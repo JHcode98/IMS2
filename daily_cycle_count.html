@@ -698,6 +698,7 @@
         const confirmSupervisorDeleteBtn = document.getElementById('confirm-supervisor-delete-btn');
         let supervisorDeleteCallback = null;
         let hourlyChart = null;
+        let monitorDashboardChart = null;
 
         const STORAGE_KEY_COUNTERS = 'ims_daily_counters_v1';
         const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
@@ -2231,15 +2232,17 @@
             if (!area) {
                 // Dashboard View
                 rackingGrid.innerHTML = '';
-                rackingGrid.style.display = 'grid';
-                rackingGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
-                rackingGrid.style.gap = '20px';
+                rackingGrid.style.display = 'block';
                 rackingGrid.style.maxWidth = '100%';
                 rackingGrid.style.width = '100%';
                 
                 capacityInfo.textContent = 'Dashboard View';
                 if(monitorFileActions) monitorFileActions.style.display = 'none';
                 statsDiv.textContent = '';
+
+                let grandTotalCapacity = 0;
+                let grandTotalCounted = 0;
+                const cards = [];
 
                 subAreaOptions.forEach(subArea => {
                     const config = subAreaConfigs[subArea];
@@ -2279,7 +2282,26 @@
                                 areaTotal++;
                             }
                         });
+                        
+                        // Floor
+                        if (config.floor) {
+                            const floorCells = config.floor.width * config.floor.levels;
+                            for(let i=0; i<floorCells; i++) {
+                                const isAuto = globalCellIndex < countedCount;
+                                globalCellIndex++;
+                                
+                                const label = `${config.floor.prefix}-${i+1}`;
+                                const status = customStatuses[label];
+                                if (status === 'empty' || status === 'not-part') continue;
+
+                                if(isCellCounted(label, isAuto)) areaCounted++;
+                                areaTotal++;
+                            }
+                        }
                     }
+
+                    grandTotalCapacity += areaTotal;
+                    grandTotalCounted += areaCounted;
 
                     const pct = areaTotal > 0 ? Math.round((areaCounted / areaTotal) * 100) : 0;
                     let color = '#e74c3c';
@@ -2307,8 +2329,60 @@
                             <div style="width:${pct}%; height:100%; background:${color};"></div>
                         </div>
                     `;
-                    rackingGrid.appendChild(card);
+                    cards.push(card);
                 });
+
+                // Render Chart
+                const chartContainer = document.createElement('div');
+                chartContainer.style.width = '100%';
+                chartContainer.style.height = '250px';
+                chartContainer.style.marginBottom = '20px';
+                chartContainer.style.display = 'flex';
+                chartContainer.style.justifyContent = 'center';
+                
+                const canvas = document.createElement('canvas');
+                canvas.id = 'monitor-dashboard-chart';
+                chartContainer.appendChild(canvas);
+                rackingGrid.appendChild(chartContainer);
+
+                if (monitorDashboardChart) {
+                    monitorDashboardChart.destroy();
+                    monitorDashboardChart = null;
+                }
+
+                monitorDashboardChart = new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Counted', 'Remaining'],
+                        datasets: [{
+                            data: [grandTotalCounted, grandTotalCapacity - grandTotalCounted],
+                            backgroundColor: ['#2ecc71', '#e74c3c'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `Total: ${grandTotalCounted} / ${grandTotalCapacity} (${grandTotalCapacity > 0 ? Math.round((grandTotalCounted/grandTotalCapacity)*100) : 0}%)`,
+                                font: { size: 16 }
+                            },
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+
+                // Render Cards Grid
+                const cardsGrid = document.createElement('div');
+                cardsGrid.style.display = 'grid';
+                cardsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+                cardsGrid.style.gap = '20px';
+                cardsGrid.style.width = '100%';
+                cards.forEach(c => cardsGrid.appendChild(c));
+                rackingGrid.appendChild(cardsGrid);
+
                 return;
             }
             
