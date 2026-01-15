@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cycle Count Completion - Inventory Management System</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .summary-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; border: 1px solid #eef2f6; }
+    .summary-value { font-size: 2.5em; font-weight: bold; color: #2752a7; margin-bottom: 5px; }
+    .summary-label { color: #666; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px; }
+    .progress-container { background: #e9ecef; border-radius: 8px; height: 30px; width: 100%; overflow: hidden; margin-bottom: 10px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); }
+    .completion-bar-fill { height: 100%; width: 0%; transition: width 0.5s ease, background-color 0.3s ease; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+    .chart-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #eef2f6; position: relative; }
+    /* Dark Mode Header */
+			body.dark-mode header {
+				background: #1a252f;
+				border-bottom: 1px solid #2c3e50;
+			}
+			body.dark-mode header h1 {
+				color: #ecf0f1;
+			}
+  </style>
+</head>
+<body class="inventory-mode">
+  <!-- Main App Sidebar -->
+  <nav id="app-sidebar">
+    <div class="sidebar-brand">
+      <img src="Logo.jpg" alt="Logo" class="sidebar-logo" style="height:32px;width:auto;margin-right:8px">
+      <span class="brand-text">IMS</span>
+      <button id="main-sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+    </div>
+    <ul class="sidebar-menu">
+      <li>
+        <button onclick="window.location.href='homepage.html'" data-tooltip="Homepage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span class="menu-text">Homepage</span>
+        </button>
+      </li>
+      <li>
+        <button data-tooltip="Document Monitoring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span class="menu-text">Document Monitoring</span>
+        </button>
+        <ul class="sidebar-submenu">
+						<li><button onclick="window.location.href='index.html'">IAAF Monitoring</button></li>
+						<li><button onclick="window.location.href='ir_monitoring.html'">IR Monitoring</button></li>
+        </ul>
+      </li>
+      <li>
+        <button class="active" data-tooltip="Inventory Tracker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <span class="menu-text">Inventory Tracker</span>
+        </button>
+        <ul class="sidebar-submenu" style="display:block">
+          <li><button onclick="window.location.href='cycle_count.html'">Cycle Count</button></li>
+          <li><button onclick="window.location.href='cycle_count_reports.html'">Cycle Count Report</button></li>
+          <li><button class="active" onclick="window.location.href='cycle_count_completion.html'">Cycle Count Completion</button></li>
+          <li><button onclick="window.location.href='cycle_count_schedule.html'">Cycle Count Schedule</button></li>
+        </ul>
+      </li>
+      <li><button onclick="window.location.href='settings.html'" data-tooltip="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="menu-text">Settings</span>
+      </button></li>
+    </ul>
+  </nav>
+
+  <header>
+    <h1>Cycle Count Completion</h1>
+    <div class="navbar" role="navigation">
+      <div class="nav-left">
+        <button class="nav-btn" onclick="window.location.href='cycle_count.html'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:5px;vertical-align:text-bottom;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back to Entry
+        </button>
+        <button class="nav-btn" id="print-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:5px;vertical-align:text-bottom;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Print Report
+        </button>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+      <div class="nav-right">
+        <div class="nav-notifications">
+          <button class="notification-btn" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="notification-badge">0</span>
+          </button>
+            <div class="notification-menu">
+            <div class="notification-header"><span>Notifications</span><button class="clear-notifications">Clear All</button></div>
+            <ul class="notification-list"></ul>
+          </div>
+        </div>
+        <div id="clock" class="clock" aria-live="polite"></div>
+        <div class="nav-user" id="nav-user">
+          <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+          <button class="user-btn" id="user-btn" aria-haspopup="true" aria-expanded="false"><span id="username-display"></span> <span id="role-badge" class="role-badge" style="display:none;margin-left:8px"></span></button>
+          <div class="user-menu" id="user-menu" role="menu" aria-label="User menu">
+            <a href="profile.html" id="profile-btn" role="menuitem">Profile</a>
+            <a href="settings.html" role="menuitem">Settings</a>
+            <button id="logout-btn" role="menuitem">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>Completion Status</h2>
+      <p class="muted">This module will track the completion progress of cycle counts against the master inventory list.</p>
+      
+      <!-- SKU Completion Section -->
+      <h3 style="margin-top:20px; border-bottom:2px solid #eee; padding-bottom:10px;">SKU Completion</h3>
+      <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; border: 1px solid #eef2f6; margin-top: 15px;">
+        <h4>Master SKU List</h4>
+        <p class="muted">Upload a CSV file containing the full list of Item Codes to track progress against.</p>
+        <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap: wrap;">
+          <input type="file" id="master-list-file" accept=".csv" style="padding: 6px; background: #fff;">
+          <button id="upload-master-btn">Upload Master List</button>
+          <button id="clear-master-btn" style="background:#d9534f; color: white;">Clear Master List</button>
+          <button id="download-master-template-btn" style="background:#fff; color:#333; border:1px solid #ccc;">Download Template</button>
+        </div>
+        <p id="master-status" style="margin-top:10px; font-weight:bold; color:#2752a7"></p>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h4>SKU Progress</h4>
+        <div class="progress-container">
+          <div id="completion-bar" class="completion-bar-fill">0%</div>
+        </div>
+        
+        <div class="report-grid">
+          <div class="summary-card">
+            <div class="summary-value" id="stat-total-master">0</div>
+            <div class="summary-label">Total Master SKUs</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value" id="stat-counted">0</div>
+            <div class="summary-label">Unique SKUs Counted</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value" id="stat-remaining">0</div>
+            <div class="summary-label">Remaining SKUs</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+            <h4>Uncounted SKUs Details</h4>
+            <div>
+                <button id="view-uncounted-btn" style="margin-right:5px;">View Report</button>
+                <button id="export-uncounted-btn">Export Uncounted CSV</button>
+            </div>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; background: #fff;">
+            <table id="uncounted-table" style="width:100%; border-collapse: collapse;">
+                <thead style="position:sticky; top:0; background:#f9fbfd; z-index:1;">
+                    <tr>
+                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Item Code</th>
+                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <p id="uncounted-msg" class="muted" style="margin-top:5px; font-size:13px"></p>
+      </div>
+
+      <!-- Location Completion Section -->
+      <h3 style="margin-top:40px; border-bottom:2px solid #eee; padding-bottom:10px;">Location Completion</h3>
+      <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; border: 1px solid #eef2f6; margin-top: 15px;">
+        <h4>Master Location List</h4>
+        <p class="muted">Upload a CSV file containing the full list of Locations to track progress against.</p>
+        <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap: wrap;">
+          <input type="file" id="master-loc-file" accept=".csv" style="padding: 6px; background: #fff;">
+          <button id="upload-master-loc-btn">Upload Master Locations</button>
+          <button id="clear-master-loc-btn" style="background:#d9534f; color: white;">Clear Master Locations</button>
+          <button id="download-master-loc-template-btn" style="background:#fff; color:#333; border:1px solid #ccc;">Download Template</button>
+        </div>
+        <p id="master-loc-status" style="margin-top:10px; font-weight:bold; color:#2752a7"></p>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h4>Location Progress</h4>
+        <div class="progress-container">
+          <div id="completion-loc-bar" class="completion-bar-fill">0%</div>
+        </div>
+        
+        <div class="report-grid">
+          <div class="summary-card">
+            <div class="summary-value" id="stat-total-loc-master">0</div>
+            <div class="summary-label">Total Master Locations</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value" id="stat-loc-counted">0</div>
+            <div class="summary-label">Locations Counted</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value" id="stat-loc-remaining">0</div>
+            <div class="summary-label">Remaining Locations</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+            <h4>Uncounted Locations Details</h4>
+            <div>
+                <button id="view-uncounted-loc-btn" style="margin-right:5px;">View Report</button>
+                <button id="export-uncounted-loc-btn">Export Uncounted CSV</button>
+            </div>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; background: #fff;">
+            <table id="uncounted-loc-table" style="width:100%; border-collapse: collapse;">
+                <thead style="position:sticky; top:0; background:#f9fbfd; z-index:1;">
+                    <tr>
+                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Location</th>
+                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <p id="uncounted-loc-msg" class="muted" style="margin-top:5px; font-size:13px"></p>
+      </div>
+
+      <!-- Overall Chart -->
+      <h3 style="margin-top:40px; border-bottom:2px solid #eee; padding-bottom:10px;">Overall Completion Chart</h3>
+      <div class="chart-container" style="height: 250px; margin-top: 15px;">
+        <canvas id="completion-chart"></canvas>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Print Options Modal -->
+  <div id="print-options-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 300px; margin-top: 100px; text-align: center;">
+      <h3>Print Options</h3>
+      <p>Choose what to print:</p>
+      <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+        <button id="print-dashboard-btn" style="background:#2752a7; color:#fff; border:none; padding: 10px; border-radius: 4px; cursor: pointer;">Print Dashboard</button>
+        <button id="print-uncounted-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding: 10px; border-radius: 4px; cursor: pointer;">Print Uncounted SKUs</button>
+        <button id="cancel-print-btn" style="background:transparent; color:#666; border:none; padding: 5px; cursor: pointer; margin-top: 5px;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
+    
+    const STORAGE_KEY_CC = 'ims_cycle_count_v1';
+    const STORAGE_KEY_MASTER = 'ims_master_sku_list_v1';
+    const STORAGE_KEY_MASTER_LOC = 'ims_master_loc_list_v1';
+    let currentUncounted = [];
+    let currentUncountedLoc = [];
+    let completionChartInstance = null;
+
+    function loadCompletionData() {
+        const masterList = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER) || '[]');
+        const cycleData = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+
+        // Get unique item codes from cycle count
+        const countedSet = new Set(cycleData.map(item => String(item.itemCode).trim()));
+        
+        // Calculate stats
+        const totalMaster = masterList.length;
+        let countedFromMaster = 0;
+        let uncounted = [];
+        
+        if (totalMaster > 0) {
+            // Count how many master items are in the counted set
+            uncounted = masterList.filter(sku => !countedSet.has(String(sku).trim()));
+            countedFromMaster = totalMaster - uncounted.length;
+        }
+        currentUncounted = uncounted;
+
+        const percentage = totalMaster > 0 ? ((countedFromMaster / totalMaster) * 100).toFixed(1) : 0;
+        const remaining = totalMaster - countedFromMaster;
+
+        // Update UI
+        document.getElementById('stat-total-master').textContent = totalMaster;
+        document.getElementById('stat-counted').textContent = countedFromMaster;
+        document.getElementById('stat-remaining').textContent = remaining;
+
+        const bar = document.getElementById('completion-bar');
+        bar.style.width = percentage + '%';
+        bar.textContent = percentage + '%';
+        
+        // Color coding based on percentage
+        if(percentage < 30) bar.style.backgroundColor = '#e74c3c'; // Red
+        else if(percentage < 70) bar.style.backgroundColor = '#f1c40f'; // Yellow
+        else bar.style.backgroundColor = '#2ecc71'; // Green
+
+        const statusText = document.getElementById('master-status');
+        if(totalMaster === 0) {
+            statusText.textContent = 'No Master List loaded.';
+            statusText.style.color = '#e74c3c';
+        } else {
+            statusText.textContent = `Master List Loaded: ${totalMaster} items.`;
+            statusText.style.color = '#2752a7';
+        }
+        
+        renderUncountedTable(uncounted);
+    }
+
+    function loadLocationCompletionData() {
+        const masterLocList = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_LOC) || '[]');
+        const cycleData = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+        
+        const countedLocSet = new Set(cycleData.map(item => String(item.location).trim()));
+        
+        const totalMaster = masterLocList.length;
+        let countedFromMaster = 0;
+        let uncounted = [];
+        
+        if (totalMaster > 0) {
+             uncounted = masterLocList.filter(loc => !countedLocSet.has(String(loc).trim()));
+             countedFromMaster = totalMaster - uncounted.length;
+        }
+        currentUncountedLoc = uncounted;
+        
+        const percentage = totalMaster > 0 ? ((countedFromMaster / totalMaster) * 100).toFixed(1) : 0;
+        const remaining = totalMaster - countedFromMaster;
+        
+        document.getElementById('stat-total-loc-master').textContent = totalMaster;
+        document.getElementById('stat-loc-counted').textContent = countedFromMaster;
+        document.getElementById('stat-loc-remaining').textContent = remaining;
+        
+        const bar = document.getElementById('completion-loc-bar');
+        bar.style.width = percentage + '%';
+        bar.textContent = percentage + '%';
+        
+        if(percentage < 30) bar.style.backgroundColor = '#e74c3c';
+        else if(percentage < 70) bar.style.backgroundColor = '#f1c40f';
+        else bar.style.backgroundColor = '#2ecc71';
+        
+        const statusText = document.getElementById('master-loc-status');
+        if(totalMaster === 0) {
+            statusText.textContent = 'No Master Location List loaded.';
+            statusText.style.color = '#e74c3c';
+        } else {
+            statusText.textContent = `Master Location List Loaded: ${totalMaster} locations.`;
+            statusText.style.color = '#2752a7';
+        }
+        
+        renderUncountedLocTable(uncounted);
+    }
+
+    function renderUncountedTable(list) {
+        const tbody = document.querySelector('#uncounted-table tbody');
+        const msg = document.getElementById('uncounted-msg');
+        tbody.innerHTML = '';
+        
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" style="padding:15px; text-align:center; color:#666;">No uncounted items found (or no master list loaded).</td></tr>';
+            msg.textContent = '';
+            return;
+        }
+
+        // Limit display for performance if list is huge
+        const displayLimit = 500;
+        const displayList = list.slice(0, displayLimit);
+        
+        displayList.forEach(sku => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding:8px; border-bottom:1px solid #eee;">${sku}</td>
+                <td style="padding:8px; border-bottom:1px solid #eee;"><span style="background:#fdecea; color:#e74c3c; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">Pending</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (list.length > displayLimit) {
+            msg.textContent = `Showing first ${displayLimit} of ${list.length} uncounted items. Use Export to see full list.`;
+        } else {
+            msg.textContent = `Showing all ${list.length} uncounted items.`;
+        }
+    }
+
+    function renderUncountedLocTable(list) {
+        const tbody = document.querySelector('#uncounted-loc-table tbody');
+        const msg = document.getElementById('uncounted-loc-msg');
+        tbody.innerHTML = '';
+        
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" style="padding:15px; text-align:center; color:#666;">No uncounted locations found (or no master list loaded).</td></tr>';
+            msg.textContent = '';
+            return;
+        }
+
+        const displayLimit = 500;
+        const displayList = list.slice(0, displayLimit);
+        
+        displayList.forEach(loc => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding:8px; border-bottom:1px solid #eee;">${loc}</td>
+                <td style="padding:8px; border-bottom:1px solid #eee;"><span style="background:#fdecea; color:#e74c3c; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">Pending</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (list.length > displayLimit) {
+            msg.textContent = `Showing first ${displayLimit} of ${list.length} uncounted locations. Use Export to see full list.`;
+        } else {
+            msg.textContent = `Showing all ${list.length} uncounted locations.`;
+        }
+    }
+
+    function renderOverallCompletionChart() {
+        const skuPctText = document.getElementById('completion-bar').textContent || '0%';
+        const locPctText = document.getElementById('completion-loc-bar').textContent || '0%';
+        
+        const skuPct = parseFloat(skuPctText.replace('%', ''));
+        const locPct = parseFloat(locPctText.replace('%', ''));
+
+        const ctx = document.getElementById('completion-chart').getContext('2d');
+        if (completionChartInstance) {
+            completionChartInstance.destroy();
+        }
+        completionChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['SKU Completion', 'Location Completion'],
+                datasets: [{
+                    label: 'Completion %',
+                    data: [skuPct, locPct],
+                    backgroundColor: [
+                        'rgba(78, 115, 223, 0.8)',
+                        'rgba(28, 200, 138, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(78, 115, 223, 1)',
+                        'rgba(28, 200, 138, 1)'
+                    ],
+                    borderWidth: 1,
+                    barPercentage: 0.5
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'SKU vs. Location Completion' }
+                }
+            }
+        });
+    }
+
+    // Upload Handler
+    document.getElementById('upload-master-btn').addEventListener('click', () => {
+        const fileInput = document.getElementById('master-list-file');
+        const file = fileInput.files[0];
+        if(!file) { alert('Please select a CSV file first.'); return; }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const lines = text.split(/\r\n|\n/);
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            let colIdx = headers.indexOf('Item Code');
+            if(colIdx === -1) colIdx = 0; // Default to first column
+
+            const newMaster = [];
+            for(let i=1; i<lines.length; i++) {
+                if(!lines[i].trim()) continue;
+                const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+                if(cols[colIdx]) newMaster.push(cols[colIdx]);
+            }
+
+            // Unique master items
+            const uniqueMaster = [...new Set(newMaster)];
+            localStorage.setItem(STORAGE_KEY_MASTER, JSON.stringify(uniqueMaster));
+            alert(`Master list uploaded successfully. ${uniqueMaster.length} unique items found.`);
+            loadCompletionData();
+            renderOverallCompletionChart();
+            fileInput.value = '';
+        };
+        reader.readAsText(file);
+    });
+
+    document.getElementById('clear-master-btn').addEventListener('click', () => {
+        if(confirm('Clear the master SKU list?')) {
+            localStorage.removeItem(STORAGE_KEY_MASTER);
+            loadCompletionData();
+            renderOverallCompletionChart();
+        }
+    });
+
+    // Upload Location Master
+    document.getElementById('upload-master-loc-btn').addEventListener('click', () => {
+        const fileInput = document.getElementById('master-loc-file');
+        const file = fileInput.files[0];
+        if(!file) { alert('Please select a CSV file first.'); return; }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const lines = text.split(/\r\n|\n/);
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            let colIdx = headers.indexOf('Location');
+            if(colIdx === -1) colIdx = 0;
+
+            const newMaster = [];
+            for(let i=1; i<lines.length; i++) {
+                if(!lines[i].trim()) continue;
+                const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+                if(cols[colIdx]) newMaster.push(cols[colIdx]);
+            }
+
+            const uniqueMaster = [...new Set(newMaster)];
+            localStorage.setItem(STORAGE_KEY_MASTER_LOC, JSON.stringify(uniqueMaster));
+            alert(`Master location list uploaded successfully. ${uniqueMaster.length} unique locations found.`);
+            loadLocationCompletionData();
+            renderOverallCompletionChart();
+            fileInput.value = '';
+        };
+        reader.readAsText(file);
+    });
+
+    document.getElementById('clear-master-loc-btn').addEventListener('click', () => {
+        if(confirm('Clear the master Location list?')) {
+            localStorage.removeItem(STORAGE_KEY_MASTER_LOC);
+            loadLocationCompletionData();
+            renderOverallCompletionChart();
+        }
+    });
+
+    // Download Template
+    document.getElementById('download-master-template-btn').addEventListener('click', () => {
+        const headers = ['Item Code', 'Description (Optional)'];
+        const sample = ['10000001', 'Sample Item A'];
+        const sample2 = ['10000002', 'Sample Item B'];
+        const csvContent = headers.join(',') + '\n' + sample.join(',') + '\n' + sample2.join(',');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'master_sku_list_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // Download Location Template
+    document.getElementById('download-master-loc-template-btn').addEventListener('click', () => {
+        const headers = ['Location', 'Description (Optional)'];
+        const sample = ['A-01-01', 'Aisle A'];
+        const sample2 = ['A-01-02', 'Aisle A'];
+        const csvContent = headers.join(',') + '\n' + sample.join(',') + '\n' + sample2.join(',');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'master_location_list_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // Export Uncounted
+    document.getElementById('export-uncounted-btn').addEventListener('click', () => {
+        if(currentUncounted.length === 0) { alert('No uncounted items to export.'); return; }
+        
+        const csvContent = "Item Code,Status\n" + currentUncounted.map(sku => `"${sku}",Pending`).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'uncounted_skus.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // View Uncounted Report
+    document.getElementById('view-uncounted-btn').addEventListener('click', () => {
+        if(currentUncounted.length === 0) { alert('No uncounted items to view.'); return; }
+        
+        const reportWindow = window.open('', '_blank');
+        let html = `
+        <html>
+        <head>
+            <title>Uncounted SKUs Report</title>
+            <style>
+                body { font-family: sans-serif; font-size: 12px; padding: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                th { background-color: #f0f0f0; }
+                .header { text-align: center; margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>Uncounted SKUs Report</h2>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Total Uncounted: ${currentUncounted.length}</p>
+            </div>
+            <table>
+                <thead><tr><th>Item Code</th><th>Status</th></tr></thead>
+                <tbody>
+        `;
+        currentUncounted.forEach(sku => {
+            html += `<tr><td>${sku}</td><td>Pending</td></tr>`;
+        });
+        html += `</tbody></table></body></html>`;
+        reportWindow.document.write(html);
+        reportWindow.document.close();
+    });
+
+    // View Uncounted Locations Report
+    document.getElementById('view-uncounted-loc-btn').addEventListener('click', () => {
+        if(currentUncountedLoc.length === 0) { alert('No uncounted locations to view.'); return; }
+        
+        const reportWindow = window.open('', '_blank');
+        let html = `
+        <html>
+        <head>
+            <title>Uncounted Locations Report</title>
+            <style>
+                body { font-family: sans-serif; font-size: 12px; padding: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                th { background-color: #f0f0f0; }
+                .header { text-align: center; margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>Uncounted Locations Report</h2>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Total Uncounted: ${currentUncountedLoc.length}</p>
+            </div>
+            <table>
+                <thead><tr><th>Location</th><th>Status</th></tr></thead>
+                <tbody>
+        `;
+        currentUncountedLoc.forEach(loc => {
+            html += `<tr><td>${loc}</td><td>Pending</td></tr>`;
+        });
+        html += `</tbody></table></body></html>`;
+        reportWindow.document.write(html);
+        reportWindow.document.close();
+    });
+
+    // Export Uncounted Locations
+    document.getElementById('export-uncounted-loc-btn').addEventListener('click', () => {
+        if(currentUncountedLoc.length === 0) { alert('No uncounted locations to export.'); return; }
+        
+        const csvContent = "Location,Status\n" + currentUncountedLoc.map(loc => `"${loc}",Pending`).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'uncounted_locations.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // Print Logic
+    const printBtn = document.getElementById('print-btn');
+    const printModal = document.getElementById('print-options-modal');
+    const printDashboardBtn = document.getElementById('print-dashboard-btn');
+    const printUncountedBtn = document.getElementById('print-uncounted-btn');
+    const cancelPrintBtn = document.getElementById('cancel-print-btn');
+
+    if(printBtn && printModal) {
+      printBtn.addEventListener('click', () => {
+        printModal.classList.remove('hidden');
+      });
+      printModal.querySelector('.modal-overlay').addEventListener('click', () => {
+        printModal.classList.add('hidden');
+      });
+    }
+    if(cancelPrintBtn) cancelPrintBtn.addEventListener('click', () => printModal.classList.add('hidden'));
+
+    if(printDashboardBtn) {
+        printDashboardBtn.addEventListener('click', () => {
+            printModal.classList.add('hidden');
+            window.print();
+        });
+    }
+
+    if(printUncountedBtn) {
+        printUncountedBtn.addEventListener('click', () => {
+            printModal.classList.add('hidden');
+            if(currentUncounted.length === 0) { alert('No uncounted items to print.'); return; }
+            
+            const printWindow = window.open('', '_blank');
+            let html = `
+            <html>
+            <head>
+                <title>Uncounted SKUs Report</title>
+                <style>
+                    body { font-family: sans-serif; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                    th { background-color: #f0f0f0; }
+                    .header { text-align: center; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>Uncounted SKUs Report</h2>
+                    <p>Generated on: ${new Date().toLocaleString()}</p>
+                    <p>Total Uncounted: ${currentUncounted.length}</p>
+                </div>
+                <table>
+                    <thead><tr><th>Item Code</th><th>Status</th></tr></thead>
+                    <tbody>
+            `;
+            currentUncounted.forEach(sku => {
+                html += `<tr><td>${sku}</td><td>Pending</td></tr>`;
+            });
+            html += `</tbody></table><script>window.onload = function() { window.print(); window.close(); }<\/script></body></html>`;
+            printWindow.document.write(html);
+            printWindow.document.close();
+        });
+    }
+
+    loadCompletionData();
+    loadLocationCompletionData();
+    renderOverallCompletionChart();
+  </script>
+</body>
+</html>

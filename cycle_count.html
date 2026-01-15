@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cycle Count - Inventory Management System</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    /* Compact view styles for full screen mode */
+    .compact-view { font-size: 13px; }
+    .compact-view table th, .compact-view table td { padding: 4px 6px !important; }
+    .compact-view input, .compact-view select, .compact-view button { font-size: 13px; padding: 4px 8px; }
+    .compact-view .icon-btn svg { width: 14px; height: 14px; }
+    /* Auto-fill visual indicator */
+    .auto-filled {
+      background-color: #e8f5e9 !important;
+      border-color: #2ecc71 !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232ecc71' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 16px;
+    }
+    /* Flip Card for Entry Form */
+    .entry-flip-container { perspective: 1000px; position: relative; margin-bottom: 20px; min-height: 600px; }
+    .entry-flip-inner { transition: transform 0.6s; transform-style: preserve-3d; position: relative; width: 600px; height: 600px; }
+    .entry-flip-container.flipped .entry-flip-inner { transform: rotateY(180deg); }
+    .entry-flip-front, .entry-flip-back { 
+        backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+        background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #eef2f6; padding: 20px;
+        overflow-y: auto;
+    }
+    .entry-flip-front { z-index: 2; transform: rotateY(0deg); }
+    .entry-flip-back { transform: rotateY(180deg); }
+    /* Adjust card class usage inside flip */
+    .entry-flip-front.card, .entry-flip-back.card { margin: 0; max-width: none; box-shadow: none; border: none; }
+    /* Dashboard Styles */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eef2f6; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .stat-value { font-size: 24px; font-weight: bold; color: #2752a7; }
+    .stat-label { font-size: 12px; color: #6c757d; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .chart-wrapper { position: relative; height: 250px; width: 100%; }
+    @media (max-width: 768px) { .dashboard-charts-row { grid-template-columns: 1fr !important; } }
+
+    /* Calculator */
+    .calc-container { position: fixed; top: 100px; right: 20px; width: 220px; background: var(--card); border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; padding: 10px; display: none; }
+    .calc-container.show { display: block; }
+    .calc-display { width: 100%; height: 40px; margin-bottom: 10px; text-align: right; padding: 5px; font-size: 18px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; color: #333; }
+    .calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+    .calc-btn { padding: 10px; background: #eee; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: #333; }
+    .calc-btn:hover { background: #ddd; }
+    .calc-btn.operator { background: #e0e0e0; color: #2752a7; }
+    .calc-btn.equal { background: #2752a7; color: #fff; grid-column: span 2; }
+    .calc-btn.clear { background: #d9534f; color: #fff; grid-column: span 2; }
+    body.dark-mode .calc-container { background: #2c2c2c; border-color: #444; }
+    body.dark-mode .calc-display { background: #1a1a1a; color: #fff; border-color: #444; }
+    body.dark-mode .calc-btn { background: #333; color: #e0e0e0; }
+    body.dark-mode .calc-btn:hover { background: #444; }
+    
+    /* Fix tooltip clipping for top buttons (Position tooltip below button) */
+    #daily-counters-btn[data-tooltip]::after, #toggle-calc-btn[data-tooltip]::after, #flip-to-chart-btn[data-tooltip]::after, #flip-to-form-btn[data-tooltip]::after { top: 100%; bottom: auto; margin-top: 8px; margin-bottom: 0; }
+    #daily-counters-btn[data-tooltip]::before, #toggle-calc-btn[data-tooltip]::before, #flip-to-chart-btn[data-tooltip]::before, #flip-to-form-btn[data-tooltip]::before { top: 100%; bottom: auto; margin-top: 3px; margin-bottom: 0; border-top-color: transparent; border-bottom-color: #2c3e50; }
+    
+    /* Calculator Drag Handle */
+    #calc-header { cursor: move; background: #f1f1f1; padding: 5px; border-radius: 4px 4px 0 0; margin: -10px -10px 10px -10px; text-align: center; font-size: 12px; font-weight: bold; color: #555; border-bottom: 1px solid #ddd; }
+    body.dark-mode #calc-header { background: #333; color: #ccc; border-bottom-color: #444; }
+
+    /* Dark Mode Header */
+			body.dark-mode header {
+				background: #1a252f;
+				border-bottom: 1px solid #2c3e50;
+			}
+			body.dark-mode header h1 {
+				color: #ecf0f1;
+			}
+  </style>
+</head>
+<body class="inventory-mode">
+  <script>
+    // Apply sidebar state immediately to prevent layout shift (zoom effect)
+    if(localStorage.getItem('ims_sidebar_collapsed') === '1') document.body.classList.add('sidebar-collapsed');
+  </script>
+  <!-- Main App Sidebar -->
+  <nav id="app-sidebar">
+    <div class="sidebar-brand">
+      <img src="Logo.jpg" alt="Logo" class="sidebar-logo" style="height:32px;width:auto;margin-right:8px">
+      <span class="brand-text">IMS</span>
+      <button id="main-sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+    </div>
+    <ul class="sidebar-menu">
+      <li>
+        <button onclick="window.location.href='homepage.html'" data-tooltip="Homepage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span class="menu-text">Homepage</span>
+        </button>
+      </li>
+      <li>
+        <button data-tooltip="Document Monitoring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span class="menu-text">Document Monitoring</span>
+        </button>
+        <ul class="sidebar-submenu">
+						<li><button onclick="window.location.href='index.html'">IAAF Monitoring</button></li>
+						<li><button onclick="window.location.href='ir_monitoring.html'">IR Monitoring</button></li>
+        </ul>
+      </li>
+      <li>
+        <button class="active" data-tooltip="Inventory Tracker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <span class="menu-text">Inventory Tracker</span>
+        </button>
+        <ul class="sidebar-submenu" style="display:block">
+          <li><button class="active" onclick="window.location.href='cycle_count.html'">Cycle Count</button></li>
+          <li><button onclick="window.location.href='cycle_count_reports.html'">Cycle Count Report</button></li>
+          <li><button onclick="window.location.href='cycle_count_completion.html'">Cycle Count Completion</button></li>
+          <li><button onclick="window.location.href='cycle_count_schedule.html'">Cycle Count Schedule</button></li>
+        </ul>
+      </li>
+      <li><button onclick="window.location.href='settings.html'" data-tooltip="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="menu-text">Settings</span>
+      </button></li>
+    </ul>
+  </nav>
+  <script>
+    // Apply sidebar state immediately to prevent layout shift
+    if(localStorage.getItem('ims_sidebar_collapsed') === '1') document.getElementById('app-sidebar').classList.add('collapsed');
+  </script>
+
+  <header>
+    <h1>Cycle Count</h1>
+    <div class="navbar" role="navigation">
+      <div class="nav-left">
+        <button class="nav-btn" onclick="window.location.href='cycle_count_reports.html'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:5px;vertical-align:text-bottom;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Reports
+        </button>
+        <button class="nav-btn" id="open-analytics-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:5px;vertical-align:text-bottom;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Analytics Dashboard
+        </button>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+      <div class="nav-right">
+        <div class="nav-notifications">
+          <button class="notification-btn" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="notification-badge">0</span>
+          </button>
+          <div class="notification-menu">
+            <div class="notification-header"><span>Notifications</span><button class="clear-notifications">Clear All</button></div>
+            <ul class="notification-list"></ul>
+          </div>
+        </div>
+        <div id="clock" class="clock" aria-live="polite"></div>
+        <div class="nav-user" id="nav-user">
+          <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+          <button class="user-btn" id="user-btn" aria-haspopup="true" aria-expanded="false"><span id="username-display"></span> <span id="role-badge" class="role-badge" style="display:none;margin-left:8px"></span></button>
+          <div class="user-menu" id="user-menu" role="menu" aria-label="User menu">
+            <a href="profile.html" id="profile-btn" role="menuitem">Profile</a>
+            <a href="settings.html" role="menuitem">Settings</a>
+            <button id="logout-btn" role="menuitem">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="entry-flip-container" id="entry-flip-container">
+      <div class="entry-flip-inner">
+        <!-- Front: Form -->
+        <div class="entry-flip-front card" id="form-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="margin:0;">New Cycle Count Entry</h2>
+            <div style="display:flex; gap:8px">
+              <button id="daily-counters-btn" class="icon-btn" title="Manage Daily Counters" onclick="window.location.href='daily_cycle_count.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </button>
+              <button id="toggle-calc-btn" class="icon-btn" title="Calculator">🧮</button>
+              <button id="flip-to-chart-btn" class="icon-btn" title="View Variance Chart">📊 View Chart</button>
+            </div>
+          </div>
+      <form id="cycle-count-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
+        <div>
+          <label for="item-code">Item Code</label>
+          <input type="text" id="item-code" required pattern="[15][0-9]{7}" title="8 digits starting with 1 or 5" inputmode="numeric" maxlength="8" style="width:100%">
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label for="item-desc">Description</label>
+          <textarea id="item-desc" rows="2" style="width:100%" placeholder="Auto-filled from Master"></textarea>
+        </div>
+        <div>
+          <label for="location">Location</label>
+          <input type="text" id="location" required pattern=".{8}" title="Exactly 8 characters" maxlength="8" style="width:100%">
+        </div>
+        <div>
+          <label for="system-qty">System Qty</label>
+          <input type="number" id="system-qty" required style="width:100%">
+        </div>
+        <div>
+          <label for="physical-qty">Physical Qty</label>
+          <input type="number" id="physical-qty" required style="width:100%">
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label for="notes">Notes</label>
+          <input type="text" id="notes" style="width:100%">
+        </div>
+        <div style="display:flex; gap:5px;">
+          <button type="submit" id="add-entry-btn" class="icon-btn" title="Save Entry" style="background: #2752a7; color: white; width: 100%; justify-content: center; height: 36px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          </button>
+          <button type="button" id="cancel-entry-btn" class="icon-btn" title="Cancel / Clear Form" style="background: #6c757d; color: white; width: 100%; justify-content: center; height: 36px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </form>
+      </div>
+
+        <!-- Back: Chart -->
+        <div class="entry-flip-back card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">Variance Distribution (Filtered)</h3>
+            <button id="flip-to-form-btn" class="icon-btn" title="Back to Entry Form">↩ Back to Form</button>
+          </div>
+          <div style="position: relative; height:500px; width:100%;">
+              <canvas id="variance-distribution-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="table-card" style="margin-top: 20px;">
+      <div style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display:flex; align-items:center; gap:8px">
+          <h2>Cycle Count Records</h2>
+          <button id="toggle-form-btn" class="icon-btn" title="Full View (Hide Form)" style="color:#666">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+          </button>
+        </div>
+        <div class="tools" style="display:flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="search-item-code" placeholder="Search..." style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+          <select id="variance-filter" style="padding: 7px; border-radius: 6px; border: 1px solid #ccc;">
+            <option value="all">All Variances</option>
+            <option value="exact">Exact Match</option>
+            <option value="surplus">Surplus</option>
+            <option value="shortage">Shortage</option>
+          </select>
+          <select id="date-filter-type" style="padding: 7px; border-radius: 6px; border: 1px solid #ccc;">
+            <option value="updated">Updated Date</option>
+            <option value="created">Created Date</option>
+          </select>
+          <label for="start-date" style="font-size:13px;color:var(--muted);margin-left:8px;">From:</label>
+          <input type="date" id="start-date" style="padding: 7px; border-radius: 6px; border: 1px solid #ccc;">
+          <label for="end-date" style="font-size:13px;color:var(--muted)">To:</label>
+          <input type="date" id="end-date" style="padding: 7px; border-radius: 6px; border: 1px solid #ccc;">
+          <button id="filter-date-btn" class="icon-btn" title="Filter Date Range" style="margin-left: 4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+          </button>
+          <button id="clear-date-filter-btn" class="icon-btn" title="Clear Date Filter" style="margin-left:-4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+          
+          <button id="clear-all-filters-btn" class="icon-btn" title="Clear All Filters" style="margin-left: 4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          </button>
+          <button id="mass-delete-btn" class="icon-btn" title="Mass Delete ALL Records (Reset)" style="margin-left: 4px; color: #fff; background-color: #d9534f;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+          </button>
+          <button id="delete-selected-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; margin-left: 4px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+          </button>
+          <button id="export-csv-btn" class="icon-btn" title="Export to CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          </button>
+          <button id="print-btn" class="icon-btn" title="Print Records">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          </button>
+          <button id="download-template-btn" class="icon-btn" title="Download Template">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+          </button>
+          <button id="upload-master-btn" class="icon-btn" title="Upload Master List (Item Code, Description)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          </button>
+          <button id="clear-master-btn" class="icon-btn" title="Clear Master List" style="color:#d9534f">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+          <input type="file" id="upload-master-file" accept=".csv" style="display: none;">
+          <button id="import-csv-btn" class="icon-btn" title="Import CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          </button>
+          <input type="file" id="import-csv-file" accept=".csv" style="display: none;">
+        </div>
+      </div>
+      <table id="cycle-count-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
+            <th style="padding: 8px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-cc"></th>
+            <th class="sortable" data-sort="date" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">Updated Date <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="createdDate" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">Created Date <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="itemCode" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">Item <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="description" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">Description <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="location" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">Location <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="system" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">System <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="physical" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">Physical <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="variance" style="padding: 8px; text-align: left; cursor:pointer; user-select:none" title="Click to sort by Variance">Variance <span class="sort-icon"></span></th>
+            <th class="sortable" data-sort="notes" style="padding: 8px; text-align: left; cursor:pointer; user-select:none">Notes <span class="sort-icon"></span></th>
+            <th style="padding: 8px; text-align: left;">Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #e2e8f0;">
+           <tr>
+             <td colspan="6" style="padding: 8px; text-align: right;">Total (Filtered):</td>
+             <td id="total-system" style="padding: 8px;">0</td>
+             <td id="total-physical" style="padding: 8px;">0</td>
+             <td style="padding: 8px;"><span id="total-variance" class="age">0</span></td>
+             <td colspan="2"></td>
+           </tr>
+        </tfoot>
+      </table>
+      <div id="pagination-controls" class="sidebar-pagination" style="margin-top: 10px; justify-content: flex-end;"></div>
+    </div>
+
+    <!-- Mass Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content card" style="max-width: 400px; margin-top: 100px;">
+        <h3>Confirm Mass Delete</h3>
+        <p>You are about to delete <span id="delete-count" style="font-weight:bold; color:#d9534f">0</span> records.</p>
+        <p class="muted">This action cannot be undone. Please enter Supervisor Code to proceed.</p>
+        <div style="margin: 15px 0;">
+          <label for="supervisor-code" style="display:block; margin-bottom:5px; font-weight:bold;">Supervisor Code</label>
+          <input type="password" id="supervisor-code" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="Enter code (e.g. 12345)">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button id="cancel-delete-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancel</button>
+          <button id="confirm-delete-btn" style="background:#d9534f; color:#fff; border:none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Confirm Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Print Options Modal -->
+    <div id="print-options-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content card" style="max-width: 300px; margin-top: 100px; text-align: center;">
+        <h3>Print Options</h3>
+        <p>Choose which records to print:</p>
+        <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+          <button id="print-filtered-btn" style="background:#2752a7; color:#fff; border:none; padding: 10px; border-radius: 4px; cursor: pointer;">Print Filtered Records</button>
+          <button id="print-all-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding: 10px; border-radius: 4px; cursor: pointer;">Print All Records</button>
+          <button id="cancel-print-btn" style="background:transparent; color:#666; border:none; padding: 5px; cursor: pointer; margin-top: 5px;">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Dashboard Modal -->
+    <div id="analytics-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content card" style="max-width: 1000px; width: 95%; margin-top: 20px; max-height: 90vh; overflow-y: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+          <h2 style="margin:0">Analytics Dashboard</h2>
+          <button id="close-analytics-btn" class="icon-btn" style="font-size: 24px; line-height: 1;">&times;</button>
+        </div>
+        
+        <div class="dashboard-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-total-counts">-</div>
+            <div class="stat-label">Total Counts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-accuracy">-</div>
+            <div class="stat-label">Accuracy Rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-net-variance">-</div>
+            <div class="stat-label">Net Variance</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-abs-variance">-</div>
+            <div class="stat-label">Abs. Variance</div>
+          </div>
+        </div>
+
+        <div class="dashboard-charts-row" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+           <div class="card" style="margin:0; padding:15px; border:1px solid #eee; box-shadow:none;">
+             <h4 style="margin-top:0; color:#444;">Counts (Last 7 Days)</h4>
+             <div class="chart-wrapper">
+               <canvas id="analytics-daily-chart"></canvas>
+             </div>
+           </div>
+           <div class="card" style="margin:0; padding:15px; border:1px solid #eee; box-shadow:none;">
+             <h4 style="margin-top:0; color:#444;">Variance Breakdown</h4>
+             <div class="chart-wrapper">
+               <canvas id="analytics-variance-chart"></canvas>
+             </div>
+           </div>
+        </div>
+
+        <div class="card" style="margin:0; padding:15px; border:1px solid #eee; box-shadow:none;">
+           <h4 style="margin-top:0; color:#444;">Top 10 Items by Absolute Variance</h4>
+           <div class="chart-wrapper" style="height: 300px;">
+             <canvas id="analytics-top-items-chart"></canvas>
+           </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast-notification" class="toast"></div>
+  <!-- Calculator Widget (Moved outside form for global dragging) -->
+  <div id="calculator-widget" class="calc-container">
+    <div id="calc-header">Calculator (Drag me)</div>
+    <input type="text" id="calc-display" class="calc-display" readonly>
+    <div class="calc-keys">
+      <button type="button" class="calc-btn clear" onclick="calcClear()">C</button>
+      <button type="button" class="calc-btn operator" onclick="calcAppend('/')">/</button>
+      <button type="button" class="calc-btn operator" onclick="calcAppend('*')">×</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('7')">7</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('8')">8</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('9')">9</button>
+      <button type="button" class="calc-btn operator" onclick="calcAppend('-')">-</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('4')">4</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('5')">5</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('6')">6</button>
+      <button type="button" class="calc-btn operator" onclick="calcAppend('+')">+</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('1')">1</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('2')">2</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('3')">3</button>
+      <button type="button" class="calc-btn equal" onclick="calcResult()">=</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('0')">0</button>
+      <button type="button" class="calc-btn" onclick="calcAppend('.')">.</button>
+      <button type="button" class="calc-btn" style="grid-column: span 4; background: #2752a7; color: white; margin-top: 5px;" onclick="calcCopyToPhysical()">Copy to Physical Qty</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+    // Cycle Count Logic
+    const form = document.getElementById('cycle-count-form');
+    const tableBody = document.querySelector('#cycle-count-table tbody');
+    const STORAGE_KEY_CC = 'ims_cycle_count_v1';
+    const STORAGE_KEY_MASTER_DESC = 'ims_master_desc_v1';
+    const cycleCountSearchInput = document.getElementById('search-item-code');
+    const exportBtn = document.getElementById('export-csv-btn');
+    const ccDownloadTemplateBtn = document.getElementById('download-template-btn');
+    const importBtn = document.getElementById('import-csv-btn');
+    const ccImportFile = document.getElementById('import-csv-file');
+    const selectAllCc = document.getElementById('select-all-cc');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const clearDateFilterBtn = document.getElementById('clear-date-filter-btn');
+    const filterDateBtn = document.getElementById('filter-date-btn');
+    const dateFilterType = document.getElementById('date-filter-type');
+    const clearAllFiltersBtn = document.getElementById('clear-all-filters-btn');
+    const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+    const massDeleteBtn = document.getElementById('mass-delete-btn');
+    const cancelEntryBtn = document.getElementById('cancel-entry-btn');
+    const varianceFilter = document.getElementById('variance-filter');
+    const masterUploadBtn = document.getElementById('upload-master-btn');
+    const masterUploadFile = document.getElementById('upload-master-file');
+    const clearMasterBtn = document.getElementById('clear-master-btn');
+    const entryFlipContainer = document.getElementById('entry-flip-container');
+    const flipToChartBtn = document.getElementById('flip-to-chart-btn');
+    const flipToFormBtn = document.getElementById('flip-to-form-btn');
+    
+    let ccCurrentPage = 1;
+    let rowsPerPage = 10;
+    let sortField = null;
+    let sortDirection = 'asc';
+    let deleteMode = 'selected'; // 'selected' or 'all'
+    let varianceDistributionChart = null;
+
+    function getCandidateDates(dateStr) {
+      if (!dateStr) return [];
+      const candidates = [];
+      
+      // 1. Standard parse (handles ISO, MM/DD/YYYY, etc.)
+      let s = dateStr;
+      // Fix ISO UTC issue: treat YYYY-MM-DD as local
+      if (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)) s += 'T00:00:00';
+      
+      const d1 = new Date(s);
+      if (!isNaN(d1.getTime())) candidates.push(d1);
+
+      // 2. Try parsing as DD/MM/YYYY explicitly if it contains slashes
+      if (typeof dateStr === 'string' && dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+           // Assume YYYY is last or first. 
+           let d, m, y;
+           if (parts[2].length === 4) { 
+             y = parseInt(parts[2], 10);
+             // Try DD/MM/YYYY
+             m = parseInt(parts[1], 10); d = parseInt(parts[0], 10);
+             if (y && m && d) { const dt = new Date(y, m - 1, d); if (!isNaN(dt.getTime()) && dt.getDate() === d) candidates.push(dt); }
+             // Try MM/DD/YYYY
+             m = parseInt(parts[0], 10); d = parseInt(parts[1], 10);
+             if (y && m && d) { const dt = new Date(y, m - 1, d); if (!isNaN(dt.getTime()) && dt.getDate() === d) candidates.push(dt); }
+           }
+           else if (parts[0].length === 4) { 
+             y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); 
+             if (y && m && d) {
+               const d2 = new Date(y, m - 1, d); // Month is 0-indexed
+               if (!isNaN(d2.getTime()) && d2.getDate() === d) candidates.push(d2);
+             }
+           }
+        }
+      }
+      return candidates;
+    }
+
+    function normalizeDate(dateStr) {
+      const candidates = getCandidateDates(dateStr);
+      if (candidates.length > 0) return candidates[0].toISOString();
+      return new Date().toISOString();
+    }
+
+    function loadData() {
+      let data = [];
+      try {
+        data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+      } catch (e) {
+        console.error('Error parsing cycle count data', e);
+      }
+      // Add original index to handle deletion after filtering
+      data = data.map((item, index) => ({ ...item, originalIndex: index }));
+      
+      const searchTerms = cycleCountSearchInput ? cycleCountSearchInput.value.toLowerCase().split(' ').filter(Boolean) : [];
+      let filteredData = data.filter(item => {
+        if (searchTerms.length === 0) return true;
+        const itemText = [item.itemCode, item.description || '', item.location, item.notes || ''].join(' ').toLowerCase();
+        return searchTerms.every(term => itemText.includes(term));
+      });
+
+      // Date range filter
+      let startDate = null;
+      if (startDateInput && startDateInput.value) {
+        const parts = startDateInput.value.split('-');
+        startDate = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+      }
+      let endDate = null;
+      if (endDateInput && endDateInput.value) {
+        const parts = endDateInput.value.split('-');
+        endDate = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
+      }
+      const filterType = dateFilterType ? dateFilterType.value : 'updated';
+
+      if (startDate) {
+        filteredData = filteredData.filter(item => {
+          const dateStr = filterType === 'created' ? item.createdDate : item.date;
+          const dates = getCandidateDates(dateStr);
+          return dates.some(d => d >= startDate);
+        });
+      }
+      if (endDate) {
+        filteredData = filteredData.filter(item => {
+          const dateStr = filterType === 'created' ? item.createdDate : item.date;
+          const dates = getCandidateDates(dateStr);
+          return dates.some(d => d <= endDate);
+        });
+      }
+
+      // Variance Filter
+      const vFilter = varianceFilter ? varianceFilter.value : 'all';
+      if (vFilter !== 'all') {
+        filteredData = filteredData.filter(item => {
+          const diff = (item.physical || 0) - (item.system || 0);
+          if (vFilter === 'exact') return diff === 0;
+          if (vFilter === 'surplus') return diff > 0;
+          if (vFilter === 'shortage') return diff < 0;
+          return true;
+        });
+      }
+
+      renderVarianceDistributionChart(filteredData);
+
+      if (sortField) {
+        filteredData.sort((a, b) => {
+          let valA, valB;
+          if (sortField === 'variance') {
+            valA = (a.physical || 0) - (a.system || 0);
+            valB = (b.physical || 0) - (b.system || 0);
+          } else {
+            valA = a[sortField];
+            valB = b[sortField];
+          }
+          if (typeof valA === 'string') valA = valA.toLowerCase();
+          if (typeof valB === 'string') valB = valB.toLowerCase();
+          if (valA == null) valA = '';
+          if (valB == null) valB = '';
+          if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+          if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      // Calculate totals for filtered data
+      let totalSys = 0;
+      let totalPhy = 0;
+      filteredData.forEach(item => {
+        totalSys += (Number(item.system) || 0);
+        totalPhy += (Number(item.physical) || 0);
+      });
+
+      const totalRows = filteredData.length;
+      const totalPages = Math.ceil(totalRows / rowsPerPage);
+      ccCurrentPage = Math.max(1, Math.min(ccCurrentPage, totalPages || 1));
+      const start = (ccCurrentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const paginatedData = filteredData.slice(start, end);
+
+      renderTable(paginatedData, { system: totalSys, physical: totalPhy });
+      renderPagination(totalRows, totalPages);
+    }
+
+    function renderVarianceDistributionChart(data) {
+        const chartCanvas = document.getElementById('variance-distribution-chart');
+        if (!chartCanvas) return;
+        if (typeof Chart === 'undefined') return;
+
+        let exact = 0, surplus = 0, shortage = 0;
+        data.forEach(item => {
+            const diff = (item.physical || 0) - (item.system || 0);
+            if (diff === 0) exact++;
+            else if (diff > 0) surplus++;
+            else shortage++;
+        });
+
+        if (varianceDistributionChart) {
+            varianceDistributionChart.destroy();
+        }
+
+        varianceDistributionChart = new Chart(chartCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: [`Exact (${exact})`, `Surplus (${surplus})`, `Shortage (${shortage})`],
+                datasets: [{
+                    data: [exact, surplus, shortage],
+                    backgroundColor: ['#2ecc71', '#f1c40f', '#e74c3c'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const chartElement = elements[0];
+                        const label = varianceDistributionChart.data.labels[chartElement.index];
+                        const varianceFilterSelect = document.getElementById('variance-filter');
+                        if (label.startsWith('Exact')) {
+                            varianceFilterSelect.value = 'exact';
+                        } else if (label.startsWith('Surplus')) {
+                            varianceFilterSelect.value = 'surplus';
+                        } else if (label.startsWith('Shortage')) {
+                            varianceFilterSelect.value = 'shortage';
+                        }
+                        loadData();
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: { display: false }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    function renderTable(data, totals) {
+      if (!tableBody) return;
+      tableBody.innerHTML = '';
+      
+      const tfoot = document.querySelector('#cycle-count-table tfoot');
+
+      if (data.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="11" class="muted" style="text-align:center; padding: 20px;">No records found for your search.</td></tr>`;
+        if(tfoot) tfoot.style.display = 'none';
+        return;
+      }
+      
+      if(tfoot) {
+         tfoot.style.display = '';
+         if(totals){
+             document.getElementById('total-system').textContent = totals.system;
+             document.getElementById('total-physical').textContent = totals.physical;
+             const v = totals.physical - totals.system;
+             const vSpan = document.getElementById('total-variance');
+             vSpan.textContent = (v > 0 ? '+' : '') + v;
+             vSpan.className = 'age ' + (v === 0 ? 'age-good' : (v > 0 ? 'age-warn' : 'age-bad'));
+         }
+      }
+
+      data.forEach((item) => {
+        const tr = document.createElement('tr');
+        const variance = item.physical - item.system;
+        let varianceClass = 'age-good'; // Zero variance (Green)
+        if (variance < 0) varianceClass = 'age-bad'; // Negative (Red)
+        else if (variance > 0) varianceClass = 'age-warn'; // Positive (Orange)
+        
+        const formatOrRaw = (val) => {
+            if(!val) return '';
+            // If it looks like a system ISO string, format it. Otherwise display raw.
+            if(typeof val === 'string' && val.includes('T') && val.endsWith('Z') && !isNaN(new Date(val).getTime())) {
+                return new Date(val).toLocaleString();
+            }
+            return val;
+        };
+        const timestamp = formatOrRaw(item.date);
+        const createdDate = formatOrRaw(item.createdDate);
+        
+        tr.innerHTML = `
+          <td style="padding:8px;border-bottom:1px solid #eee"><input type="checkbox" class="row-checkbox" data-index="${item.originalIndex}"></td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${timestamp}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${createdDate}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${item.itemCode}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${item.description || ''}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${item.location}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${item.system}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${item.physical}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee"><span class="age ${varianceClass}">${variance > 0 ? '+'+variance : variance}</span></td>
+          <td style="padding:8px;border-bottom:1px solid #eee">${item.notes || ''}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee">
+            <button class="icon-btn edit-btn" data-index="${item.originalIndex}" title="Edit" style="margin-right:4px">✎</button>
+            <button class="icon-btn delete-btn" data-index="${item.originalIndex}" title="Delete" style="color:#d9534f">&times;</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    if(form) form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newItem = {
+        itemCode: document.getElementById('item-code').value,
+        description: document.getElementById('item-desc').value,
+        location: document.getElementById('location').value,
+        system: Number(document.getElementById('system-qty').value),
+        physical: Number(document.getElementById('physical-qty').value),
+        notes: document.getElementById('notes').value,
+        date: new Date().toISOString(),
+        createdDate: new Date().toISOString()
+      };
+
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+      
+      const editingIndex = form.dataset.editingIndex;
+      let msg = 'Record added successfully!';
+      if (editingIndex !== undefined) {
+        // Update existing entry
+        data[editingIndex] = { ...data[editingIndex], ...newItem };
+        delete form.dataset.editingIndex;
+        form.querySelector('button[type="submit"]').title = 'Save Entry';
+        msg = 'Record updated successfully!';
+      } else {
+        // Add new entry
+        data.unshift(newItem);
+      }
+
+      localStorage.setItem(STORAGE_KEY_CC, JSON.stringify(data));
+      form.reset();
+      loadData();
+    });
+
+    if(tableBody) tableBody.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-btn')) {
+        if(!confirm('Delete this entry?')) return;
+        const originalIndex = e.target.dataset.index;
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+        data.splice(originalIndex, 1);
+        localStorage.setItem(STORAGE_KEY_CC, JSON.stringify(data));
+        loadData();
+      }
+      if (e.target.classList.contains('edit-btn')) {
+        const originalIndex = e.target.dataset.index;
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+        const item = data[originalIndex];
+        if(item){
+          document.getElementById('item-code').value = item.itemCode;
+          document.getElementById('item-desc').value = item.description || '';
+          document.getElementById('location').value = item.location;
+          document.getElementById('system-qty').value = item.system;
+          document.getElementById('physical-qty').value = item.physical;
+          document.getElementById('notes').value = item.notes || '';
+          
+          form.dataset.editingIndex = originalIndex;
+          form.querySelector('button[type="submit"]').title = 'Update Entry';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    });
+
+    if(deleteSelectedBtn) {
+      deleteSelectedBtn.addEventListener('click', () => {
+        const selected = Array.from(document.querySelectorAll('.row-checkbox:checked'));
+        if(!selected.length) { alert('No items selected'); return; }
+        deleteMode = 'selected';
+        
+        // Show Modal
+        document.getElementById('delete-count').textContent = selected.length;
+        document.getElementById('supervisor-code').value = '';
+        document.getElementById('delete-confirm-modal').classList.remove('hidden');
+      });
+    }
+
+    if(massDeleteBtn) {
+      massDeleteBtn.addEventListener('click', () => {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+        if(data.length === 0) { alert('No records to delete.'); return; }
+        deleteMode = 'all';
+        document.getElementById('delete-count').textContent = 'ALL (' + data.length + ')';
+        document.getElementById('supervisor-code').value = '';
+        document.getElementById('delete-confirm-modal').classList.remove('hidden');
+      });
+    }
+
+    if(cancelEntryBtn) {
+      cancelEntryBtn.addEventListener('click', () => {
+        form.reset();
+        delete form.dataset.editingIndex;
+        form.querySelector('button[type="submit"]').title = 'Save Entry';
+      });
+    }
+
+    // Modal Actions
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const deleteModal = document.getElementById('delete-confirm-modal');
+
+    if(cancelDeleteBtn) {
+      cancelDeleteBtn.addEventListener('click', () => {
+        deleteModal.classList.add('hidden');
+      });
+    }
+
+    if(confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', () => {
+        const code = document.getElementById('supervisor-code').value;
+        // Demo code check (accept '12345' or 'admin')
+        if(code !== '12345' && code !== 'admin') {
+          alert('Invalid Supervisor Code!');
+          return;
+        }
+
+        let newData = [];
+        if (deleteMode === 'all') {
+          newData = []; // Reset all
+        } else {
+          const selected = Array.from(document.querySelectorAll('.row-checkbox:checked'));
+          const indices = selected.map(cb => parseInt(cb.dataset.index));
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+          newData = data.filter((_, idx) => !indices.includes(idx));
+        }
+        
+        localStorage.setItem(STORAGE_KEY_CC, JSON.stringify(newData));
+        loadData();
+        if(selectAllCc) selectAllCc.checked = false;
+        
+        deleteModal.classList.add('hidden');
+        alert('Records deleted successfully.');
+      });
+    }
+
+    // Checkbox highlight logic
+    if(tableBody) tableBody.addEventListener('change', (e) => {
+      if(e.target.classList.contains('row-checkbox')){
+        const tr = e.target.closest('tr');
+        if(e.target.checked) tr.classList.add('selected-row');
+        else tr.classList.remove('selected-row');
+      }
+    });
+
+    if(selectAllCc){
+      selectAllCc.addEventListener('change', () => {
+        const checkboxes = tableBody.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(cb => {
+          cb.checked = selectAllCc.checked;
+          const tr = cb.closest('tr');
+          if(cb.checked) tr.classList.add('selected-row');
+          else tr.classList.remove('selected-row');
+        });
+      });
+    }
+
+    function renderPagination(totalRows, totalPages) {
+      const paginationContainer = document.getElementById('pagination-controls');
+      if (!paginationContainer) return;
+
+      if (totalRows <= rowsPerPage) {
+        paginationContainer.innerHTML = '';
+        return;
+      }
+
+      paginationContainer.innerHTML = `
+        <button id="prev-page-btn" class="icon-btn" title="Previous Page">‹</button>
+        <span class="current-page" style="padding: 0 10px;">Page ${ccCurrentPage} of ${totalPages}</span>
+        <button id="next-page-btn" class="icon-btn" title="Next Page">›</button>
+      `;
+
+      const prevBtn = document.getElementById('prev-page-btn');
+      const nextBtn = document.getElementById('next-page-btn');
+
+      prevBtn.disabled = ccCurrentPage === 1;
+      nextBtn.disabled = ccCurrentPage === totalPages;
+
+      prevBtn.onclick = () => {
+        if (ccCurrentPage > 1) { ccCurrentPage--; loadData(); }
+      };
+
+      nextBtn.onclick = () => {
+        if (ccCurrentPage < totalPages) { ccCurrentPage++; loadData(); }
+      };
+    }
+
+    function exportToCSV() {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+      if (data.length === 0) {
+        alert('No data to export.');
+        return;
+      }
+
+      const headers = ['Updated Date', 'Created Date', 'Item Code', 'Description', 'Location', 'System Qty', 'Physical Qty', 'Variance', 'Notes'];
+      const csvRows = [headers.join(',')];
+
+      const csvEscape = (field) => {
+        if (field == null) return '""';
+        const s = String(field);
+        if (/[,"\n]/.test(s)) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return '"' + s + '"';
+      };
+
+      data.forEach(item => {
+        const variance = item.physical - item.system;
+        const timestamp = new Date(item.date).toLocaleString();
+        const createdDate = item.createdDate ? new Date(item.createdDate).toLocaleString() : '';
+        const row = [
+          timestamp, createdDate, item.itemCode, item.description || '', item.location, item.system, item.physical, variance, item.notes || ''
+        ];
+        csvRows.push(row.map(csvEscape).join(','));
+      });
+
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cycle_count_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadTemplate() {
+      const headers = ['Created Date', 'Updated Date', 'Item Code', 'Description', 'Location', 'System Qty', 'Physical Qty', 'Notes'];
+      const sample = [new Date().toISOString(), new Date().toISOString(), '10000001', 'Sample Item Description', '12345678', '10', '8', 'Sample Note'];
+      const csvContent = headers.join(',') + '\n' + sample.join(',');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cycle_count_template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    if(exportBtn) exportBtn.addEventListener('click', exportToCSV);
+    if(ccDownloadTemplateBtn) ccDownloadTemplateBtn.addEventListener('click', downloadTemplate);
+
+    if(importBtn) importBtn.addEventListener('click', () => ccImportFile.click());
+
+    if(ccImportFile) ccImportFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const csv = event.target.result;
+          const lines = csv.split(/\r\n|\n/);
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          
+          const requiredHeaders = ['Item Code', 'Location', 'System Qty', 'Physical Qty'];
+          if (!requiredHeaders.every(h => headers.includes(h))) {
+            alert(`Import failed: CSV must contain headers: ${requiredHeaders.join(', ')}.`);
+            return;
+          }
+
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+          let addedCount = 0;
+          let duplicateCount = 0;
+
+          for (let i = 1; i < lines.length; i++) {
+            if (!lines[i]) continue;
+            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+            
+            let createdDateVal = new Date().toISOString();
+            let updatedDateVal = new Date().toISOString();
+
+            // 1. Resolve Created Date (Prioritize 'Created Date', then 'Date', then 'Timestamp')
+            let cIdx = headers.indexOf('Created Date');
+            if (cIdx === -1) cIdx = headers.indexOf('Date');
+            if (cIdx === -1) cIdx = headers.indexOf('Timestamp');
+            
+            if (cIdx !== -1 && values[cIdx]) {
+                // Use raw value from file to preserve format
+                createdDateVal = normalizeDate(values[cIdx]);
+                updatedDateVal = createdDateVal;
+            }
+
+            // 2. Resolve Updated Date (override if explicit)
+            const uIdx = headers.indexOf('Updated Date');
+            if (uIdx !== -1 && values[uIdx]) {
+                 updatedDateVal = normalizeDate(values[uIdx]);
+            }
+
+            const newItem = {
+              itemCode: values[headers.indexOf('Item Code')],
+              description: headers.includes('Description') ? values[headers.indexOf('Description')] : '',
+              location: values[headers.indexOf('Location')],
+              system: Number(values[headers.indexOf('System Qty')]),
+              physical: Number(values[headers.indexOf('Physical Qty')]),
+              notes: headers.includes('Notes') ? values[headers.indexOf('Notes')] : '',
+              date: updatedDateVal,
+              createdDate: createdDateVal
+            };
+
+            // Auto-populate description from master if missing
+            if (!newItem.description && newItem.itemCode) {
+               const masterMap = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_DESC) || '{}');
+               if(masterMap[newItem.itemCode]) newItem.description = masterMap[newItem.itemCode];
+            }
+
+            // Validate Item Code (exactly 8 digits)
+            if (newItem.itemCode && /^\d{8}$/.test(newItem.itemCode) && !isNaN(newItem.system) && !isNaN(newItem.physical)) {
+              // Check for duplicates (Item Code + Location + Created Date)
+              const exists = data.some(d => d.itemCode === newItem.itemCode && d.location === newItem.location && d.createdDate === newItem.createdDate);
+              if (exists) {
+                duplicateCount++;
+              } else {
+                data.unshift(newItem);
+                addedCount++;
+              }
+            }
+          }
+          if (addedCount > 0 || duplicateCount > 0) {
+            localStorage.setItem(STORAGE_KEY_CC, JSON.stringify(data));
+            let msg = `${addedCount} entries imported successfully.`;
+            if (duplicateCount > 0) msg += ` ${duplicateCount} duplicates skipped.`;
+            alert(msg);
+            loadData();
+          } else {
+            alert('No valid entries found to import.');
+          }
+        } catch (error) {
+          console.error('Import error:', error);
+          alert('Failed to import CSV file. Please check the file format.');
+        } finally {
+          ccImportFile.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Master List Upload Logic
+    if(masterUploadBtn) masterUploadBtn.addEventListener('click', () => masterUploadFile.click());
+
+    if(masterUploadFile) {
+      masterUploadFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          let text = ev.target.result;
+          // Remove BOM if present to ensure headers are read correctly
+          if (text.charCodeAt(0) === 0xFEFF) {
+            text = text.slice(1);
+          }
+          const lines = text.split(/\r\n|\n/);
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          const codeIdx = headers.findIndex(h => h.toLowerCase() === 'item code');
+          const descIdx = headers.findIndex(h => h.toLowerCase() === 'description');
+          
+          if(codeIdx === -1 || descIdx === -1) {
+            alert('Master List CSV must have "Item Code" and "Description" columns.');
+            return;
+          }
+
+          const masterMap = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_DESC) || '{}');
+          let count = 0;
+          for(let i=1; i<lines.length; i++) {
+            if(!lines[i].trim()) continue;
+            const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+            if(cols[codeIdx]) {
+              masterMap[cols[codeIdx]] = cols[descIdx] || '';
+              count++;
+            }
+          }
+          localStorage.setItem(STORAGE_KEY_MASTER_DESC, JSON.stringify(masterMap));
+          alert(`Master list updated with ${count} items.`);
+          masterUploadFile.value = '';
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    if(clearMasterBtn) {
+      clearMasterBtn.addEventListener('click', () => {
+        if(confirm('Are you sure you want to clear the Master Item List?')) {
+          localStorage.removeItem(STORAGE_KEY_MASTER_DESC);
+          alert('Master list cleared.');
+        }
+      });
+    }
+
+    // Auto-fill Description on Item Code input
+    const itemCodeInput = document.getElementById('item-code');
+    const itemDescInput = document.getElementById('item-desc');
+    if(itemCodeInput && itemDescInput) {
+      itemCodeInput.addEventListener('input', () => {
+        const code = itemCodeInput.value.trim();
+        itemDescInput.classList.remove('auto-filled');
+        if(code.length >= 4) {
+           const masterMap = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_DESC) || '{}');
+           if(masterMap[code]) {
+             itemDescInput.value = masterMap[code];
+             itemDescInput.classList.add('auto-filled');
+           }
+        }
+      });
+    }
+
+    // Event Listeners
+    if(cycleCountSearchInput) cycleCountSearchInput.addEventListener('input', loadData);
+    if(varianceFilter) varianceFilter.addEventListener('change', loadData);
+    if(filterDateBtn) filterDateBtn.addEventListener('click', loadData);
+    if(clearDateFilterBtn) clearDateFilterBtn.addEventListener('click', () => {
+        if(startDateInput) startDateInput.value = '';
+        if(endDateInput) endDateInput.value = '';
+        loadData();
+    });
+    if(clearAllFiltersBtn) {
+      clearAllFiltersBtn.addEventListener('click', () => {
+        cycleCountSearchInput.value = '';
+        startDateInput.value = '';
+        endDateInput.value = '';
+        if(varianceFilter) varianceFilter.value = 'all';
+        loadData();
+      });
+    }
+
+    // Flip Card Logic
+    if(flipToChartBtn && entryFlipContainer) {
+        flipToChartBtn.addEventListener('click', () => {
+            entryFlipContainer.classList.add('flipped');
+        });
+    }
+    if(flipToFormBtn && entryFlipContainer) {
+        flipToFormBtn.addEventListener('click', () => {
+            entryFlipContainer.classList.remove('flipped');
+        });
+    }
+
+    loadData();
+
+    // Sidebar Toggle Logic
+    // Handled by app.js
+
+    // Sort Logic
+    const sortHeaders = document.querySelectorAll('th.sortable');
+    sortHeaders.forEach(th => {
+      th.addEventListener('click', () => {
+        const field = th.dataset.sort;
+        if (sortField === field) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortField = field;
+            sortDirection = 'asc';
+        }
+        document.querySelectorAll('.sort-icon').forEach(icon => icon.textContent = '');
+        const icon = th.querySelector('.sort-icon');
+        if(icon) icon.textContent = sortDirection === 'asc' ? '↑' : '↓';
+        loadData();
+      });
+    });
+
+    // Toggle Form Logic
+    const toggleFormBtn = document.getElementById('toggle-form-btn');
+    const tableCard = document.getElementById('table-card');
+
+    if(toggleFormBtn && entryFlipContainer){
+      toggleFormBtn.addEventListener('click', () => {
+        const isHidden = entryFlipContainer.classList.toggle('hidden');
+        
+        // Adjust rows and font size for full view
+        rowsPerPage = isHidden ? 20 : 10;
+        if(tableCard) {
+          if(isHidden) tableCard.classList.add('compact-view');
+          else tableCard.classList.remove('compact-view');
+        }
+        ccCurrentPage = 1; // Reset to first page
+        loadData();
+
+        toggleFormBtn.title = isHidden ? "Show Form" : "Full View (Hide Form)";
+        // Change icon based on state
+        toggleFormBtn.innerHTML = isHidden ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+      });
+    }
+
+    // Analytics Logic
+    const openAnalyticsBtn = document.getElementById('open-analytics-btn');
+    const analyticsModal = document.getElementById('analytics-modal');
+    const closeAnalyticsBtn = document.getElementById('close-analytics-btn');
+    let analyticsCharts = {};
+
+    if(openAnalyticsBtn && analyticsModal) {
+      openAnalyticsBtn.addEventListener('click', () => {
+        analyticsModal.classList.remove('hidden');
+        renderAnalytics();
+      });
+      
+      closeAnalyticsBtn.addEventListener('click', () => {
+        analyticsModal.classList.add('hidden');
+      });
+
+      // Close on overlay click
+      analyticsModal.querySelector('.modal-overlay').addEventListener('click', () => {
+        analyticsModal.classList.add('hidden');
+      });
+    }
+
+    function renderAnalytics() {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+      
+      // 1. KPI Stats
+      const totalCounts = data.length;
+      let exactMatches = 0;
+      let netVariance = 0;
+      let absVariance = 0;
+
+      data.forEach(item => {
+        const diff = (item.physical || 0) - (item.system || 0);
+        if(diff === 0) exactMatches++;
+        netVariance += diff;
+        absVariance += Math.abs(diff);
+      });
+
+      const accuracy = totalCounts > 0 ? ((exactMatches / totalCounts) * 100).toFixed(1) : 0;
+
+      document.getElementById('stat-total-counts').textContent = totalCounts;
+      document.getElementById('stat-accuracy').textContent = accuracy + '%';
+      document.getElementById('stat-net-variance').textContent = (netVariance > 0 ? '+' : '') + netVariance;
+      document.getElementById('stat-net-variance').style.color = netVariance === 0 ? '#2752a7' : (netVariance > 0 ? '#f1c40f' : '#e74c3c');
+      document.getElementById('stat-abs-variance').textContent = absVariance;
+
+      // 2. Charts
+      // Helper to destroy old charts
+      const destroyChart = (id) => {
+        if(analyticsCharts[id]) { analyticsCharts[id].destroy(); }
+      };
+
+      // A. Daily Counts (Last 7 Days)
+      destroyChart('daily');
+      const last7Days = {};
+      for(let i=6; i>=0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        last7Days[dateStr] = 0;
+      }
+      
+      data.forEach(item => {
+        // Use createdDate or date
+        const dStr = (item.createdDate || item.date || '').split('T')[0];
+        if(last7Days.hasOwnProperty(dStr)) {
+          last7Days[dStr]++;
+        }
+      });
+
+      const ctxDaily = document.getElementById('analytics-daily-chart').getContext('2d');
+      analyticsCharts['daily'] = new Chart(ctxDaily, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(last7Days).map(d => d.slice(5)), // MM-DD
+          datasets: [{
+            label: 'Counts Performed',
+            data: Object.values(last7Days),
+            backgroundColor: '#3498db',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+
+      // B. Variance Breakdown
+      destroyChart('variance');
+      let vExact = 0, vSurplus = 0, vShortage = 0;
+      data.forEach(item => {
+        const diff = (item.physical || 0) - (item.system || 0);
+        if(diff === 0) vExact++;
+        else if(diff > 0) vSurplus++;
+        else vShortage++;
+      });
+
+      const ctxVar = document.getElementById('analytics-variance-chart').getContext('2d');
+      analyticsCharts['variance'] = new Chart(ctxVar, {
+        type: 'doughnut',
+        data: {
+          labels: ['Exact', 'Surplus', 'Shortage'],
+          datasets: [{
+            data: [vExact, vSurplus, vShortage],
+            backgroundColor: ['#2ecc71', '#f1c40f', '#e74c3c'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right' } },
+          cutout: '70%'
+        }
+      });
+
+      // C. Top Items by Abs Variance
+      destroyChart('top');
+      // Clone and sort
+      const sortedByVar = [...data].sort((a,b) => {
+        const varA = Math.abs((a.physical||0) - (a.system||0));
+        const varB = Math.abs((b.physical||0) - (b.system||0));
+        return varB - varA;
+      }).slice(0, 10);
+
+      const ctxTop = document.getElementById('analytics-top-items-chart').getContext('2d');
+      analyticsCharts['top'] = new Chart(ctxTop, {
+        type: 'bar',
+        data: {
+          labels: sortedByVar.map(i => i.itemCode),
+          datasets: [{
+            label: 'Variance',
+            data: sortedByVar.map(i => (i.physical||0) - (i.system||0)),
+            backgroundColor: sortedByVar.map(i => {
+               const v = (i.physical||0) - (i.system||0);
+               return v >= 0 ? '#f1c40f' : '#e74c3c';
+            })
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { grid: { color: '#f0f0f0' } } }
+        }
+      });
+    }
+
+    // Print Logic
+    const printBtn = document.getElementById('print-btn');
+    const printModal = document.getElementById('print-options-modal');
+    const printFilteredBtn = document.getElementById('print-filtered-btn');
+    const printAllBtn = document.getElementById('print-all-btn');
+    const cancelPrintBtn = document.getElementById('cancel-print-btn');
+
+    if(printBtn && printModal) {
+      printBtn.addEventListener('click', () => {
+        printModal.classList.remove('hidden');
+      });
+      
+      // Close on overlay click
+      printModal.querySelector('.modal-overlay').addEventListener('click', () => {
+        printModal.classList.add('hidden');
+      });
+    }
+
+    if(cancelPrintBtn && printModal) {
+      cancelPrintBtn.addEventListener('click', () => {
+        printModal.classList.add('hidden');
+      });
+    }
+
+    function getFilteredDataForPrint() {
+      let data = [];
+      try { data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch (e) {}
+      
+      const searchTerms = cycleCountSearchInput ? cycleCountSearchInput.value.toLowerCase().split(' ').filter(Boolean) : [];
+      let filteredData = data.filter(item => {
+        if (searchTerms.length === 0) return true;
+        const itemText = [item.itemCode, item.description || '', item.location, item.notes || ''].join(' ').toLowerCase();
+        return searchTerms.every(term => itemText.includes(term));
+      });
+
+      let startDate = null;
+      if (startDateInput && startDateInput.value) {
+        const parts = startDateInput.value.split('-');
+        startDate = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+      }
+      let endDate = null;
+      if (endDateInput && endDateInput.value) {
+        const parts = endDateInput.value.split('-');
+        endDate = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
+      }
+      const filterType = dateFilterType ? dateFilterType.value : 'updated';
+
+      if (startDate) {
+        filteredData = filteredData.filter(item => {
+          const dateStr = filterType === 'created' ? item.createdDate : item.date;
+          const dates = getCandidateDates(dateStr);
+          return dates.some(d => d >= startDate);
+        });
+      }
+      if (endDate) {
+        filteredData = filteredData.filter(item => {
+          const dateStr = filterType === 'created' ? item.createdDate : item.date;
+          const dates = getCandidateDates(dateStr);
+          return dates.some(d => d <= endDate);
+        });
+      }
+
+      const vFilter = varianceFilter ? varianceFilter.value : 'all';
+      if (vFilter !== 'all') {
+        filteredData = filteredData.filter(item => {
+          const diff = (item.physical || 0) - (item.system || 0);
+          if (vFilter === 'exact') return diff === 0;
+          if (vFilter === 'surplus') return diff > 0;
+          if (vFilter === 'shortage') return diff < 0;
+          return true;
+        });
+      }
+      return filteredData;
+    }
+
+    function printData(data, title) {
+        const printWindow = window.open('', '_blank');
+        if(!printWindow) { alert('Please allow popups to print.'); return; }
+        
+        let html = `
+        <html>
+        <head>
+            <title>${title}</title>
+            <style>
+                body { font-family: sans-serif; font-size: 12px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                th { background-color: #f0f0f0; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .variance-pos { color: orange; }
+                .variance-neg { color: red; }
+                .variance-zero { color: green; }
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>${title}</h2>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Total Records: ${data.length}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Updated Date</th>
+                        <th>Item Code</th>
+                        <th>Description</th>
+                        <th>Location</th>
+                        <th>System</th>
+                        <th>Physical</th>
+                        <th>Variance</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        data.forEach(item => {
+            const variance = (item.physical || 0) - (item.system || 0);
+            let vClass = 'variance-zero';
+            if(variance > 0) vClass = 'variance-pos';
+            if(variance < 0) vClass = 'variance-neg';
+            
+            html += `
+                <tr>
+                    <td>${new Date(item.date).toLocaleString()}</td>
+                    <td>${item.itemCode}</td>
+                    <td>${item.description || ''}</td>
+                    <td>${item.location}</td>
+                    <td>${item.system}</td>
+                    <td>${item.physical}</td>
+                    <td class="${vClass}">${variance > 0 ? '+' + variance : variance}</td>
+                    <td>${item.notes || ''}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() { window.print(); window.close(); }
+            <\/script>
+        </body>
+        </html>
+        `;
+        
+        printWindow.document.write(html);
+        printWindow.document.close();
+    }
+
+    if(printAllBtn) {
+        printAllBtn.addEventListener('click', () => {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]');
+            printData(data, 'Cycle Count - All Records');
+            printModal.classList.add('hidden');
+        });
+    }
+
+    if(printFilteredBtn) {
+        printFilteredBtn.addEventListener('click', () => {
+            const data = getFilteredDataForPrint();
+            printData(data, 'Cycle Count - Filtered Records');
+            printModal.classList.add('hidden');
+        });
+    }
+
+    // Calculator Logic
+    const calcWidget = document.getElementById('calculator-widget');
+    const toggleCalcBtn = document.getElementById('toggle-calc-btn');
+    const calcDisplay = document.getElementById('calc-display');
+    
+    if(toggleCalcBtn){
+      toggleCalcBtn.addEventListener('click', () => {
+        calcWidget.classList.toggle('show');
+      });
+    }
+
+    window.calcAppend = function(val){ if(calcDisplay) calcDisplay.value += val; };
+    window.calcClear = function(){ if(calcDisplay) calcDisplay.value = ''; };
+    window.calcResult = function(){
+      if(calcDisplay){
+        try{ calcDisplay.value = eval(calcDisplay.value); }
+        catch(e){ calcDisplay.value = 'Error'; }
+      }
+    };
+
+    // Calculator Keyboard Support
+    document.addEventListener('keydown', (e) => {
+      const calcWidget = document.getElementById('calculator-widget');
+      if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if(calcWidget && calcWidget.classList.contains('show')){
+        const key = e.key;
+        if(/[0-9.]/.test(key)){
+          calcAppend(key);
+        } else if(['+','-','*','/'].includes(key)){
+          calcAppend(key);
+        } else if(key === 'Enter' || key === '='){
+          e.preventDefault();
+          calcResult();
+        } else if(key === 'Escape' || key === 'c' || key === 'C'){
+          calcClear();
+        } else if(key === 'Backspace'){
+           const display = document.getElementById('calc-display');
+           if(display) display.value = display.value.slice(0, -1);
+        }
+      }
+    });
+
+    window.calcCopyToPhysical = function(){
+      const display = document.getElementById('calc-display');
+      const physInput = document.getElementById('physical-qty');
+      if(display && physInput && display.value !== '' && display.value !== 'Error'){
+        physInput.value = display.value;
+      }
+    };
+
+    // Make Calculator Draggable
+    function dragElement(elmnt) {
+      var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+      if (document.getElementById("calc-header")) {
+        document.getElementById("calc-header").onmousedown = dragMouseDown;
+      } else {
+        elmnt.onmousedown = dragMouseDown;
+      }
+
+      function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+      }
+
+      function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+      }
+
+      function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+      }
+    }
+    
+    if(calcWidget) dragElement(calcWidget);
+    });
+  </script>
+</body>
+</html>

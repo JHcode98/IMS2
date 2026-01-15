@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homepage - Inventory Management System</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 20px;
+    }
+    .dashboard-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: none;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    .dashboard-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    }
+    .card-icon-wrapper {
+        background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+        height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.5s ease;
+    }
+    .dashboard-card:hover .card-icon-wrapper {
+        transform: scale(1.05);
+    }
+    .card-icon {
+      width: 64px;
+      height: 64px;
+      color: #2752a7;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+    }
+    .card-content {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        background: #fff;
+        position: relative;
+        z-index: 1;
+    }
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+    .card-desc {
+      font-size: 14px;
+      color: #666;
+      flex-grow: 1;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .card-link {
+      color: #2752a7;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      font-size: 14px;
+      opacity: 0.8;
+      transition: all 0.3s ease;
+    }
+    .dashboard-card:hover .card-link {
+        opacity: 1;
+        transform: translateX(5px);
+    }
+    /* Dark Mode Header */
+    body.dark-mode header {
+        background: #1a252f;
+        border-bottom: 1px solid #2c3e50;
+    }
+    body.dark-mode header h1 {
+        color: #ecf0f1;
+    }
+    /* Dark Mode Card */
+    body.dark-mode .dashboard-card { background: #2c2c2c; }
+    body.dark-mode .card-content { background: #2c2c2c; }
+    body.dark-mode .card-title { color: #ecf0f1; }
+    body.dark-mode .card-desc { color: #b0bec5; }
+    body.dark-mode .card-icon-wrapper { background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%); }
+    body.dark-mode .card-icon { color: #64b5f6; }
+    body.dark-mode .card-link { color: #64b5f6; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav id="app-sidebar">
+    <div class="sidebar-brand">
+      <img src="Logo.jpg" alt="Logo" class="sidebar-logo" style="height:32px;width:auto;margin-right:8px">
+      <span class="brand-text">IMS</span>
+      <button id="main-sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+    </div>
+    <ul class="sidebar-menu">
+      <li>
+        <button class="active" onclick="window.location.href='homepage.html'" data-tooltip="Homepage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span class="menu-text">Homepage</span>
+        </button>
+      </li>
+      <li>
+        <button data-tooltip="Document Monitoring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span class="menu-text">Document Monitoring</span>
+        </button>
+        <ul class="sidebar-submenu">
+            <li><button onclick="window.location.href='index.html'">IAAF Monitoring</button></li>
+            <li><button onclick="window.location.href='ir_monitoring.html'">IR Monitoring</button></li>
+        </ul>
+      </li>
+      <li>
+        <button data-tooltip="Inventory Tracker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <span class="menu-text">Inventory Tracker</span>
+        </button>
+        <ul class="sidebar-submenu">
+          <li><button onclick="window.location.href='cycle_count.html'">Cycle Count</button></li>
+          <li><button onclick="window.location.href='cycle_count_reports.html'">Cycle Count Report</button></li>
+          <li><button onclick="window.location.href='cycle_count_completion.html'">Cycle Count Completion</button></li>
+          <li><button onclick="window.location.href='cycle_count_schedule.html'">Cycle Count Schedule</button></li>
+        </ul>
+      </li>
+      <li><button onclick="window.location.href='settings.html'" data-tooltip="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="menu-text">Settings</span>
+      </button></li>
+    </ul>
+  </nav>
+
+  <header>
+    <h1>Homepage</h1>
+    <div class="navbar" role="navigation">
+      <div class="nav-left"></div>
+      <div class="nav-right">
+        <div class="nav-notifications">
+          <button class="notification-btn" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="notification-badge">0</span>
+          </button>
+          <div class="notification-menu">
+            <div class="notification-header"><span>Notifications</span><button class="clear-notifications">Clear All</button></div>
+            <ul class="notification-list"></ul>
+          </div>
+        </div>
+        <div id="clock" class="clock" aria-live="polite"></div>
+        <div class="nav-user" id="nav-user">
+          <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+          <button class="user-btn" id="user-btn" aria-haspopup="true" aria-expanded="false"><span id="username-display"></span> <span id="role-badge" class="role-badge" style="display:none;margin-left:8px"></span></button>
+          <div class="user-menu" id="user-menu" role="menu" aria-label="User menu">
+            <a href="profile.html" id="profile-btn" role="menuitem">Profile</a>
+            <a href="settings.html" role="menuitem">Settings</a>
+            <button id="logout-btn" role="menuitem">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2 id="welcome-header">Welcome to IMS</h2>
+      <p class="muted">Select a module to get started.</p>
+      
+      <div class="dashboard-grid">
+        <!-- Document Monitoring -->
+        <div class="dashboard-card" onclick="window.location.href='index.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">IAAF Monitoring</div>
+            <div class="card-desc">Track and manage IAAF documents, approvals, and status updates.</div>
+            <a href="index.html" class="card-link">Go to IAAF Monitoring &rarr;</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='ir_monitoring.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">IR Monitoring</div>
+            <div class="card-desc">Log and monitor incident reports, track resolution status.</div>
+            <a href="ir_monitoring.html" class="card-link">Go to IR Monitoring &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Inventory Tracker -->
+        <div class="dashboard-card" onclick="window.location.href='cycle_count.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Cycle Count</div>
+            <div class="card-desc">Perform inventory cycle counts, record physical vs system quantities.</div>
+            <a href="cycle_count.html" class="card-link">Go to Cycle Count &rarr;</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='daily_cycle_count.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Daily Counters</div>
+            <div class="card-desc">Manage daily cycle count assignments, shifts, and productivity targets.</div>
+            <a href="daily_cycle_count.html" class="card-link">Go to Daily Counters &rarr;</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='cycle_count_reports.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Cycle Count Reports</div>
+            <div class="card-desc">View variance reports and daily count statistics.</div>
+            <a href="cycle_count_reports.html" class="card-link">Go to Reports &rarr;</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='cycle_count_completion.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Completion Status</div>
+            <div class="card-desc">Track overall progress of cycle counts against master SKU/Location lists.</div>
+            <a href="cycle_count_completion.html" class="card-link">Go to Completion &rarr;</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='cycle_count_schedule.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Cycle Count Schedule</div>
+            <div class="card-desc">Plan and manage upcoming cycle counts by location and date.</div>
+            <a href="cycle_count_schedule.html" class="card-link">Go to Schedule &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Admin / Other -->
+        <div class="dashboard-card" onclick="window.location.href='admin_inbox.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Admin Inbox</div>
+            <div class="card-desc">Manage incoming document requests and notifications (Admin only).</div>
+            <a href="admin_inbox.html" class="card-link">Go to Inbox &rarr;</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='weekly_overview.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Weekly Overview</div>
+            <div class="card-desc">Visual overview of document creation trends per week.</div>
+            <a href="weekly_overview.html" class="card-link">Go to Overview &rarr;</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='settings.html'">
+          <div class="card-icon-wrapper">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </div>
+          <div class="card-content">
+            <div class="card-title">Settings</div>
+            <div class="card-desc">Configure application preferences, theme, and notifications.</div>
+            <a href="settings.html" class="card-link">Go to Settings &rarr;</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
+    const currentUser = sessionStorage.getItem('dms_auth_v1');
+    if(currentUser) {
+      document.getElementById('welcome-header').textContent = `Welcome to IMS, ${currentUser}`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Documents Charts</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="lib/chart.umd.min.js"></script>
+    <style>
+      .charts-wrap{max-width:1100px;margin:18px auto;padding:12px;display:grid;grid-template-columns:1fr;gap:18px}
+      @media(min-width: 768px) { .charts-wrap { grid-template-columns: 1fr 1fr; } }
+      .chart-card{background:#fff;border-radius:8px;padding:12px;border:1px solid #eef6ff}
+      .chart-row{display:flex;gap:14px;flex-wrap:wrap}
+      canvas{max-width:100%;height:360px}
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Document Visualizations</h1>
+      <nav>
+        <a href="index.html">Dashboard</a> •
+        <a href="documents_full.html">Full Docs</a>
+      </nav>
+    </header>
+
+    <main class="charts-wrap">
+      <section class="chart-card">
+        <h2>Status Distribution (Pie)</h2>
+        <canvas id="chart-status"></canvas>
+      </section>
+
+      <section class="chart-card">
+        <h2>Documents by Week (Line)</h2>
+        <canvas id="chart-timeline"></canvas>
+      </section>
+
+      <section class="chart-card">
+        <h2>By Title</h2>
+        <canvas id="chart-title"></canvas>
+      </section>
+
+      <section class="chart-card">
+        <h2>By Owner</h2>
+        <canvas id="chart-owner"></canvas>
+      </section>
+    </main>
+
+    <footer style="text-align:center;margin-top:18px">
+      <small>Generated from local data or API.</small>
+    </footer>
+
+    <script>
+      const STORAGE_KEY = 'dms_docs_v1';
+
+      async function loadDocs(){
+        try{ 
+          const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          return Array.isArray(d) ? d.filter(x => x && typeof x === 'object') : [];
+        }
+        catch(e){ return []; }
+      }
+
+      function aggregateCount(items, keyFn){
+        const map = {};
+        items.forEach(it => {
+          if(!it) return;
+          const k = (keyFn(it) || 'Unknown').trim() || 'Unknown';
+          map[k] = (map[k] || 0) + 1;
+        });
+        return map;
+      }
+
+      // Summarize map to top N keys, grouping the rest into 'Other'
+      function summarizeMap(map, topN = 10){
+        const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+        if(entries.length <= topN) return entries;
+        const top = entries.slice(0, topN);
+        const other = entries.slice(topN).reduce((s,[_k,v]) => s+v, 0);
+        top.push(['Other', other]);
+        return top;
+      }
+
+      function renderBar(ctx, labels, data, title, color){
+        return new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ label: title, data: data, backgroundColor: color || 'rgba(54,162,235,0.6)' }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { mode: 'index' } },
+            scales: {
+              x: { ticks: { maxRotation: 45, autoSkip: true }, grid: { display: false } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+
+      function renderPie(ctx, labels, data, title){
+        return new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: title,
+              data: data,
+              backgroundColor: [
+                '#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#34495e', '#1abc9c'
+              ]
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right' } }
+          }
+        });
+      }
+
+      function renderLine(ctx, labels, data, title){
+        return new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: title,
+              data: data,
+              borderColor: '#3498db',
+              backgroundColor: 'rgba(52, 152, 219, 0.2)',
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, ticks: { precision:0 } }
+            }
+          }
+        });
+      }
+
+      (async ()=>{
+        if(typeof Chart === 'undefined'){
+           document.querySelector('.charts-wrap').innerHTML = '<div style="text-align:center;padding:20px;color:red">Error: Chart.js library could not be loaded. Please check your internet connection.</div>';
+           return;
+        }
+        const docs = await loadDocs();
+        if(!docs || docs.length === 0){
+           document.querySelector('.charts-wrap').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#666">No documents found. Add some documents in the dashboard to see charts here.</div>';
+           return;
+        }
+        // Match app.js migration logic for consistency
+        try{
+          docs.forEach(d => {
+            if(d && d.status === 'Received'){
+              if(!d.adminStatus) d.adminStatus = 'Received';
+              d.status = 'Routing';
+            }
+          });
+        }catch(e){}
+
+        // 1. Status (Pie)
+        const byStatus = aggregateCount(docs, d => d.status || 'Revision');
+        const statusLabels = Object.keys(byStatus);
+        const statusData = Object.values(byStatus);
+
+        // 2. Timeline (Line) - Group by Week (Monday)
+        const byWeek = {};
+        docs.forEach(d => {
+            if(!d || !d.createdAt) return;
+            const date = new Date(Number(d.createdAt));
+            if(isNaN(date.getTime())) return;
+            // Get Monday of the week
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
+            const monday = new Date(date);
+            monday.setDate(diff);
+            const key = monday.toISOString().split('T')[0];
+            byWeek[key] = (byWeek[key] || 0) + 1;
+        });
+        const sortedWeeks = Object.keys(byWeek).sort();
+        const weekData = sortedWeeks.map(k => byWeek[k]);
+
+        // 3. Title & Owner (Bar)
+        const byTitle = aggregateCount(docs, d => d.title || 'Unknown');
+        const byOwner = aggregateCount(docs, d => d.owner || 'Unknown');
+
+        const topTitles = summarizeMap(byTitle, 10);
+        const titleLabels = topTitles.map(e => e[0]);
+        const titleData = topTitles.map(e => e[1]);
+
+        const topOwners = summarizeMap(byOwner, 10);
+        const ownerLabels = topOwners.map(e => e[0]);
+        const ownerData = topOwners.map(e => e[1]);
+
+        const cStatus = document.getElementById('chart-status');
+        if(cStatus) renderPie(cStatus.getContext('2d'), statusLabels, statusData, 'Status Distribution');
+        
+        const cTimeline = document.getElementById('chart-timeline');
+        if(cTimeline) renderLine(cTimeline.getContext('2d'), sortedWeeks, weekData, 'Documents by Week');
+        
+        const cTitle = document.getElementById('chart-title');
+        if(cTitle) renderBar(cTitle.getContext('2d'), titleLabels, titleData, 'Documents by Title', 'rgba(75,192,192,0.6)');
+        
+        const cOwner = document.getElementById('chart-owner');
+        if(cOwner) renderBar(cOwner.getContext('2d'), ownerLabels, ownerData, 'Documents by Owner', 'rgba(153,102,255,0.6)');
+      })();
+    </script>
+  </body>
+</html>

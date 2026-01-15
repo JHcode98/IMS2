@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Cycle Counters - IMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* Dark Mode Header */
+    body.dark-mode header { background: #1a252f; border-bottom: 1px solid #2c3e50; }
+    body.dark-mode header h1 { color: #ecf0f1; }
+    .completion-high { color: #2ecc71; font-weight: bold; }
+    .completion-med { color: #f1c40f; font-weight: bold; }
+    .completion-low { color: #e74c3c; font-weight: bold; }
+    
+    /* Flip Card Styles */
+    .flip-container { perspective: 1000px; position: relative; margin-bottom: 20px; }
+    .flip-inner { transition: transform 0.6s; transform-style: preserve-3d; position: relative; }
+    .flip-container.flipped .flip-inner { transform: rotateY(180deg); }
+    .flip-front, .flip-back { 
+        backface-visibility: hidden; width: 100%; top: 0; left: 0; 
+        background: var(--card); border-radius: 8px; 
+    }
+    .flip-front { z-index: 2; transform: rotateY(0deg); position: relative; }
+    .flip-back { transform: rotateY(180deg); position: absolute; height: 100%; top: 0; overflow-y: auto; }
+  </style>
+  <style>
+    /* Card content expand/collapse */
+    .card-content.hidden { display: none; }
+    /* Resizable box */
+    .resizable-box {
+        resize: both;
+        overflow: auto;
+        min-width: 300px;
+        min-height: 200px;
+    }
+    /* Full height chart container for back card */
+    .chart-container-back {
+        flex: 1;
+        position: relative;
+        width: 100%;
+        min-height: 0;
+    }
+    /* Ensure modal is on top of navbar (z-index 9999) */
+    .modal { z-index: 10001 !important; }
+    
+    /* Fix tooltips inside modal to appear below buttons */
+    .modal-content .icon-btn[data-tooltip]::after {
+        top: 100%;
+        bottom: auto;
+        margin-top: 8px;
+        margin-bottom: 0;
+    }
+    .modal-content .icon-btn[data-tooltip]::before {
+        top: 100%;
+        bottom: auto;
+        margin-top: 3px;
+        margin-bottom: 0;
+        border-top-color: transparent;
+        border-bottom-color: #2c3e50;
+    }
+    /* Sortable headers */
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { background-color: #f1f1f1; }
+    .sort-icon { margin-left: 5px; font-size: 10px; }
+    body.dark-mode th.sortable:hover { background-color: #333; }
+    
+    /* Full View Styles */
+    main.full-view-counters #attendance-card { display: none; }
+    main.full-view-attendance #counters-flip-container { display: none; }
+    main.full-view-attendance #attendance-card { min-height: 80vh; }
+    
+    .badge-target-met {
+        background-color: #2ecc71;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: bold;
+        vertical-align: middle;
+    }
+    .shift-summary-content {
+        padding: 8px;
+        border-radius: 6px;
+        transition: background-color 0.2s;
+        cursor: help;
+    }
+    .shift-summary-content:hover {
+        background-color: rgba(39, 82, 167, 0.08);
+    }
+    /* Racking Grid Styles */
+    .rack-cell {
+        width: 100%;
+        aspect-ratio: 1.6;
+        background-color: #f0f2f5;
+        border: 1px solid #d9d9d9;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: transform 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    .rack-cell:hover {
+        transform: scale(1.1);
+        z-index: 1;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .rack-cell.selected {
+        border-color: #2752a7;
+        box-shadow: inset 0 0 0 3px #2752a7;
+        z-index: 2;
+    }
+    .rack-cell .pallet-icon {
+        width: 80%;
+        height: 80%;
+        fill: #7f8c8d;
+        opacity: 0.5;
+        transition: fill 0.3s;
+    }
+    .rack-cell.counted {
+        background-color: #e8f5e9;
+        border-color: #a5d6a7;
+    }
+    .rack-cell.uncounted {
+        background-color: #ffebee;
+        border-color: #ef9a9a;
+    }
+    .rack-cell.empty {
+        background-color: #e1f5fe;
+        border-color: #81d4fa;
+    }
+    .rack-cell.not-part {
+        background-color: #cfd8dc;
+        border-color: #b0bec5;
+    }
+    .rack-cell.counted .pallet-icon {
+        fill: #7f8c8d;
+        opacity: 0.5;
+    }
+    .rack-cell .cell-name {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 10px;
+        font-weight: bold;
+        color: #333;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 2px 4px;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        width: 100%;
+        text-align: center;
+        word-break: break-word;
+        line-height: 1;
+        pointer-events: none;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 98%;
+    }
+    .rack-spacer {
+        pointer-events: none;
+    }
+    .rack-cell[draggable="true"] {
+        cursor: grab;
+    }
+    .rack-cell.dragging {
+        opacity: 0.5;
+        border: 2px dashed #666;
+    }
+    .rack-cell.over {
+        border: 2px dashed #2752a7;
+        background-color: rgba(39, 82, 167, 0.1);
+        transform: scale(1.05);
+        z-index: 10;
+    }
+    .cell-checkbox {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        z-index: 5;
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+        opacity: 0;
+    }
+    .cell-checkbox:checked {
+        opacity: 1;
+    }
+    .rack-cell:hover .cell-checkbox {
+        opacity: 1;
+    }
+  </style>
+</head>
+<body class="inventory-mode">
+  <script>
+    if(localStorage.getItem('ims_sidebar_collapsed') === '1') document.body.classList.add('sidebar-collapsed');
+  </script>
+  
+  <!-- Reuse existing sidebar structure -->
+  <nav id="app-sidebar">
+    <div class="sidebar-brand">
+      <img src="Logo.jpg" alt="Logo" class="sidebar-logo" style="height:32px;width:auto;margin-right:8px">
+      <span class="brand-text">IMS</span>
+      <button id="main-sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+    </div>
+    <ul class="sidebar-menu">
+      <li><button onclick="window.location.href='homepage.html'"><span class="menu-text">Homepage</span></button></li>
+      <li><button onclick="window.location.href='cycle_count.html'" class="active"><span class="menu-text">Inventory Tracker</span></button></li>
+    </ul>
+  </nav>
+
+  <header>
+    <h1>Daily Cycle Counters</h1>
+    <div class="navbar" role="navigation">
+      <div class="nav-left">
+        <button class="nav-btn" onclick="window.location.href='cycle_count.html'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:5px;vertical-align:text-bottom;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back to Cycle Count
+        </button>
+      </div>
+      <div class="nav-right">
+        <div class="nav-user" id="nav-user">
+          <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+          <button class="user-btn" id="user-btn"><span id="username-display"></span></button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 15px;">
+      <strong style="color: var(--accent);">Global Date Filter:</strong>
+      <label for="global-start-date">From:</label>
+      <input type="date" id="global-start-date" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+      <label for="global-end-date">To:</label>
+      <input type="date" id="global-end-date" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+      <button id="apply-global-filter" class="icon-btn" title="Apply Filter" style="background: #2752a7; color: white;">Filter</button>
+      <button id="clear-global-filter" class="icon-btn" title="Clear Filter">Clear</button>
+      <button id="sub-area-filter-btn" class="icon-btn" title="Sub Area Filter" style="margin-left: 10px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Sub Area
+      </button>
+      <button id="monitor-sub-area-btn" class="icon-btn" title="Monitor Sub Area" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Monitor
+      </button>
+    </div>
+    <div class="card resizable-box" id="manage-counters-card" style="min-height: 600px; margin-bottom: 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <h2 style="margin:0;">Manage Daily Counters</h2>
+            <button class="icon-btn expand-toggle-btn" title="Collapse" style="padding:4px; border:none; background:transparent; color:var(--muted);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
+        </div>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="counters-search" placeholder="Search date or shift..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+            <button id="delete-selected-counters-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+            </button>
+            <button id="clear-counters-filters-btn" class="icon-btn" title="Clear Filters">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+            </button>
+            <button id="export-counters-btn" class="icon-btn" title="Export CSV">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+            <button id="archive-btn" class="icon-btn" title="Archive (Past Days)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+            </button>
+        </div>
+      </div>
+      <div class="card-content">
+
+      <!-- Form -->
+      <form id="daily-counters-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eef2f6;">
+          <input type="hidden" id="counter-edit-id">
+          <div>
+              <label for="counter-date">Date</label>
+              <input type="date" id="counter-date" required style="width:100%">
+          </div>
+          <div>
+              <label for="counter-shift">Shift</label>
+              <select id="counter-shift" required style="width:100%">
+                  <option value="1st Shift-(6am-2pm)">1st Shift-(6am-2pm)</option>
+                  <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
+                  <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
+              </select>
+          </div>
+          <div>
+              <label for="counter-required">Required Counters</label>
+              <input type="number" id="counter-required" required min="1" style="width:100%">
+          </div>
+          <div>
+              <label for="counter-rate">Standard Rate</label>
+              <input type="number" id="counter-rate" min="1" placeholder="Per Person" style="width:100%">
+          </div>
+          <div>
+              <label for="counter-target">Target Output</label>
+              <input type="number" id="counter-target" min="0" placeholder="Optional" style="width:100%">
+          </div>
+          <div>
+              <label for="counter-note">Note (Optional)</label>
+              <input type="text" id="counter-note" placeholder="Shift notes..." style="width:100%">
+          </div>
+          <div style="display:flex; gap:5px;">
+              <button type="submit" id="save-counter-btn" class="icon-btn" title="Save" style="background: #2752a7; color: white; height: 38px; width: 100%; justify-content: center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save
+              </button>
+              <button type="button" id="cancel-counter-edit-btn" class="icon-btn" title="Cancel Edit" style="background: #6c757d; color: white; height: 38px; display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+          </div>
+      </form>
+
+      <!-- Table -->
+      <div style="overflow-x: auto;">
+          <table id="daily-counters-table" style="width:100%; border-collapse: collapse;">
+              <thead>
+                  <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
+                      <th style="padding: 12px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-counters" title="Select All"></th>
+                      <th style="padding: 12px; text-align: left;">Date</th>
+                      <th style="padding: 12px; text-align: left;">1st Shift (6am-2pm)</th>
+                      <th style="padding: 12px; text-align: left;">2nd Shift (2pm-10pm)</th>
+                      <th style="padding: 12px; text-align: left;">3rd Shift (10pm-6am)</th>
+                  </tr>
+              </thead>
+              <tbody></tbody>
+          </table>
+      </div>
+      <div id="counters-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-top: 1px solid #eee;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="counters-rows-per-page" style="font-size:13px; color:var(--muted);">Rows:</label>
+            <select id="counters-rows-per-page" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #d6dbe6;"><option value="3">3</option><option value="7" selected>7</option><option value="14">14</option></select>
+        </div>
+        <span id="counters-page-info" style="font-size: 13px; font-weight: 600; color: var(--muted);"></span>
+        <div style="display:flex; gap:8px;">
+            <button id="counters-prev-page" class="icon-btn" title="Previous">‹</button>
+            <button id="counters-next-page" class="icon-btn" title="Next">›</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card resizable-box" id="attendance-card" style="margin-top: 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <h2 style="margin:0;">Attendance Sheet</h2>
+            <button class="icon-btn expand-toggle-btn" title="Collapse" style="padding:4px; border:none; background:transparent; color:var(--muted);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Roles</option>
+                <option value="IC Support">IC Support</option>
+                <option value="IC Back up">IC Back up</option>
+            </select>
+            <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Areas</option>
+                <option value="Pick Bin">Pick Bin</option>
+                <option value="Reserved Bin">Reserved Bin</option>
+            </select>
+            <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+            <button id="print-att-btn" class="icon-btn" title="Print List">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            </button>
+            <button id="delete-selected-att-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+            </button>
+            <button id="export-att-btn" class="icon-btn" title="Export CSV" style="margin-right:5px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+            <button id="add-att-btn" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Entry
+            </button>
+        </div>
+      </div>
+      <div class="card-content">
+      <div style="overflow-x: auto;">
+          <table id="attendance-table" style="width:100%; border-collapse: collapse;">
+              <thead>
+                  <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
+                      <th style="padding: 12px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-att" title="Select All"></th>
+                      <th class="sortable" data-sort="date" style="padding: 12px; text-align: left;">Date <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="shift" style="padding: 12px; text-align: left;">Shift <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="name" style="padding: 12px; text-align: left;">Name <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="role" style="padding: 12px; text-align: left;">Role <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="area" style="padding: 12px; text-align: left;">Area <span class="sort-icon"></span></th>
+                      <th style="padding: 12px; text-align: left;">Break Out</th>
+                      <th style="padding: 12px; text-align: left;">Break In</th>
+                      <th class="sortable" data-sort="duration" style="padding: 12px; text-align: left;">Duration <span class="sort-icon"></span></th>
+                      <th style="padding: 12px; text-align: left;">Action</th>
+                  </tr>
+              </thead>
+              <tbody></tbody>
+          </table>
+      </div>
+      <div id="att-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-top: 1px solid #eee;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="att-rows-per-page" style="font-size:13px; color:var(--muted);">Rows:</label>
+            <select id="att-rows-per-page" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #d6dbe6;"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option><option value="100">100</option></select>
+        </div>
+        <span id="att-page-info" style="font-size: 13px; font-weight: 600; color: var(--muted);"></span>
+        <div style="display:flex; gap:8px;">
+            <button id="att-prev-page" class="icon-btn" title="Previous">‹</button>
+            <button id="att-next-page" class="icon-btn" title="Next">›</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Attendance Modal -->
+  <div id="att-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 500px; margin: 50px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0" id="att-modal-title">Add Attendance</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <form id="att-modal-form" style="display: grid; gap: 15px;">
+            <input type="hidden" id="att-edit-id">
+            <div>
+                <label for="att-date">Date</label>
+                <input type="date" id="att-date" required style="width:100%">
+            </div>
+            <div>
+                <label for="att-shift">Shift</label>
+                <select id="att-shift" required style="width:100%">
+                    <option value="1st Shift-(6am-2pm)">1st Shift-(6am-2pm)</option>
+                    <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
+                    <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
+                </select>
+            </div>
+            <div>
+                <label for="att-name">Counter Name</label>
+                <input type="text" id="att-name" required placeholder="Enter Name" style="width:100%">
+            </div>
+            <div>
+                <label for="att-role">Role</label>
+                <select id="att-role" style="width:100%">
+                    <option value="IC Support">IC Support</option>
+                    <option value="IC Back up">IC Back up</option>
+                </select>
+            </div>
+            <div>
+                <label for="att-area">Area</label>
+                <select id="att-area" style="width:100%">
+                    <option value="Pick Bin">Pick Bin</option>
+                    <option value="Reserved Bin">Reserved Bin</option>
+                </select>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-break-out">Break Out</label>
+                    <input type="time" id="att-break-out" style="width:100%">
+                </div>
+                <div>
+                    <label for="att-break-in">Break In</label>
+                    <input type="time" id="att-break-in" style="width:100%">
+                </div>
+            </div>
+            <div style="text-align:right; margin-top:10px;">
+                <button type="button" class="icon-btn close-modal" style="margin-right:5px;">Cancel</button>
+                <button type="submit" class="icon-btn" style="background: #2752a7; color: white;">Save</button>
+            </div>
+        </form>
+    </div>
+  </div>
+
+  <!-- Hourly Monitor Modal -->
+  <div id="hourly-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90vw; height: 90vh; display: flex; flex-direction: column; max-width: none; margin: 0;">
+        <input type="hidden" id="hourly-date-val">
+        <input type="hidden" id="hourly-shift-val">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0" id="hourly-modal-title">Hourly Output</h3>
+            <div>
+                <button id="email-hourly-btn" class="icon-btn" title="Email Report (Text)" style="margin-right:5px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                </button>
+                <button id="clear-hourly-btn" class="icon-btn" title="Clear Actuals" style="margin-right:5px; color:#e74c3c;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+                <button id="share-hourly-btn" class="icon-btn" title="Visualize & Share" style="margin-right:5px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
+                <button id="export-hourly-btn" class="icon-btn" title="Export CSV" style="margin-right:5px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                <button id="save-hourly-targets-btn" class="icon-btn" title="Save Hourly Data" style="background:#2752a7; color:white;">Save Data</button>
+                <button class="icon-btn close-modal">&times;</button>
+            </div>
+        </div>
+        <div id="hourly-report-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+        <div style="position:relative; flex: 1; min-height: 0; width:100%;">
+            <canvas id="hourly-chart"></canvas>
+        </div>
+        <div id="hourly-details" style="margin-top:10px; flex: 1; overflow-y: auto;">
+            <!-- Hourly input fields will be generated here -->
+        </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Snapshot Modal -->
+  <div id="snapshot-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 900px; margin: 50px auto; text-align:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Report Snapshot</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div id="snapshot-container" style="overflow:auto; max-height:60vh; border:1px solid #eee; margin-bottom:15px;"></div>
+        <div style="display:flex; justify-content:center; gap:10px;">
+            <button id="snapshot-share-btn" class="icon-btn" style="background:#2752a7; color:white; padding:8px 16px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> Share Image
+            </button>
+            <button id="snapshot-download-btn" class="icon-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding:8px 16px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download
+            </button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Supervisor Delete Modal -->
+  <div id="supervisor-delete-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px;">
+      <h3 id="supervisor-modal-title">Confirm Deletion</h3>
+      <p>You are about to delete <strong id="supervisor-delete-count">0</strong> records.</p>
+      <p class="muted">This action cannot be undone. Please enter Supervisor Code to proceed.</p>
+      <div style="margin: 15px 0;">
+        <label for="supervisor-code" style="display:block; margin-bottom:5px; font-weight:bold;">Supervisor Code</label>
+        <input type="password" id="supervisor-code" style="width:100%;" placeholder="Enter code">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="icon-btn close-modal">Cancel</button>
+        <button type="button" id="confirm-supervisor-delete-btn" class="icon-btn" style="background:#d9534f; color:white;">Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hover Summary Popup -->
+  <div id="summary-hover-popup" class="card" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.3); z-index: 10002; display: none; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); min-width: 350px; max-width: 500px; background: #fff; border: 1px solid #ccc; pointer-events: none;">
+    <h3 style="margin-top:0; color:var(--accent); border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">Shift Summary</h3>
+    <div id="summary-popup-content" style="font-size: 1.2em; line-height: 1.5;"></div>
+  </div>
+
+  <!-- Sub Area Filter Modal -->
+  <div id="sub-area-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 100px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Select Sub Area</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div id="sub-area-list" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
+            <!-- Checkboxes generated by JS -->
+        </div>
+        <div style="text-align:right;">
+            <button id="apply-sub-area-filter" class="icon-btn" style="background:#2752a7; color:white;">Apply Filter</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Sub Area Monitor Modal -->
+  <div id="sub-area-monitor-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="width: 95%; max-width: 1400px; height: 85vh; display:flex; flex-direction:column; margin: 40px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Sub Area Monitor</h3>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <div id="monitor-bulk-actions" style="display:none; gap:5px;">
+                    <button id="bulk-copy-names-btn" class="icon-btn" style="background:#3498db; color:white; width:auto; padding: 6px 12px; font-size:12px;">Copy Names</button>
+                    <button id="bulk-paste-names-btn" class="icon-btn" style="background:#9b59b6; color:white; width:auto; padding: 6px 12px; font-size:12px;">Paste Names</button>
+                    <button id="bulk-counted-btn" class="icon-btn" style="background:#2ecc71; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Counted</button>
+                    <button id="bulk-empty-btn" class="icon-btn" style="background:#03a9f4; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Empty</button>
+                    <button id="bulk-edit-btn" class="icon-btn" style="background:#607d8b; color:white; width:auto; padding: 6px 12px; font-size:12px;">Edit</button>
+                    <button id="bulk-uncounted-btn" class="icon-btn" style="background:#e74c3c; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Not Counted</button>
+                </div>
+                <select id="monitor-sub-area-select" style="padding:6px; border-radius:4px; border:1px solid #ccc; min-width: 150px;"></select>
+                <span id="monitor-capacity-info" style="font-size:13px; color:#666; font-weight:bold;"></span>
+                <button class="icon-btn close-modal">&times;</button>
+            </div>
+        </div>
+        <div style="flex:1; overflow:auto; padding:20px; border:1px solid #eee; border-radius:4px; background:#f9f9f9; display: flex; justify-content: center; align-items: flex-start;">
+            <div id="racking-grid" style="display:grid; gap:2px;"></div>
+        </div>
+        <div id="monitor-stats" style="margin-top:10px; font-weight:bold; text-align: right;"></div>
+    </div>
+  </div>
+
+  <!-- Cell Edit Modal -->
+  <div id="cell-edit-modal" class="modal hidden" style="z-index: 10005;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 300px; margin: 150px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Edit Grid Name</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <input type="hidden" id="cell-edit-id">
+        <div id="cell-name-group" style="margin-bottom:15px;">
+            <label for="cell-custom-name" style="font-weight:bold;">Grid Name:</label>
+            <input type="text" id="cell-custom-name" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="Enter name">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label for="cell-status" style="font-weight:bold;">Status:</label>
+            <select id="cell-status" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <option value="auto">Auto (Default)</option>
+                <option value="counted">Counted</option>
+                <option value="empty">Empty</option>
+                <option value="not-part">Not Part</option>
+                <option value="uncounted">Not Counted</option>
+            </select>
+        </div>
+        <div style="text-align:right;">
+            <button id="save-cell-btn" class="icon-btn" style="background:#2752a7; color:white; padding:8px 16px;">Save</button>
+        </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const countersForm = document.getElementById('daily-counters-form');
+        const countersTableBody = document.querySelector('#daily-counters-table tbody');
+        const cancelCounterEditBtn = document.getElementById('cancel-counter-edit-btn');
+        const saveCounterBtn = document.getElementById('save-counter-btn');
+        const archiveBtn = document.getElementById('archive-btn');
+        const exportCountersBtn = document.getElementById('export-counters-btn');
+        const dateInput = document.getElementById('counter-date');
+        const rateInput = document.getElementById('counter-rate');
+        const reqInput = document.getElementById('counter-required');
+        const targetInput = document.getElementById('counter-target');
+        const noteInput = document.getElementById('counter-note');
+        
+        const attendanceTableBody = document.querySelector('#attendance-table tbody');
+        
+        // Modal elements
+        const attModal = document.getElementById('att-modal');
+        const attForm = document.getElementById('att-modal-form');
+        const addAttBtn = document.getElementById('add-att-btn');
+        const exportAttBtn = document.getElementById('export-att-btn');
+        const printAttBtn = document.getElementById('print-att-btn');
+        const attSearchInput = document.getElementById('att-search');
+        const attFilterRole = document.getElementById('att-filter-role');
+        const attFilterArea = document.getElementById('att-filter-area');
+        const countersSearchInput = document.getElementById('counters-search');
+        const deleteSelectedCountersBtn = document.getElementById('delete-selected-counters-btn');
+        const clearCountersFiltersBtn = document.getElementById('clear-counters-filters-btn');
+        const globalStartDate = document.getElementById('global-start-date');
+        const globalEndDate = document.getElementById('global-end-date');
+        
+        // Sub Area elements
+        const subAreaFilterBtn = document.getElementById('sub-area-filter-btn');
+        const subAreaModal = document.getElementById('sub-area-modal');
+        const subAreaList = document.getElementById('sub-area-list');
+        const applySubAreaFilterBtn = document.getElementById('apply-sub-area-filter');
+        
+        // Monitor elements
+        const monitorSubAreaBtn = document.getElementById('monitor-sub-area-btn');
+        const subAreaMonitorModal = document.getElementById('sub-area-monitor-modal');
+        const monitorSubAreaSelect = document.getElementById('monitor-sub-area-select');
+        const rackingGrid = document.getElementById('racking-grid');
+        const monitorBulkActions = document.getElementById('monitor-bulk-actions');
+        const bulkCountedBtn = document.getElementById('bulk-counted-btn');
+        const bulkUncountedBtn = document.getElementById('bulk-uncounted-btn');
+        const bulkCopyNamesBtn = document.getElementById('bulk-copy-names-btn');
+        const bulkPasteNamesBtn = document.getElementById('bulk-paste-names-btn');
+        const bulkEmptyBtn = document.getElementById('bulk-empty-btn');
+        const bulkEditBtn = document.getElementById('bulk-edit-btn');
+        
+        // Hourly Modal
+        const hourlyModal = document.getElementById('hourly-modal');
+        const snapshotModal = document.getElementById('snapshot-modal');
+        const snapshotContainer = document.getElementById('snapshot-container');
+        const snapshotShareBtn = document.getElementById('snapshot-share-btn');
+        const snapshotDownloadBtn = document.getElementById('snapshot-download-btn');
+        let currentSnapshotBlob = null;
+        const supervisorDeleteModal = document.getElementById('supervisor-delete-modal');
+        const confirmSupervisorDeleteBtn = document.getElementById('confirm-supervisor-delete-btn');
+        let supervisorDeleteCallback = null;
+        let hourlyChart = null;
+
+        const STORAGE_KEY_COUNTERS = 'ims_daily_counters_v1';
+        const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
+        const STORAGE_KEY_CC = 'ims_cycle_count_v1';
+        
+        let showArchiveOnly = false;
+        let attCurrentPage = 1;
+        let attItemsPerPage = 20;
+        let countersCurrentPage = 1;
+        let countersItemsPerPage = 7;
+        let attSortField = 'date';
+        let attSortDirection = 'desc';
+        
+        let globalSubAreas = []; // Selected sub areas for filtering
+        const subAreaOptions = ['DCI', 'DCJ', 'DCK', 'DCL', 'DCM', 'DCN', 'DCO'];
+        
+        // Sub Area Configurations (Width x Levels)
+        const subAreaConfigs = {
+            'DCI': { 
+                type: 'multi',
+                blocks: [
+                    { width: 23, levels: 6, prefix: 'DCI002', rowBase: 20, rowStep: 10 },
+                    { width: 23, levels: 6, prefix: 'DCI004', rowBase: 20, rowStep: 10 }
+                ],
+                floor: { width: 23, levels: 2, prefix: 'DCI-FLOOR' }
+            },
+            'DCJ': { 
+                type: 'multi',
+                blocks: [
+                    { width: 23, levels: 6, prefix: 'DCJ002', rowBase: 20, rowStep: 10 },
+                    { width: 23, levels: 6, prefix: 'DCJ004', rowBase: 20, rowStep: 10 }
+                ],
+                floor: { width: 23, levels: 2, prefix: 'DCJ-FLOOR' }
+            },
+            'DCK': { 
+                type: 'multi',
+                blocks: [
+                    { width: 23, levels: 6, prefix: 'DCK002', rowBase: 20, rowStep: 10 },
+                    { width: 23, levels: 6, prefix: 'DCK004', rowBase: 20, rowStep: 10 }
+                ],
+                floor: { width: 23, levels: 2, prefix: 'DCK-FLOOR' }
+            },
+            'DCL': { 
+                type: 'multi',
+                blocks: [
+                    { width: 23, levels: 6, prefix: 'DCL002', rowBase: 20, rowStep: 10 },
+                    { width: 23, levels: 6, prefix: 'DCL004', rowBase: 20, rowStep: 10 }
+                ],
+                floor: { width: 23, levels: 2, prefix: 'DCL-FLOOR' }
+            },
+            'DCM': { 
+                type: 'multi',
+                blocks: [
+                    { width: 23, levels: 6, prefix: 'DCM002', rowBase: 20, rowStep: 10 },
+                    { width: 23, levels: 6, prefix: 'DCM004', rowBase: 20, rowStep: 10 }
+                ],
+                floor: { width: 23, levels: 2, prefix: 'DCM-FLOOR' }
+            },
+            'DCN': { 
+                type: 'multi',
+                blocks: [
+                    { width: 23, levels: 6, prefix: 'DCN002', rowBase: 20, rowStep: 10 },
+                    { width: 23, levels: 6, prefix: 'DCN004', rowBase: 20, rowStep: 10 }
+                ],
+                floor: { width: 23, levels: 2, prefix: 'DCN-FLOOR' }
+            },
+            'DCO': { 
+                type: 'multi',
+                blocks: [
+                    { width: 23, levels: 6, prefix: 'DCO002', rowBase: 20, rowStep: 10 },
+                    { width: 23, levels: 6, prefix: 'DCO004', rowBase: 20, rowStep: 10 }
+                ],
+                floor: { width: 23, levels: 2, prefix: 'DCO-FLOOR' }
+            }
+        };
+        
+        const monitorSelectedCells = new Set();
+
+        // Helper to set local date
+        function setLocalDate(input) {
+            if (!input) return;
+            const now = new Date();
+            const local = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            input.value = local.toISOString().split('T')[0];
+        }
+
+        // Set default date
+        setLocalDate(dateInput);
+
+        // Auto-calc target in form
+        function autoCalcTarget() {
+            const req = parseInt(reqInput.value) || 0;
+            const rate = parseInt(rateInput.value) || 0;
+            if (req > 0 && rate > 0) targetInput.value = req * rate;
+        }
+        if(rateInput) rateInput.addEventListener('input', autoCalcTarget);
+        if(reqInput) reqInput.addEventListener('input', autoCalcTarget);
+
+        // Global functions for hover popup
+        window.showSummaryPopup = function(el) {
+            const popup = document.getElementById('summary-hover-popup');
+            const content = document.getElementById('summary-popup-content');
+            if(popup && content) {
+                content.innerHTML = el.innerHTML;
+                popup.style.display = 'block';
+            }
+        };
+        window.hideSummaryPopup = function() {
+            const popup = document.getElementById('summary-hover-popup');
+            if(popup) popup.style.display = 'none';
+        };
+
+        function getCountersData() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY_COUNTERS) || '[]');
+            } catch (e) {
+                console.error('Error parsing daily counters data', e);
+                return [];
+            }
+        }
+
+        function saveCountersData(data) {
+            localStorage.setItem(STORAGE_KEY_COUNTERS, JSON.stringify(data));
+        }
+
+        function getAttendanceData() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY_ATTENDANCE) || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveAttendanceData(data) {
+            localStorage.setItem(STORAGE_KEY_ATTENDANCE, JSON.stringify(data));
+        }
+
+        function renderCountersTable() {
+            if (!countersTableBody) return;
+            let data = getCountersData();
+            const attendance = getAttendanceData();
+            
+            // Load actuals for badge calculation
+            let cycleCounts = [];
+            try { cycleCounts = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch(e){}
+            const actualsMap = {};
+            cycleCounts.forEach(c => {
+                const ts = c.createdDate || c.date;
+                if(ts) {
+                    const info = getShiftFromTimestamp(ts);
+                    const key = `${info.date}|${info.shift}`;
+                    actualsMap[key] = (actualsMap[key] || 0) + 1;
+                }
+            });
+            
+            if (showArchiveOnly) {
+                const today = new Date().toISOString().split('T')[0];
+                data = data.filter(d => d.date < today);
+            }
+            
+            const searchTerm = countersSearchInput ? countersSearchInput.value.toLowerCase() : '';
+            if (searchTerm) {
+                data = data.filter(item => 
+                    item.date.toLowerCase().includes(searchTerm) || 
+                    item.shift.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Global Date Filter
+            if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+                if (start) start.setHours(0,0,0,0);
+                const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+                if (end) end.setHours(23,59,59,999);
+
+                data = data.filter(item => {
+                    const itemDate = new Date(item.date);
+                    return (!start || itemDate >= start) && (!end || itemDate <= end);
+                });
+            }
+            
+            // Group by Date
+            const grouped = {};
+            data.forEach(item => {
+                if (!grouped[item.date]) grouped[item.date] = {};
+                grouped[item.date][item.shift] = item;
+            });
+            
+            const dates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+            
+            // Pagination for Counters
+            const totalItems = dates.length;
+            const totalPages = Math.ceil(totalItems / countersItemsPerPage) || 1;
+            if (countersCurrentPage > totalPages) countersCurrentPage = totalPages;
+            
+            const paginatedDates = dates.slice((countersCurrentPage - 1) * countersItemsPerPage, countersCurrentPage * countersItemsPerPage);
+            
+            const countersPageInfo = document.getElementById('counters-page-info');
+            if(countersPageInfo) {
+                countersPageInfo.textContent = `Page ${countersCurrentPage} of ${totalPages} (${totalItems} dates)`;
+                document.getElementById('counters-prev-page').disabled = countersCurrentPage <= 1;
+                document.getElementById('counters-next-page').disabled = countersCurrentPage >= totalPages;
+            }
+
+            countersTableBody.innerHTML = '';
+            if (paginatedDates.length === 0) {
+                countersTableBody.innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center; padding: 20px;">No daily counter records found.</td></tr>`;
+                return;
+            }
+            
+            const shifts = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+            
+            paginatedDates.forEach(date => {
+                const tr = document.createElement('tr');
+                let html = `<td style="padding:12px;border-bottom:1px solid #eee;"><input type="checkbox" class="counter-row-checkbox" data-date="${date}"></td><td style="padding:12px;border-bottom:1px solid #eee; font-weight:bold;">${date}</td>`;
+                
+                shifts.forEach(shift => {
+                    const item = grouped[date][shift];
+                    if (item) {
+                        const req = Number(item.required) || 1;
+                        let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift);
+                        
+                        // Apply Global Sub Area Filter to counts
+                        if (globalSubAreas.length > 0) {
+                            shiftAtt = shiftAtt.filter(a => globalSubAreas.includes(a.area));
+                        }
+                        
+                        const act = shiftAtt.length;
+                        const pct = Math.round((act / req) * 100);
+                        
+                        // Calculate dynamic target based on active counters if rate exists
+                        const rate = item.standardRate || 0;
+                        const activeTarget = rate > 0 ? (act * rate) : (item.targetOutput || 0);
+                        
+                        // Calculate actual output for this shift
+                        let actualOutput = 0;
+                        if (item.hourlyActuals) {
+                            actualOutput = Object.values(item.hourlyActuals).reduce((a, b) => a + (Number(b)||0), 0);
+                        } else {
+                            actualOutput = actualsMap[`${date}|${shift}`] || 0;
+                        }
+                        
+                        let effectiveTarget = activeTarget;
+                        let isCustomTarget = false;
+                        if (item.hourlyTargets && Object.keys(item.hourlyTargets).length > 0) {
+                            effectiveTarget = Object.values(item.hourlyTargets).reduce((a, b) => a + (Number(b)||0), 0);
+                            isCustomTarget = true;
+                        }
+                        
+                        let varianceHtml = '';
+                        if (effectiveTarget > 0 || isCustomTarget) {
+                            const variance = actualOutput - effectiveTarget;
+                            const varColor = variance >= 0 ? '#2ecc71' : '#e74c3c';
+                            const varSign = variance > 0 ? '+' : '';
+                            const customIcon = isCustomTarget ? `<span class="hourly-btn" data-date="${date}" data-shift="${shift}" title="Custom Hourly Targets Active - Click to Edit" style="font-size:12px; margin-left:3px; cursor:pointer;">⚙️</span>` : '';
+                            varianceHtml = `<span style="background-color:${varColor}; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; vertical-align:middle; margin-left:5px;">Var: ${varSign}${variance}</span>${customIcon}`;
+                        }
+                        
+                        // Visual indicator for shortage
+                        const isShort = act < req;
+                        const shortIndicator = isShort ? `<span title="Shortage: ${req - act}" style="color:#e74c3c; margin-left:5px; cursor:help;">⚠️</span>` : '';
+                        
+                        // Breakdowns
+                        const areaCounts = {};
+                        const roleCounts = {};
+                        shiftAtt.forEach(a => {
+                            if(a.area) areaCounts[a.area] = (areaCounts[a.area] || 0) + 1;
+                            if(a.role) roleCounts[a.role] = (roleCounts[a.role] || 0) + 1;
+                        });
+                        const areaStr = Object.entries(areaCounts).map(([k,v]) => `${k}: ${v}`).join(', ');
+                        const roleStr = Object.entries(roleCounts).map(([k,v]) => `${k}: ${v}`).join(', ');
+
+                        let pctClass = 'completion-low';
+                        if(pct >= 100) pctClass = 'completion-high';
+                        else if(pct >= 80) pctClass = 'completion-med';
+                        
+                        html += `
+                        <td style="padding:12px;border-bottom:1px solid #eee; vertical-align:top;">
+                            <div class="shift-summary-content" onmouseenter="window.showSummaryPopup(this)" onmouseleave="window.hideSummaryPopup()">
+                                <div style="font-size:13px; margin-bottom:4px;">Req: <strong>${req}</strong> | Act: <strong>${act}</strong> ${shortIndicator} ${varianceHtml}</div>
+                                ${rate > 0 ? `<div style="font-size:12px; color:#2752a7; margin-bottom:4px;">Target (Act): <strong>${activeTarget}</strong> <span class="muted" style="font-size:11px">(@${rate}/p)</span></div>` : ''}
+                                <div class="${pctClass}" style="margin-top:4px; margin-bottom:6px;">${pct}% Completed</div>
+                                ${item.note ? `<div style="font-size:11px; color:#555; margin-bottom:4px; font-style:italic; background:#f8f9fa; padding:2px 4px; border-radius:3px;">Note: ${item.note}</div>` : ''}
+                                ${areaStr ? `<div style="font-size:11px; color:#666; margin-bottom:2px;"><strong>Area:</strong> ${areaStr}</div>` : ''}
+                                ${roleStr ? `<div style="font-size:11px; color:#666; margin-bottom:4px;"><strong>Role:</strong> ${roleStr}</div>` : ''}
+                            </div>
+                            <div class="action-buttons-container" style="margin-top:6px;">
+                                <button class="icon-btn edit-counter-btn" data-id="${item.id}" title="Edit" style="padding:2px 6px; font-size:12px;">✎</button>
+                                <button class="icon-btn duplicate-counter-btn" data-id="${item.id}" title="Duplicate to Next Day" style="padding:2px 6px; font-size:12px;">📋</button>
+                                <button class="icon-btn hourly-btn" data-date="${date}" data-shift="${shift}" title="Hourly Monitor" style="padding:2px 6px; font-size:12px; background:#6f42c1; color:white; border:none;">Hourly</button>
+                                <button class="icon-btn delete-counter-btn" data-id="${item.id}" title="Delete" style="padding:2px 6px; font-size:12px; color:#d9534f;">&times;</button>
+                            </div>
+                        </td>`;
+                    } else {
+                        html += `<td style="padding:12px;border-bottom:1px solid #eee; color:#ccc;">-</td>`;
+                    }
+                });
+                tr.innerHTML = html;
+                countersTableBody.appendChild(tr);
+            });
+            setTimeout(fixTooltips, 0);
+        }
+
+        if (countersTableBody) {
+            countersTableBody.addEventListener('change', (e) => {
+                if (e.target.classList.contains('counter-row-checkbox')) {
+                    const selectedCount = document.querySelectorAll('.counter-row-checkbox:checked').length;
+                    if (deleteSelectedCountersBtn) {
+                        deleteSelectedCountersBtn.style.display = selectedCount > 0 ? 'inline-flex' : 'none';
+                    }
+                }
+            });
+        }
+
+        // Counters Pagination Listeners
+        const countersPaginationControls = document.getElementById('counters-pagination-controls');
+        if (countersPaginationControls) {
+            countersPaginationControls.addEventListener('click', (e) => {
+                if (e.target.id === 'counters-prev-page' && !e.target.disabled) {
+                    countersCurrentPage--;
+                    renderCountersTable();
+                } else if (e.target.id === 'counters-next-page' && !e.target.disabled) {
+                    countersCurrentPage++;
+                    renderCountersTable();
+                }
+            });
+            const countersRowsPerPageSelect = document.getElementById('counters-rows-per-page');
+            if (countersRowsPerPageSelect) {
+                countersRowsPerPageSelect.addEventListener('change', () => {
+                    countersItemsPerPage = parseInt(countersRowsPerPageSelect.value, 10);
+                    countersCurrentPage = 1;
+                    renderCountersTable();
+                });
+            }
+        }
+
+        if (countersSearchInput) {
+            countersSearchInput.addEventListener('input', () => {
+                countersCurrentPage = 1;
+                renderCountersTable();
+            });
+        }
+
+        const selectAllCounters = document.getElementById('select-all-counters');
+        if (selectAllCounters) {
+            selectAllCounters.addEventListener('change', (e) => {
+                document.querySelectorAll('.counter-row-checkbox').forEach(cb => cb.checked = e.target.checked);
+                if (deleteSelectedCountersBtn) deleteSelectedCountersBtn.style.display = e.target.checked ? 'inline-flex' : 'none';
+            });
+        }
+
+        if (clearCountersFiltersBtn) {
+            clearCountersFiltersBtn.addEventListener('click', () => {
+                if (countersSearchInput) countersSearchInput.value = '';
+                showArchiveOnly = false;
+                if (archiveBtn) archiveBtn.classList.remove('active-filter');
+                countersCurrentPage = 1;
+                renderCountersTable();
+            });
+        }
+
+        // Daily Counters Actions (Edit, Delete, Duplicate)
+        if (countersTableBody) {
+            countersTableBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const id = btn.dataset.id;
+
+                if (btn.classList.contains('delete-counter-btn')) {
+                    if(confirm('Delete this record?')) {
+                        let data = getCountersData();
+                        data = data.filter(item => item.id !== id);
+                        saveCountersData(data);
+                        renderCountersTable();
+                    }
+                } else if (btn.classList.contains('edit-counter-btn')) {
+                    const data = getCountersData();
+                    const item = data.find(i => i.id === id);
+                    if (item) {
+                        document.getElementById('counter-edit-id').value = item.id;
+                        document.getElementById('counter-date').value = item.date;
+                        document.getElementById('counter-shift').value = item.shift;
+                        document.getElementById('counter-required').value = item.required;
+                        document.getElementById('counter-rate').value = item.standardRate || '';
+                        document.getElementById('counter-target').value = item.targetOutput || '';
+                        document.getElementById('counter-note').value = item.note || '';
+                        
+                        saveCounterBtn.innerHTML = 'Update';
+                        cancelCounterEditBtn.style.display = 'inline-flex';
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                } else if (btn.classList.contains('duplicate-counter-btn')) {
+                    const data = getCountersData();
+                    const item = data.find(i => i.id === id);
+                    if (item) {
+                        const d = new Date(item.date);
+                        d.setDate(d.getDate() + 1);
+                        const nextDate = d.toISOString().split('T')[0];
+                        
+                        const exists = data.find(x => x.date === nextDate && x.shift === item.shift);
+                        if (exists) {
+                            alert(`An entry for ${nextDate} - ${item.shift} already exists. Duplicate skipped.`);
+                            return;
+                        }
+                        
+                        const newItem = { ...item, id: Date.now().toString(), date: nextDate, hourlyActuals: {} };
+                        data.push(newItem);
+                        saveCountersData(data);
+                        renderCountersTable();
+                        alert(`Duplicated entry to ${nextDate}`);
+                    }
+                }
+            });
+        }
+
+        // Hourly Monitor Logic
+        if (countersTableBody) {
+            countersTableBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('.hourly-btn');
+                if (btn) {
+                    const date = btn.dataset.date;
+                    const shift = btn.dataset.shift;
+                    openHourlyModal(date, shift);
+                }
+            });
+        }
+
+        function openHourlyModal(dateStr, shift) {
+             document.getElementById('hourly-modal-title').textContent = `Hourly Output: ${dateStr} (${shift.split('-')[0]})`;
+             hourlyModal.classList.remove('hidden');
+             document.getElementById('hourly-date-val').value = dateStr;
+             document.getElementById('hourly-shift-val').value = shift;
+             
+             // Find the counter entry to get the main target
+             const counters = getCountersData();
+             const counterEntry = counters.find(c => c.date === dateStr && c.shift === shift);
+             
+             // Determine time range
+             const start = new Date(dateStr);
+             const end = new Date(dateStr);
+             
+             if (shift.includes('1st Shift')) {
+                 start.setHours(6,0,0,0); end.setHours(14,0,0,0);
+             } else if (shift.includes('2nd Shift')) {
+                 start.setHours(14,0,0,0); end.setHours(22,0,0,0);
+             } else { // 3rd Shift
+                 start.setHours(22,0,0,0); 
+                 end.setDate(end.getDate() + 1); end.setHours(6,0,0,0);
+             }
+ 
+             // Fetch and filter data
+             let cycleCounts = [];
+             try { cycleCounts = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch(e){}
+             
+             const hourlyDetailsContainer = document.getElementById('hourly-details');
+             hourlyDetailsContainer.innerHTML = '';
+             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee;"><p>Hour</p><p>Actual</p><p>Target</p><p>Variance</p></div>';
+
+             const hourlyData = {};
+             const hourlyTargets = {};
+             
+             // Calculate default hourly target based on active target (rate * attendance or targetOutput)
+             const attendance = getAttendanceData();
+             const shiftAtt = attendance.filter(a => a.date === dateStr && a.shift === shift);
+             const act = shiftAtt.length;
+             const rate = (counterEntry && counterEntry.standardRate) || 0;
+             const activeTarget = rate > 0 ? (act * rate) : ((counterEntry && counterEntry.targetOutput) || 0);
+             const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
+             
+             const savedActuals = counterEntry && counterEntry.hourlyActuals ? counterEntry.hourlyActuals : null;
+             let totalAct = 0;
+             let totalTgt = 0;
+
+             // Initialize hours
+             for (let d = new Date(start); d < end; d.setHours(d.getHours() + 1)) {
+                 const h = d.getHours();
+                 const label = `${h}:00 - ${h+1}:00`;
+                 
+                 if (savedActuals && savedActuals[label] !== undefined) {
+                     hourlyData[label] = savedActuals[label];
+                 } else {
+                     hourlyData[label] = 0;
+                 }
+                 
+                 // Use saved hourly target or default
+                 const savedTarget = counterEntry && counterEntry.hourlyTargets && counterEntry.hourlyTargets[label];
+                 hourlyTargets[label] = savedTarget !== undefined ? savedTarget : defaultHourlyTarget;
+             }
+ 
+             // Only calculate from cycleCounts if no manual actuals are saved
+             if (!savedActuals) {
+                 cycleCounts.forEach(c => {
+                     const ts = c.createdDate || c.date;
+                     if (ts) {
+                         const d = new Date(ts);
+                         if (d >= start && d < end) {
+                             const h = d.getHours();
+                             const label = `${h}:00 - ${h+1}:00`;
+                             if (hourlyData.hasOwnProperty(label)) hourlyData[label]++;
+                         }
+                     }
+                 });
+             }
+ 
+             // Build details table and populate targets
+             Object.keys(hourlyData).forEach(label => {
+                const act = hourlyData[label] || 0;
+                const tgt = hourlyTargets[label] || 0;
+                const variance = act - tgt;
+                const varColor = variance >= 0 ? '#2ecc71' : '#e74c3c';
+                const rowBg = variance < 0 ? 'background-color: #fff5f5;' : '';
+                
+                totalAct += act;
+                totalTgt += tgt;
+                
+                hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee;">
+                    <div style="padding-left: 5px;">${label}</div>
+                    <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 80px; padding: 4px;"></div>
+                    <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 80px; padding: 4px;"></div>
+                    <div class="hourly-variance" style="font-weight:bold; color:${varColor}">${(variance > 0 ? '+' : '') + variance}</div></div>`;
+             });
+             
+             const totalVar = totalAct - totalTgt;
+             const totalVarColor = totalVar >= 0 ? '#2ecc71' : '#e74c3c';
+             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0;">
+                <div style="padding-left: 5px;">Total</div>
+                <div id="hourly-total-act">${totalAct}</div>
+                <div id="hourly-total-tgt">${totalTgt}</div>
+                <div id="hourly-total-var" style="color:${totalVarColor}">${(totalVar > 0 ? '+' : '') + totalVar}</div>
+             </div>`;
+             
+             hourlyDetailsContainer.innerHTML = hourlyDetailsHtml;
+
+             // Calculate cumulative data
+             const hourlyValues = Object.values(hourlyData);
+             const cumulativeData = [];
+             let sum = 0;
+             for (const value of hourlyValues) {
+                 sum += value;
+                 cumulativeData.push(sum);
+             }
+
+             const targetLineData = Object.values(hourlyTargets);
+ 
+             const ctx = document.getElementById('hourly-chart');
+             if (hourlyChart) hourlyChart.destroy();
+             hourlyChart = new Chart(ctx, {
+                 type: 'bar',
+                 data: {
+                     labels: Object.keys(hourlyData),
+                    datasets: [
+                        { label: 'Hourly Output', data: hourlyValues, backgroundColor: '#36b9cc', order: 2 },
+                        { label: 'Cumulative Total', data: cumulativeData, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', order: 1 },
+                        { label: 'Target', data: targetLineData, type: 'line', borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [5, 5], order: 0 }
+                    ]
+                 },
+                 options: { 
+                     responsive: true, maintainAspectRatio: false, 
+                     scales: { y: { beginAtZero: true, title: { display: true, text: 'Items Counted' } } } 
+                 }
+             });
+        }
+
+        // Dynamic Variance Calculation
+        const hourlyDetailsDiv = document.getElementById('hourly-details');
+        if (hourlyDetailsDiv) {
+            hourlyDetailsDiv.addEventListener('input', (e) => {
+                if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input')) {
+                    const row = e.target.closest('div[style*="display:grid"]');
+                    const act = parseInt(row.querySelector('.hourly-actual-input').value) || 0;
+                    const tgt = parseInt(row.querySelector('.hourly-target-input').value) || 0;
+                    const variance = act - tgt;
+                    const varDiv = row.querySelector('.hourly-variance');
+                    varDiv.textContent = (variance > 0 ? '+' : '') + variance;
+                    varDiv.style.color = variance >= 0 ? '#2ecc71' : '#e74c3c';
+                    
+                    // Update row highlight
+                    row.style.backgroundColor = variance < 0 ? '#fff5f5' : '';
+                    
+                    // Update totals
+                    let tAct = 0, tTgt = 0;
+                    hourlyDetailsDiv.querySelectorAll('.hourly-actual-input').forEach(i => tAct += (parseInt(i.value)||0));
+                    hourlyDetailsDiv.querySelectorAll('.hourly-target-input').forEach(i => tTgt += (parseInt(i.value)||0));
+                    const tVar = tAct - tTgt;
+                    
+                    document.getElementById('hourly-total-act').textContent = tAct;
+                    document.getElementById('hourly-total-tgt').textContent = tTgt;
+                    const tVarDiv = document.getElementById('hourly-total-var');
+                    if(tVarDiv) {
+                        tVarDiv.textContent = (tVar > 0 ? '+' : '') + tVar;
+                        tVarDiv.style.color = tVar >= 0 ? '#2ecc71' : '#e74c3c';
+                    }
+                    
+                    // Update Chart Real-time
+                    if (hourlyChart) {
+                        const rows = document.querySelectorAll('#hourly-details > div[style*="display:grid"]');
+                        const actuals = [];
+                        const targets = [];
+                        let cumulative = [];
+                        let sum = 0;
+                        
+                        rows.forEach(r => {
+                            const aIn = r.querySelector('.hourly-actual-input');
+                            const tIn = r.querySelector('.hourly-target-input');
+                            if (aIn && tIn) {
+                                const aVal = parseInt(aIn.value) || 0;
+                                const tVal = parseInt(tIn.value) || 0;
+                                actuals.push(aVal);
+                                targets.push(tVal);
+                                sum += aVal;
+                                cumulative.push(sum);
+                            }
+                        });
+                        
+                        if (hourlyChart.data.datasets[0]) hourlyChart.data.datasets[0].data = actuals;
+                        if (hourlyChart.data.datasets[1]) hourlyChart.data.datasets[1].data = cumulative;
+                        if (hourlyChart.data.datasets[2]) hourlyChart.data.datasets[2].data = targets;
+                        hourlyChart.update('none');
+                    }
+                }
+            });
+        }
+
+        // Save Hourly Targets
+        const saveHourlyTargetsBtn = document.getElementById('save-hourly-targets-btn');
+        if (saveHourlyTargetsBtn) {
+            saveHourlyTargetsBtn.addEventListener('click', () => {
+                const dateStr = document.getElementById('hourly-date-val').value;
+                const shift = document.getElementById('hourly-shift-val').value;
+
+                const counters = getCountersData();
+                const counterIndex = counters.findIndex(c => c.date === dateStr && c.shift === shift);
+
+                if (counterIndex > -1) {
+                    if (!counters[counterIndex].hourlyTargets) counters[counterIndex].hourlyTargets = {};
+                    if (!counters[counterIndex].hourlyActuals) counters[counterIndex].hourlyActuals = {};
+                    
+                    document.querySelectorAll('.hourly-target-input').forEach(input => {
+                        const hour = input.dataset.hour;
+                        const value = parseInt(input.value, 10);
+                        if (!isNaN(value) && value >= 0) {
+                            counters[counterIndex].hourlyTargets[hour] = value;
+                        }
+                    });
+                    document.querySelectorAll('.hourly-actual-input').forEach(input => {
+                        const hour = input.dataset.hour;
+                        const value = parseInt(input.value, 10);
+                        if (!isNaN(value) && value >= 0) {
+                            counters[counterIndex].hourlyActuals[hour] = value;
+                        }
+                    });
+                    
+                    saveCountersData(counters);
+                    alert('Hourly data saved!');
+                    // Refresh chart in modal
+                    openHourlyModal(dateStr, shift);
+                    // Refresh main productivity chart if visible
+                    if (document.getElementById('counters-flip-container').classList.contains('flipped')) {
+                        renderProductivityChart();
+                    }
+                }
+            });
+        }
+
+        // Export Hourly Data
+        const exportHourlyBtn = document.getElementById('export-hourly-btn');
+        if (exportHourlyBtn) {
+            exportHourlyBtn.addEventListener('click', () => {
+                const rows = [];
+                rows.push(['Hour', 'Actual', 'Target', 'Variance']);
+                
+                // Data rows
+                const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
+                inputs.forEach(input => {
+                    const rowDiv = input.closest('div[style*="display:grid"]');
+                    const hour = rowDiv.children[0].textContent.trim();
+                    const act = input.value;
+                    const tgt = rowDiv.querySelector('.hourly-target-input').value;
+                    const variance = rowDiv.querySelector('.hourly-variance').textContent;
+                    rows.push([`"${hour}"`, act, tgt, variance]);
+                });
+                
+                // Total row
+                const tAct = document.getElementById('hourly-total-act') ? document.getElementById('hourly-total-act').textContent : '0';
+                const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
+                const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
+                rows.push(['Total', tAct, tTgt, tVar]);
+                
+                const csvContent = rows.map(e => e.join(',')).join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `hourly_output_${new Date().toISOString().slice(0,10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        function getHourlyReportText() {
+            const dateStr = document.getElementById('hourly-date-val').value;
+            const shift = document.getElementById('hourly-shift-val').value;
+            const tAct = document.getElementById('hourly-total-act') ? document.getElementById('hourly-total-act').textContent : '0';
+            const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
+            const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
+            
+            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Act | Tgt | Var\n---|---|---|---\n`;
+            
+            document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
+                const row = input.closest('div[style*="display:grid"]');
+                const hour = row.children[0].textContent.trim();
+                const tgt = row.querySelector('.hourly-target-input').value;
+                const variance = row.querySelector('.hourly-variance').textContent;
+                text += `${hour} | ${input.value} | ${tgt} | ${variance}\n`;
+            });
+            return text;
+        }
+
+        // Share Hourly Report (Visualize)
+        const shareHourlyBtn = document.getElementById('share-hourly-btn');
+        if (shareHourlyBtn) {
+            shareHourlyBtn.addEventListener('click', async () => {
+                const content = document.getElementById('hourly-report-content');
+                const details = document.getElementById('hourly-details');
+                
+                // Temporarily expand details for full capture
+                const originalOverflow = details.style.overflow;
+                const originalHeight = details.style.height;
+                const originalFlex = details.style.flex;
+                
+                details.style.overflow = 'visible';
+                details.style.height = 'auto';
+                details.style.flex = 'none';
+                
+                // Add watermark/timestamp
+                const watermark = document.createElement('div');
+                watermark.innerText = `Generated: ${new Date().toLocaleString()}`;
+                watermark.style.cssText = 'position:absolute; bottom:5px; right:10px; color:#888; font-size:10px; opacity:0.7; z-index:100; pointer-events:none;';
+                
+                const prevPos = content.style.position;
+                content.style.position = 'relative';
+                content.appendChild(watermark);
+
+                try {
+                    const canvas = await html2canvas(content, { scale: 2, backgroundColor: '#ffffff' });
+                    
+                    // Restore styles
+                    details.style.overflow = originalOverflow;
+                    details.style.height = originalHeight;
+                    details.style.flex = originalFlex;
+                    content.style.position = prevPos;
+                    if(watermark.parentNode) watermark.parentNode.removeChild(watermark);
+                    
+                    snapshotContainer.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = canvas.toDataURL('image/png');
+                    img.style.maxWidth = '100%';
+                    snapshotContainer.appendChild(img);
+                    
+                    canvas.toBlob(blob => {
+                        currentSnapshotBlob = blob;
+                        snapshotModal.classList.remove('hidden');
+                    });
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to generate image snapshot.');
+                    // Restore styles in case of error
+                    details.style.overflow = originalOverflow;
+                    details.style.height = originalHeight;
+                    details.style.flex = originalFlex;
+                    content.style.position = prevPos;
+                    if(watermark.parentNode) watermark.parentNode.removeChild(watermark);
+                }
+            });
+        }
+
+        if (snapshotShareBtn) {
+            snapshotShareBtn.addEventListener('click', async () => {
+                if (!currentSnapshotBlob) return;
+                const file = new File([currentSnapshotBlob], "hourly_report.png", { type: "image/png" });
+                
+                if (navigator.canShare && navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Hourly Output Report',
+                            text: 'Here is the hourly output report.',
+                            files: [file]
+                        });
+                    } catch (err) {
+                        console.error(err);
+                        alert('Sharing failed or cancelled.');
+                    }
+                } else {
+                    alert('Web Share API not supported on this browser. Please use Download.');
+                }
+            });
+        }
+
+        if (snapshotDownloadBtn) {
+            snapshotDownloadBtn.addEventListener('click', () => {
+                if (!currentSnapshotBlob) return;
+                const url = URL.createObjectURL(currentSnapshotBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hourly_report_${new Date().toISOString().slice(0,10)}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        // Email Hourly Report
+        const emailHourlyBtn = document.getElementById('email-hourly-btn');
+        if (emailHourlyBtn) {
+            emailHourlyBtn.addEventListener('click', () => {
+                const text = getHourlyReportText();
+                const subject = `Hourly Output Report - ${document.getElementById('hourly-date-val').value}`;
+                const recipient = prompt("Enter recipient email (optional):", "") || "";
+                window.location.href = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+            });
+        }
+
+        // Clear Hourly Actuals
+        const clearHourlyBtn = document.getElementById('clear-hourly-btn');
+        if (clearHourlyBtn) {
+            clearHourlyBtn.addEventListener('click', () => {
+                if(confirm('Are you sure you want to clear all actual values for this shift?')){
+                    document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
+                        input.value = 0;
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                    });
+                }
+            });
+        }
+
+        if (exportCountersBtn) {
+            exportCountersBtn.addEventListener('click', () => {
+                const counters = getCountersData();
+                const attendance = getAttendanceData();
+                
+                if (counters.length === 0) {
+                    alert('No data to export.');
+                    return;
+                }
+
+                // Sort by date desc, then shift
+                counters.sort((a, b) => {
+                    if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+                    return a.shift.localeCompare(b.shift);
+                });
+
+                const headers = ['Date', 'Shift', 'Required', 'Active', 'Target', 'Completion %'];
+                const rows = [headers.join(',')];
+
+                counters.forEach(item => {
+                    const req = Number(item.required) || 1;
+                    const act = attendance.filter(a => a.date === item.date && a.shift === item.shift).length;
+                    const pct = Math.round((act / req) * 100);
+                    
+                    rows.push([
+                        item.date,
+                        `"${item.shift}"`,
+                        req,
+                        act,
+                        item.targetOutput || 0,
+                        `${pct}%`
+                    ].join(','));
+                });
+
+                const csvContent = rows.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'daily_counters_summary.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        if (archiveBtn) {
+            archiveBtn.addEventListener('click', () => {
+                showArchiveOnly = !showArchiveOnly;
+                archiveBtn.classList.toggle('active-filter', showArchiveOnly);
+                renderCountersTable();
+            });
+        }
+
+        function getDuration(start, end) {
+            if (!start || !end) return '-';
+            const [h1, m1] = start.split(':').map(Number);
+            const [h2, m2] = end.split(':').map(Number);
+            let minutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (minutes < 0) minutes += 24 * 60;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return (h > 0 ? h + 'h ' : '') + m + 'm';
+        }
+
+        function getFilteredAttendanceData() {
+            let data = getAttendanceData();
+
+            // Global date filter
+            if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+                if (start) start.setHours(0,0,0,0);
+                const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+                if (end) end.setHours(23,59,59,999);
+
+                data = data.filter(item => {
+                    const itemDate = new Date(item.date);
+                    return (!start || itemDate >= start) && (!end || itemDate <= end);
+                });
+            }
+            
+            // Global Sub Area Filter
+            if (globalSubAreas.length > 0) {
+                data = data.filter(item => globalSubAreas.includes(item.area));
+            }
+
+            // Search filter
+            const searchTerm = attSearchInput ? attSearchInput.value.toLowerCase() : '';
+            if (searchTerm) {
+                data = data.filter(item => 
+                    (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+                    (item.role && item.role.toLowerCase().includes(searchTerm)) ||
+                    (item.area && item.area.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Role and Area filters
+            const roleFilter = attFilterRole ? attFilterRole.value : '';
+            if (roleFilter) {
+                data = data.filter(item => item.role === roleFilter);
+            }
+            const areaFilter = attFilterArea ? attFilterArea.value : '';
+            if (areaFilter) {
+                data = data.filter(item => item.area === areaFilter);
+            }
+            
+            // Sorting
+            data.sort((a, b) => {
+                let valA = a[attSortField] || '';
+                let valB = b[attSortField] || '';
+                
+                if (attSortField === 'duration') {
+                    valA = getDuration(a.breakOut, a.breakIn);
+                    valB = getDuration(b.breakOut, b.breakIn);
+                }
+                
+                if (valA < valB) return attSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return attSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            return data;
+        }
+
+        function renderAttendanceTable() {
+            if (!attendanceTableBody) return;
+            const attRowsPerPageSelect = document.getElementById('att-rows-per-page');
+            if (attRowsPerPageSelect) attItemsPerPage = parseInt(attRowsPerPageSelect.value, 10);
+
+            let data = getFilteredAttendanceData();
+
+            // Pagination
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / attItemsPerPage) || 1;
+            if (attCurrentPage > totalPages) attCurrentPage = totalPages;
+
+            const paginatedData = data.slice((attCurrentPage - 1) * attItemsPerPage, attCurrentPage * attItemsPerPage);
+
+            attendanceTableBody.innerHTML = '';
+            const paginationControls = document.getElementById('att-pagination-controls');
+            if (paginationControls) {
+                if (totalItems === 0) {
+                    paginationControls.style.display = 'none';
+                } else {
+                    paginationControls.style.display = 'flex';
+                    document.getElementById('att-page-info').textContent = `Page ${attCurrentPage} of ${totalPages} (${totalItems} records)`;
+                    document.getElementById('att-prev-page').disabled = attCurrentPage <= 1;
+                    document.getElementById('att-next-page').disabled = attCurrentPage >= totalPages;
+                }
+            }
+            
+            // Update sort icons
+            document.querySelectorAll('#attendance-table th.sortable .sort-icon').forEach(icon => icon.textContent = '');
+            const activeHeader = document.querySelector(`#attendance-table th[data-sort="${attSortField}"]`);
+            if(activeHeader) {
+                activeHeader.querySelector('.sort-icon').textContent = attSortDirection === 'asc' ? '↑' : '↓';
+            }
+
+            if (paginatedData.length === 0) {
+                attendanceTableBody.innerHTML = `<tr><td colspan="10" class="muted" style="text-align:center; padding: 20px;">No attendance records found.</td></tr>`;
+                return;
+            }
+            paginatedData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:12px;border-bottom:1px solid #eee"><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.date}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.shift}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.name}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.role || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.area || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.breakOut || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.breakIn || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee; font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">
+                        <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
+                        <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
+                    </td>
+                `;
+                attendanceTableBody.appendChild(tr);
+            });
+            setTimeout(fixTooltips, 0);
+        }
+
+        if (printAttBtn) {
+            printAttBtn.addEventListener('click', () => {
+                const dataToPrint = getFilteredAttendanceData();
+                if (dataToPrint.length === 0) {
+                    alert('No records to print.');
+                    return;
+                }
+
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write('<html><head><title>Attendance Report</title>');
+                printWindow.document.write('<style>body{font-family:sans-serif;font-size:12px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ccc;padding:6px;text-align:left;} th{background:#f0f0f0;} .sig{height:40px;}</style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write('<h2>Attendance Report</h2>');
+                printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
+                printWindow.document.write('<table><thead><tr>');
+                const headers = ['Date', 'Shift', 'Name', 'Role', 'Area', 'Signature'];
+                headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
+                printWindow.document.write('</tr></thead><tbody>');
+
+                dataToPrint.forEach(item => {
+                    printWindow.document.write('<tr>');
+                    printWindow.document.write(`<td>${item.date}</td>`);
+                    printWindow.document.write(`<td>${item.shift}</td>`);
+                    printWindow.document.write(`<td>${item.name}</td>`);
+                    printWindow.document.write(`<td>${item.role || '-'}</td>`);
+                    printWindow.document.write(`<td>${item.area || '-'}</td>`);
+                    printWindow.document.write('<td class="sig"></td>'); // Empty signature cell
+                    printWindow.document.write('</tr>');
+                });
+
+                printWindow.document.write('</tbody></table>');
+                printWindow.document.write('<script>window.onload=function(){window.print();window.close();}<\/script>');
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+            });
+        }
+
+        // Mass Delete for Attendance
+        const selectAllAtt = document.getElementById('select-all-att');
+        const deleteSelectedAttBtn = document.getElementById('delete-selected-att-btn');
+
+        function updateAttendanceActionButtons() {
+            const selectedCount = document.querySelectorAll('.att-row-checkbox:checked').length;
+            if (deleteSelectedAttBtn) {
+                deleteSelectedAttBtn.style.display = selectedCount > 0 ? 'inline-flex' : 'none';
+            }
+        }
+
+        if (selectAllAtt) {
+            selectAllAtt.addEventListener('change', (e) => {
+                document.querySelectorAll('.att-row-checkbox').forEach(cb => cb.checked = e.target.checked);
+                updateAttendanceActionButtons();
+            });
+        }
+
+        if (attendanceTableBody) {
+            attendanceTableBody.addEventListener('change', (e) => {
+                if (e.target.classList.contains('att-row-checkbox')) {
+                    updateAttendanceActionButtons();
+                }
+            });
+        }
+
+        if (deleteSelectedAttBtn) {
+            deleteSelectedAttBtn.addEventListener('click', () => {
+                const selectedIds = Array.from(document.querySelectorAll('.att-row-checkbox:checked')).map(cb => cb.dataset.id);
+                if (selectedIds.length === 0) return;
+
+                showSupervisorDeleteModal(selectedIds.length, () => {
+                    const selectedSet = new Set(selectedIds);
+                    let data = getAttendanceData();
+                    data = data.filter(item => !selectedSet.has(item.id));
+                    saveAttendanceData(data);
+                    renderAttendanceTable();
+                    renderCountersTable();
+                    updateAttendanceActionButtons();
+                });
+            });
+        }
+
+        if (deleteSelectedCountersBtn) {
+            deleteSelectedCountersBtn.addEventListener('click', () => {
+                const selectedDates = Array.from(document.querySelectorAll('.counter-row-checkbox:checked')).map(cb => cb.dataset.date);
+                if (selectedDates.length === 0) return;
+
+                showSupervisorDeleteModal(selectedDates.length, () => {
+                    const selectedSet = new Set(selectedDates);
+                    let data = getCountersData();
+                    data = data.filter(item => !selectedSet.has(item.date));
+                    saveCountersData(data);
+                    renderCountersTable();
+                    deleteSelectedCountersBtn.style.display = 'none';
+                    if(selectAllCounters) selectAllCounters.checked = false;
+                });
+            });
+        }
+
+        function showSupervisorDeleteModal(count, callback) {
+            if (!supervisorDeleteModal) return;
+            document.getElementById('supervisor-delete-count').textContent = count;
+            document.getElementById('supervisor-code').value = '';
+            supervisorDeleteCallback = callback;
+            supervisorDeleteModal.classList.remove('hidden');
+        }
+
+        if (confirmSupervisorDeleteBtn) {
+            confirmSupervisorDeleteBtn.addEventListener('click', () => {
+                const code = document.getElementById('supervisor-code').value;
+                if (code !== '12345' && code !== 'admin') { alert('Invalid Supervisor Code.'); return; }
+                if (typeof supervisorDeleteCallback === 'function') supervisorDeleteCallback();
+                supervisorDeleteModal.classList.add('hidden');
+            });
+        }
+
+        if (attSearchInput) {
+            attSearchInput.addEventListener('input', () => {
+                attCurrentPage = 1;
+                renderAttendanceTable();
+            });
+        }
+
+        // Attendance Sorting Listeners
+        document.querySelectorAll('#attendance-table th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if (attSortField === field) {
+                    attSortDirection = attSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    attSortField = field;
+                    attSortDirection = 'asc';
+                }
+                renderAttendanceTable();
+            });
+        });
+
+        if (attFilterRole) attFilterRole.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
+        if (attFilterArea) attFilterArea.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
+
+        const attPaginationControls = document.getElementById('att-pagination-controls');
+        if (attPaginationControls) {
+            attPaginationControls.addEventListener('click', (e) => {
+                if (e.target.id === 'att-prev-page' && !e.target.disabled) {
+                    attCurrentPage--;
+                    renderAttendanceTable();
+                } else if (e.target.id === 'att-next-page' && !e.target.disabled) {
+                    attCurrentPage++;
+                    renderAttendanceTable();
+                }
+            });
+            const attRowsPerPageSelect = document.getElementById('att-rows-per-page');
+            if (attRowsPerPageSelect) {
+                attRowsPerPageSelect.addEventListener('change', () => {
+                    attCurrentPage = 1;
+                    renderAttendanceTable();
+                });
+            }
+        }
+
+        if (countersForm) {
+            countersForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('counter-edit-id').value;
+                const newEntry = {
+                    id: editId || Date.now().toString(),
+                    date: document.getElementById('counter-date').value,
+                    shift: document.getElementById('counter-shift').value,
+                    required: Number(document.getElementById('counter-required').value),
+                    standardRate: Number(document.getElementById('counter-rate').value) || 0,
+                    targetOutput: Number(document.getElementById('counter-target').value) || 0,
+                    note: document.getElementById('counter-note').value.trim()
+                    // active is now derived
+                };
+
+                let data = getCountersData();
+                if (editId) {
+                    const index = data.findIndex(item => item.id === editId);
+                    if (index > -1) data[index] = newEntry;
+                } else {
+                    data.push(newEntry);
+                }
+                saveCountersData(data);
+                renderCountersTable();
+                
+                // Reset form but keep date
+                const currentDate = document.getElementById('counter-date').value;
+                countersForm.reset();
+                document.getElementById('counter-date').value = currentDate;
+                
+                document.getElementById('counter-edit-id').value = '';
+                saveCounterBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save';
+                cancelCounterEditBtn.style.display = 'none';
+            });
+        }
+
+        if (countersTableBody) {
+            countersTableBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const id = btn.dataset.id;
+
+                if (btn.classList.contains('delete-counter-btn')) {
+                    if(confirm('Delete this record?')) {
+                        let data = getCountersData();
+                        data = data.filter(item => item.id !== id);
+                        saveCountersData(data);
+                        renderCountersTable();
+                    }
+                } else if (btn.classList.contains('edit-counter-btn')) {
+                    const data = getCountersData();
+                    const item = data.find(i => i.id === id);
+                    if (item) {
+                        document.getElementById('counter-edit-id').value = item.id;
+                        document.getElementById('counter-date').value = item.date;
+                        document.getElementById('counter-shift').value = item.shift;
+                        document.getElementById('counter-required').value = item.required;
+                        document.getElementById('counter-rate').value = item.standardRate || '';
+                        document.getElementById('counter-target').value = item.targetOutput || '';
+                        document.getElementById('counter-note').value = item.note || '';
+                        
+                        saveCounterBtn.innerHTML = 'Update';
+                        cancelCounterEditBtn.style.display = 'inline-flex';
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                } else if (btn.classList.contains('duplicate-counter-btn')) {
+                    const data = getCountersData();
+                    const item = data.find(i => i.id === id);
+                    if (item) {
+                        const d = new Date(item.date);
+                        d.setDate(d.getDate() + 1);
+                        const nextDate = d.toISOString().split('T')[0];
+                        
+                        const exists = data.find(x => x.date === nextDate && x.shift === item.shift);
+                        if (exists) {
+                            alert(`An entry for ${nextDate} - ${item.shift} already exists. Duplicate skipped.`);
+                            return;
+                        }
+                        
+                        const newItem = { ...item, id: Date.now().toString(), date: nextDate, hourlyActuals: {} };
+                        // Keep hourlyTargets if they exist as part of the plan
+                        data.push(newItem);
+                        saveCountersData(data);
+                        renderCountersTable();
+                        alert(`Duplicated entry to ${nextDate}`);
+                    }
+                }
+            });
+        }
+
+        if (cancelCounterEditBtn) {
+            cancelCounterEditBtn.addEventListener('click', () => {
+                countersForm.reset();
+                document.getElementById('counter-edit-id').value = '';
+                saveCounterBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save';
+                cancelCounterEditBtn.style.display = 'none';
+                document.getElementById('counter-rate').value = '';
+                document.getElementById('counter-note').value = '';
+                setLocalDate(document.getElementById('counter-date'));
+            });
+        }
+
+        // Attendance Modal Logic
+        if (addAttBtn) {
+            addAttBtn.addEventListener('click', () => {
+                document.getElementById('att-modal-title').textContent = 'Add Attendance';
+                attForm.reset();
+                document.getElementById('att-edit-id').value = '';
+                document.getElementById('att-date').valueAsDate = new Date();
+                attModal.classList.remove('hidden');
+            });
+        }
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                if (modal) modal.classList.add('hidden');
+            });
+        });
+
+        if (attForm) {
+            attForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('att-edit-id').value;
+                const newEntry = {
+                    id: editId || Date.now().toString(),
+                    date: document.getElementById('att-date').value,
+                    shift: document.getElementById('att-shift').value,
+                    name: document.getElementById('att-name').value.trim(),
+                    role: document.getElementById('att-role').value,
+                    area: document.getElementById('att-area').value,
+                    breakIn: document.getElementById('att-break-in').value,
+                    breakOut: document.getElementById('att-break-out').value
+                };
+                if(!newEntry.name) return;
+
+                // Duplicate check
+                const existing = getAttendanceData().find(a => 
+                    a.date === newEntry.date && 
+                    a.shift === newEntry.shift && 
+                    a.name.toLowerCase() === newEntry.name.toLowerCase() &&
+                    a.id !== newEntry.id
+                );
+                if (existing) {
+                    alert('Duplicate entry: This person is already listed for this shift.');
+                    return;
+                }
+
+                let data = getAttendanceData();
+                if (editId) {
+                    const idx = data.findIndex(x => x.id === editId);
+                    if (idx > -1) data[idx] = newEntry;
+                } else {
+                    data.push(newEntry);
+                }
+                saveAttendanceData(data);
+                
+                attModal.classList.add('hidden');
+                renderAttendanceTable();
+                renderCountersTable(); // Update counts
+            });
+        }
+
+        if (exportAttBtn) {
+            exportAttBtn.addEventListener('click', () => {
+                const data = getAttendanceData();
+                if (data.length === 0) { alert('No attendance records to export.'); return; }
+                
+                const headers = ['Date', 'Shift', 'Name', 'Role', 'Area', 'Break Out', 'Break In', 'Duration'];
+                const rows = [headers.join(',')];
+                
+                data.forEach(item => {
+                    const dur = getDuration(item.breakOut, item.breakIn);
+                    const row = [
+                        item.date, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.breakOut || '', item.breakIn || '', dur
+                    ];
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'attendance_sheet.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            });
+        }
+
+        if (attendanceTableBody) {
+            attendanceTableBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const id = btn.dataset.id;
+
+                if (btn.classList.contains('delete-att-btn')) {
+                    if(confirm('Remove this person?')) {
+                        let data = getAttendanceData();
+                        data = data.filter(item => item.id !== id);
+                        saveAttendanceData(data);
+                        renderAttendanceTable();
+                        renderCountersTable(); // Update counts
+                    }
+                } else if (btn.classList.contains('edit-att-btn')) {
+                    const data = getAttendanceData();
+                    const item = data.find(x => x.id === id);
+                    if (item) {
+                        document.getElementById('att-modal-title').textContent = 'Edit Attendance';
+                        document.getElementById('att-edit-id').value = item.id;
+                        document.getElementById('att-date').value = item.date;
+                        document.getElementById('att-shift').value = item.shift;
+                        document.getElementById('att-name').value = item.name;
+                        document.getElementById('att-role').value = item.role;
+                        document.getElementById('att-area').value = item.area;
+                        document.getElementById('att-break-out').value = item.breakOut;
+                        document.getElementById('att-break-in').value = item.breakIn;
+                        attModal.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+
+        // Expand/Collapse Card Logic
+        document.querySelectorAll('.expand-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const card = e.target.closest('.card');
+                const content = card.querySelector('.card-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.title = isHidden ? 'Expand' : 'Collapse';
+                    btn.innerHTML = isHidden ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+                }
+            });
+        });
+
+        // Automatic Shift End Check (runs every minute)
+        setInterval(() => {
+            const now = new Date();
+            const m = now.getMinutes();
+            const h = now.getHours();
+            // Check 5 mins before shift ends: 13:55 (1st), 21:55 (2nd), 05:55 (3rd)
+            if (m === 55 && (h === 13 || h === 21 || h === 5)) {
+                if (!sessionStorage.getItem(`shift_alert_${h}`)) {
+                    sessionStorage.setItem(`shift_alert_${h}`, 'true');
+                    // Alert removed as chart is removed
+                }
+            }
+        }, 60000);
+
+        // Global Filter Logic
+        const applyGlobalFilterBtn = document.getElementById('apply-global-filter');
+        const clearGlobalFilterBtn = document.getElementById('clear-global-filter');
+        if (applyGlobalFilterBtn) {
+            applyGlobalFilterBtn.addEventListener('click', () => {
+                renderCountersTable(); renderAttendanceTable();
+            });
+        }
+        if (clearGlobalFilterBtn) {
+            clearGlobalFilterBtn.addEventListener('click', () => {
+                globalStartDate.value = ''; globalEndDate.value = '';
+                renderCountersTable(); renderAttendanceTable();
+            });
+        }
+
+        // Sub Area Filter Logic
+        if (subAreaFilterBtn) {
+            // Populate modal
+            subAreaList.innerHTML = '';
+            subAreaOptions.forEach(area => {
+                const div = document.createElement('div');
+                div.innerHTML = `<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" value="${area}" class="sub-area-checkbox"> ${area}</label>`;
+                subAreaList.appendChild(div);
+            });
+            
+            subAreaFilterBtn.addEventListener('click', () => {
+                // Sync checkboxes
+                document.querySelectorAll('.sub-area-checkbox').forEach(cb => {
+                    cb.checked = globalSubAreas.includes(cb.value);
+                });
+                subAreaModal.classList.remove('hidden');
+            });
+        }
+        
+        if (applySubAreaFilterBtn) {
+            applySubAreaFilterBtn.addEventListener('click', () => {
+                globalSubAreas = Array.from(document.querySelectorAll('.sub-area-checkbox:checked')).map(cb => cb.value);
+                subAreaModal.classList.add('hidden');
+                
+                // Visual feedback on button
+                if (globalSubAreas.length > 0) {
+                    subAreaFilterBtn.style.background = '#e74c3c';
+                    subAreaFilterBtn.style.color = 'white';
+                    subAreaFilterBtn.title = `Filtered: ${globalSubAreas.join(', ')}`;
+                } else {
+                    subAreaFilterBtn.style.background = '';
+                    subAreaFilterBtn.style.color = '';
+                    subAreaFilterBtn.title = 'Sub Area Filter';
+                }
+                
+                renderCountersTable();
+                renderAttendanceTable();
+            });
+        }
+        
+        // Monitor Sub Area Logic
+        if (monitorSubAreaBtn) {
+            // Populate select
+            monitorSubAreaSelect.innerHTML = '<option value="">Dashboard</option>';
+            subAreaOptions.forEach(area => {
+                monitorSubAreaSelect.innerHTML += `<option value="${area}">${area}</option>`;
+            });
+            
+            monitorSubAreaBtn.addEventListener('click', () => {
+                subAreaMonitorModal.classList.remove('hidden');
+                renderMonitorGrid();
+            });
+            
+            monitorSubAreaSelect.addEventListener('change', () => {
+                monitorSelectedCells.clear();
+                updateMonitorControls();
+                renderMonitorGrid();
+            });
+        }
+        
+        function renderMonitorGrid() {
+            const area = monitorSubAreaSelect.value;
+            const rackingGrid = document.getElementById('racking-grid');
+            const statsDiv = document.getElementById('monitor-stats');
+            const capacityInfo = document.getElementById('monitor-capacity-info');
+            
+            // Get Data
+            let cycleCounts = [];
+            const customLabels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+            const customStatuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+            const CELL_SIZE = 70; // Larger grid cells
+            
+            try { cycleCounts = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch(e){}
+            
+            // Filter by date (Global Filter)
+            const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+            if (start) start.setHours(0,0,0,0);
+            const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+            if (end) end.setHours(23,59,59,999);
+            
+            // Helper to check if a cell is counted
+            const isCellCounted = (label, isAuto) => {
+                const manualStatus = customStatuses[label];
+                if (manualStatus === 'counted') return true;
+                if (manualStatus === 'uncounted') return false;
+                return isAuto;
+            };
+
+            if (!area) {
+                // Dashboard View
+                rackingGrid.innerHTML = '';
+                rackingGrid.style.display = 'grid';
+                rackingGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+                rackingGrid.style.gap = '20px';
+                rackingGrid.style.maxWidth = '100%';
+                rackingGrid.style.width = '100%';
+                
+                capacityInfo.textContent = 'Dashboard View';
+                statsDiv.textContent = '';
+
+                subAreaOptions.forEach(subArea => {
+                    const config = subAreaConfigs[subArea];
+                    if(!config) return;
+
+                    // Calculate stats for this area
+                    let areaTotal = 0;
+                    let areaCounted = 0;
+                    
+                    // Filter counts for this area
+                    const areaCounts = cycleCounts.filter(c => {
+                        const d = new Date(c.createdDate || c.date);
+                        const dateMatch = (!start || d >= start) && (!end || d <= end);
+                        const locMatch = (c.location || '').toUpperCase().startsWith(subArea);
+                        return dateMatch && locMatch;
+                    });
+                    const countedCount = areaCounts.length;
+                    let globalCellIndex = 0;
+
+                    // Blocks
+                    if (config.type === 'multi') {
+                        config.blocks.forEach(block => {
+                            const blockCells = block.width * block.levels;
+                            for(let i=0; i<blockCells; i++) {
+                                const isAuto = globalCellIndex < countedCount;
+                                globalCellIndex++;
+                                
+                                const rowIdx = Math.floor(i / block.width);
+                                const colIdx = (i % block.width) + 1;
+                                const rowNum = (block.rowBase || 0) + (rowIdx * (block.rowStep || 10));
+                                const label = `${block.prefix}${rowNum}-C${colIdx}`;
+                                
+                                const status = customStatuses[label];
+                                if (status === 'empty' || status === 'not-part') continue;
+
+                                if(isCellCounted(label, isAuto)) areaCounted++;
+                                areaTotal++;
+                            }
+                        });
+                    }
+
+                    const pct = areaTotal > 0 ? Math.round((areaCounted / areaTotal) * 100) : 0;
+                    let color = '#e74c3c';
+                    if(pct >= 100) color = '#2ecc71';
+                    else if(pct >= 50) color = '#f1c40f';
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.padding = '20px';
+                    card.style.textAlign = 'center';
+                    card.style.cursor = 'pointer';
+                    card.style.transition = 'transform 0.2s';
+                    card.onmouseover = () => card.style.transform = 'translateY(-5px)';
+                    card.onmouseout = () => card.style.transform = 'none';
+                    card.onclick = () => {
+                        monitorSubAreaSelect.value = subArea;
+                        renderMonitorGrid();
+                    };
+
+                    card.innerHTML = `
+                        <h3 style="margin:0 0 10px 0; color:#2752a7;">${subArea}</h3>
+                        <div style="font-size:36px; font-weight:bold; color:${color};">${pct}%</div>
+                        <div style="color:#666; font-size:14px; margin-top:5px;">${areaCounted} / ${areaTotal} Counted</div>
+                        <div style="margin-top:10px; height:10px; background:#eee; border-radius:5px; overflow:hidden;">
+                            <div style="width:${pct}%; height:100%; background:${color};"></div>
+                        </div>
+                    `;
+                    rackingGrid.appendChild(card);
+                });
+                return;
+            }
+            
+            // Config
+            const config = subAreaConfigs[area] || { width: 20, levels: 5, total: 100 }; // Default if not defined
+            
+            // Filter counts for this area
+            const areaCounts = cycleCounts.filter(c => {
+                const d = new Date(c.createdDate || c.date);
+                const dateMatch = (!start || d >= start) && (!end || d <= end);
+                // Match location starting with area name
+                const locMatch = (c.location || '').toUpperCase().startsWith(area);
+                return dateMatch && locMatch;
+            });
+            
+            const countedCount = areaCounts.length;
+            let globalCellIndex = 0;
+            let totalCapacity = 0;
+            let totalEffectiveCounted = 0;
+            
+            // Render Grid
+            rackingGrid.innerHTML = '';
+            rackingGrid.style.maxWidth = 'none';
+            
+            if (config.type === 'multi') {
+                rackingGrid.style.display = 'flex';
+                rackingGrid.style.flexDirection = 'column';
+                rackingGrid.style.gap = '40px'; // Space between blocks
+                rackingGrid.style.alignItems = 'center';
+                
+                config.blocks.forEach((block, blockIndex) => {
+                    const blockWrapper = document.createElement('div');
+                    blockWrapper.style.display = 'flex';
+                    blockWrapper.style.flexDirection = 'column';
+                    blockWrapper.style.alignItems = 'flex-start';
+                    blockWrapper.style.width = '100%';
+                    blockWrapper.style.maxWidth = `${block.width * CELL_SIZE}px`;
+
+                    const headerDiv = document.createElement('div');
+                    headerDiv.style.marginBottom = '5px';
+                    headerDiv.innerHTML = `<label style="font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center;"><input type="checkbox" class="block-select-all" data-block="${blockIndex}" style="margin-right:5px;"> Select All</label>`;
+                    headerDiv.querySelector('input').onclick = (e) => toggleBlockSelection(blockIndex, e.target.checked);
+                    blockWrapper.appendChild(headerDiv);
+
+                    const blockDiv = document.createElement('div');
+                    blockDiv.style.display = 'grid';
+                    blockDiv.style.gridTemplateColumns = `repeat(${block.width}, 1fr)`;
+                    blockDiv.style.gap = '2px';
+                    blockDiv.style.width = '100%';
+                    
+                    const blockCells = block.width * block.levels;
+                    
+                    for (let i = 0; i < blockCells; i++) {
+                        const isAutoCounted = globalCellIndex < countedCount;
+                        globalCellIndex++;
+                        
+                        // Generate Label: Prefix + RowNum + Col
+                        const rowIdx = Math.floor(i / block.width);
+                        const colIdx = (i % block.width) + 1;
+                        const rowNum = (block.rowBase || 0) + (rowIdx * (block.rowStep || 10));
+                        const label = `${block.prefix}${rowNum}-C${colIdx}`;
+                        
+                        const customName = customLabels[label];
+                        const manualStatus = customStatuses[label];
+                        
+                        const isPartOfStats = (manualStatus !== 'empty' && manualStatus !== 'not-part');
+                        let statusClass = '';
+                        let isCounted = false;
+                        if (manualStatus === 'counted') {
+                            isCounted = true;
+                            statusClass = 'counted';
+                        } else if (manualStatus === 'uncounted') {
+                            isCounted = false;
+                            statusClass = 'uncounted';
+                        } else if (manualStatus === 'empty') {
+                            isCounted = false;
+                            statusClass = 'empty';
+                        } else if (manualStatus === 'not-part') {
+                            isCounted = false;
+                            statusClass = 'not-part';
+                        } else { // auto
+                            isCounted = isAutoCounted;
+                            if (isCounted) statusClass = 'counted';
+                        }
+                        
+                        if (isPartOfStats) {
+                            totalCapacity++;
+                            if(isCounted) totalEffectiveCounted++;
+                        }
+                        
+                        const cell = document.createElement('div');
+                        cell.className = `rack-cell ${statusClass}`;
+                        
+                        // Drag & Drop Attributes
+                        cell.draggable = true;
+                        cell.addEventListener('dragstart', handleDragStart);
+                        cell.addEventListener('dragover', handleDragOver);
+                        cell.addEventListener('dragenter', handleDragEnter);
+                        cell.addEventListener('dragleave', handleDragLeave);
+                        cell.addEventListener('drop', handleDrop);
+                        cell.addEventListener('dragend', handleDragEnd);
+                        
+                        cell.dataset.id = label;
+                        cell.dataset.block = blockIndex;
+                        if (monitorSelectedCells.has(label)) cell.classList.add('selected');
+                        
+                        cell.title = `${customName || 'Grid'} - ${isCounted ? 'Counted' : 'Not Counted'}`;
+                        cell.onclick = (e) => {
+                            if(e.target.type !== 'checkbox') openCellEditModal(label, customName, manualStatus);
+                        };
+                        
+                        if (manualStatus !== 'not-part' && manualStatus !== 'empty') {
+                            cell.innerHTML = `<svg class="pallet-icon" viewBox="0 0 24 24"><path d="M19 13H5c-1.1 0-2 .9-2 2v4h2v2h14v-2h2v-4c0-1.1-.9-2-2-2zM7 19v-2h2v2H7zm4 0v-2h2v2h-2zm4 0v-2h2v2h-2zM4 9h16v2H4V9zm0-4h16v2H4V5z"/></svg>`;
+                        }
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'cell-checkbox';
+                        checkbox.checked = monitorSelectedCells.has(label);
+                        checkbox.onclick = (e) => { 
+                            e.stopPropagation(); 
+                            const checked = e.target.checked;
+                            if(checked) cell.classList.add('selected'); else cell.classList.remove('selected');
+                            toggleCellSelection(label, checked); 
+                        };
+                        
+                        cell.appendChild(checkbox);
+                        
+                        if(customName) {
+                            const nameSpan = document.createElement('span');
+                            nameSpan.className = 'cell-name';
+                            nameSpan.textContent = customName;
+                            cell.appendChild(nameSpan);
+                        }
+                        
+                        blockDiv.appendChild(cell);
+                    }
+                    blockWrapper.appendChild(blockDiv);
+                    rackingGrid.appendChild(blockWrapper);
+                });
+                
+                // Render Floor
+                if (config.floor) {
+                    const floorCells = config.floor.width * config.floor.levels;
+                    let floorCounted = 0;
+                    
+                    const floorHeader = document.createElement('h4');
+                    floorHeader.textContent = 'FLOOR';
+                    floorHeader.style.width = '100%';
+                    floorHeader.style.textAlign = 'center';
+                    floorHeader.style.margin = '30px 0 10px 0';
+                    floorHeader.style.color = '#2752a7';
+                    floorHeader.style.borderTop = '2px dashed #ccc';
+                    floorHeader.style.paddingTop = '10px';
+                    rackingGrid.appendChild(floorHeader);
+
+                    const floorDiv = document.createElement('div');
+                    floorDiv.style.display = 'grid';
+                    floorDiv.style.gridTemplateColumns = `repeat(${config.floor.width}, 1fr)`;
+                    floorDiv.style.gap = '2px';
+                    floorDiv.style.width = '100%';
+                    floorDiv.style.maxWidth = `${config.floor.width * CELL_SIZE}px`;
+                    
+                    for (let i = 0; i < floorCells; i++) {
+                        const isAutoCounted = globalCellIndex < countedCount;
+                        globalCellIndex++;
+                        
+                        const label = `${config.floor.prefix}-${i+1}`;
+                        const customName = customLabels[label];
+                        const manualStatus = customStatuses[label];
+                        
+                        let statusClass = '';
+                        let isCounted = false;
+                        if (manualStatus === 'counted') { isCounted = true; statusClass = 'counted'; }
+                        else if (manualStatus === 'uncounted') { isCounted = false; statusClass = 'uncounted'; }
+                        else if (manualStatus === 'empty') { isCounted = true; statusClass = 'empty'; }
+                        else if (manualStatus === 'not-part') { isCounted = false; statusClass = 'not-part'; }
+                        else { isCounted = isAutoCounted; if (isCounted) statusClass = 'counted'; }
+                        
+                        if(isCounted) {
+                            floorCounted++;
+                        }
+                        
+                        const cell = document.createElement('div');
+                        cell.className = `rack-cell ${statusClass}`;
+                        cell.draggable = true;
+                        cell.addEventListener('dragstart', handleDragStart);
+                        cell.addEventListener('dragover', handleDragOver);
+                        cell.addEventListener('dragenter', handleDragEnter);
+                        cell.addEventListener('dragleave', handleDragLeave);
+                        cell.addEventListener('drop', handleDrop);
+                        cell.addEventListener('dragend', handleDragEnd);
+                        
+                        cell.dataset.id = label;
+                        cell.dataset.block = 'floor';
+                        if (monitorSelectedCells.has(label)) cell.classList.add('selected');
+                        cell.title = `${customName || 'Floor'} - ${isCounted ? 'Counted' : 'Not Counted'}`;
+                        cell.onclick = (e) => { if(e.target.type !== 'checkbox') openCellEditModal(label, customName, manualStatus); };
+                        if (manualStatus !== 'not-part' && manualStatus !== 'empty') {
+                            cell.innerHTML = `<svg class="pallet-icon" viewBox="0 0 24 24"><path d="M19 13H5c-1.1 0-2 .9-2 2v4h2v2h14v-2h2v-4c0-1.1-.9-2-2-2zM7 19v-2h2v2H7zm4 0v-2h2v2h-2zm4 0v-2h2v2h-2zM4 9h16v2H4V9zm0-4h16v2H4V5z"/></svg>`;
+                        }
+                        const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'cell-checkbox'; checkbox.checked = monitorSelectedCells.has(label);
+                        checkbox.onclick = (e) => { e.stopPropagation(); const checked = e.target.checked; if(checked) cell.classList.add('selected'); else cell.classList.remove('selected'); toggleCellSelection(label, checked); };
+                        cell.appendChild(checkbox);
+                        if(customName) { const nameSpan = document.createElement('span'); nameSpan.className = 'cell-name'; nameSpan.textContent = customName; cell.appendChild(nameSpan); }
+                        floorDiv.appendChild(cell);
+                    }
+                    rackingGrid.appendChild(floorDiv);
+                    floorHeader.textContent = `FLOOR (${floorCounted} / ${floorCells})`;
+                }
+            } else {
+                rackingGrid.style.display = 'grid';
+                rackingGrid.style.gridTemplateColumns = `repeat(${config.width}, 1fr)`;
+                rackingGrid.style.maxWidth = `${config.width * CELL_SIZE}px`;
+                rackingGrid.style.width = '100%';
+                for (let i = 0; i < totalCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = `rack-cell ${i < countedCount ? 'counted' : ''}`;
+                    cell.title = i < countedCount ? 'Counted' : 'Empty';
+                    rackingGrid.appendChild(cell);
+                }
+            }
+            
+            // Update capacity info after loop (since 'not-part' and 'empty' reduce it)
+            document.getElementById('monitor-capacity-info').textContent = `Capacity: ${totalCapacity} positions`;
+            const pct = totalCapacity > 0 ? Math.round((totalEffectiveCounted / totalCapacity) * 100) : 0;
+            document.getElementById('monitor-stats').innerHTML = `Counted: ${totalEffectiveCounted} / ${totalCapacity} (${pct}%)`;
+        }
+        
+        // Drag and Drop Handlers
+        let dragSrcEl = null;
+        function handleDragStart(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.id);
+            this.classList.add('dragging');
+        }
+        function handleDragOver(e) {
+            if (e.preventDefault) e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+        function handleDragEnter(e) { this.classList.add('over'); }
+        function handleDragLeave(e) { this.classList.remove('over'); }
+        function handleDrop(e) {
+            if (e.stopPropagation) e.stopPropagation();
+            const srcId = e.dataTransfer.getData('text/plain');
+            const destId = this.dataset.id;
+            if (srcId !== destId) moveCellData(srcId, destId);
+            return false;
+        }
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.rack-cell').forEach(col => col.classList.remove('over'));
+        }
+        function moveCellData(srcId, destId) {
+            const labels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+            const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+            // Move Name
+            if (labels[srcId]) {
+                labels[destId] = labels[srcId];
+                delete labels[srcId];
+            }
+            // Move Status
+            if (statuses[srcId]) {
+                statuses[destId] = statuses[srcId];
+                delete statuses[srcId];
+            }
+            localStorage.setItem('ims_rack_labels_v1', JSON.stringify(labels));
+            localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
+            renderMonitorGrid();
+        }
+        
+        function toggleCellSelection(id, isChecked) {
+            if (!isChecked) {
+                monitorSelectedCells.delete(id);
+            } else {
+                monitorSelectedCells.add(id);
+            }
+            updateMonitorControls();
+        }
+
+        function toggleBlockSelection(blockIndex, isChecked) {
+            const cells = document.querySelectorAll(`.rack-cell[data-block="${blockIndex}"]`);
+            cells.forEach(cell => {
+                const id = cell.dataset.id;
+                const cb = cell.querySelector('.cell-checkbox');
+                if (cb) {
+                    cb.checked = isChecked;
+                    if (isChecked) {
+                        monitorSelectedCells.add(id);
+                        cell.classList.add('selected');
+                    } else {
+                        monitorSelectedCells.delete(id);
+                        cell.classList.remove('selected');
+                    }
+                }
+            });
+            updateMonitorControls();
+        }
+
+        function updateMonitorControls() {
+            if (monitorSelectedCells.size > 0) {
+                monitorBulkActions.style.display = 'flex';
+            } else {
+                monitorBulkActions.style.display = 'none';
+            }
+        }
+        
+        function bulkUpdateStatus(status) {
+            const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+            monitorSelectedCells.forEach(cellId => {
+                if (status !== 'auto') statuses[cellId] = status; else delete statuses[cellId];
+            });
+            localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
+            monitorSelectedCells.clear();
+            updateMonitorControls();
+            renderMonitorGrid();
+        }
+        
+        if (bulkCountedBtn) bulkCountedBtn.addEventListener('click', () => bulkUpdateStatus('counted'));
+        if (bulkUncountedBtn) bulkUncountedBtn.addEventListener('click', () => bulkUpdateStatus('uncounted'));
+        if (bulkEmptyBtn) bulkEmptyBtn.addEventListener('click', () => bulkUpdateStatus('empty'));
+        
+        if (bulkEditBtn) {
+            bulkEditBtn.addEventListener('click', () => {
+                document.getElementById('cell-edit-id').value = 'BULK';
+                document.getElementById('cell-name-group').style.display = 'none';
+                document.getElementById('cell-status').value = 'auto';
+                document.querySelector('#cell-edit-modal h3').textContent = `Update ${monitorSelectedCells.size} Cells`;
+                document.getElementById('cell-edit-modal').classList.remove('hidden');
+            });
+        }
+        
+        if (bulkCopyNamesBtn) {
+            bulkCopyNamesBtn.addEventListener('click', () => {
+                if (monitorSelectedCells.size === 0) {
+                    alert('No cells selected to copy.');
+                    return;
+                }
+
+                const customLabels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+                const namesToCopy = [];
+
+                monitorSelectedCells.forEach(cellId => {
+                    const name = customLabels[cellId] || cellId;
+                    namesToCopy.push(name);
+                });
+
+                const textToCopy = namesToCopy.join('\n');
+                
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    alert(`${namesToCopy.length} pallet name(s) copied to clipboard.`);
+                }).catch(err => {
+                    console.error('Failed to copy names: ', err);
+                    alert('Failed to copy names to clipboard.');
+                });
+            });
+        }
+        
+        if (bulkPasteNamesBtn) {
+            bulkPasteNamesBtn.addEventListener('click', async () => {
+                if (monitorSelectedCells.size === 0) {
+                    alert('No cells selected to paste into.');
+                    return;
+                }
+                
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (!text) {
+                        alert('Clipboard is empty.');
+                        return;
+                    }
+                    
+                    const sourceNames = text.split(/\r?\n/).filter(line => line.trim() !== '');
+                    if (sourceNames.length === 0) return;
+
+                    const targetCells = Array.from(document.querySelectorAll('.rack-cell.selected'));
+                    const currentArea = document.getElementById('monitor-sub-area-select').value;
+                    const customLabels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+                    
+                    targetCells.forEach((cell, index) => {
+                        const cellId = cell.dataset.id;
+                        const sourceName = sourceNames[index % sourceNames.length].trim();
+                        let newName = sourceName;
+                        if (currentArea && currentArea.length === 3 && /^[A-Z]{3}/.test(sourceName)) {
+                            newName = currentArea + sourceName.substring(3);
+                        }
+                        customLabels[cellId] = newName;
+                    });
+
+                    localStorage.setItem('ims_rack_labels_v1', JSON.stringify(customLabels));
+                    renderMonitorGrid();
+                    alert(`Pasted and updated ${targetCells.length} cells.`);
+                } catch (err) {
+                    console.error('Failed to read clipboard:', err);
+                    alert('Failed to read from clipboard. Please ensure you have granted permission.');
+                }
+            });
+        }
+        
+        function openCellEditModal(id, currentName, currentStatus) {
+            document.getElementById('cell-edit-id').value = id;
+            document.getElementById('cell-name-group').style.display = '';
+            document.querySelector('#cell-edit-modal h3').textContent = 'Edit Grid Name';
+            document.getElementById('cell-custom-name').value = currentName || '';
+            document.getElementById('cell-status').value = currentStatus || 'auto';
+            document.getElementById('cell-edit-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('cell-custom-name').focus(), 100);
+        }
+        
+        document.getElementById('save-cell-btn').addEventListener('click', () => {
+            const id = document.getElementById('cell-edit-id').value;
+            const status = document.getElementById('cell-status').value;
+            
+            if (id === 'BULK') {
+                const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+                monitorSelectedCells.forEach(cellId => {
+                    if (status !== 'auto') statuses[cellId] = status; else delete statuses[cellId];
+                });
+                localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
+                monitorSelectedCells.clear();
+                updateMonitorControls();
+            } else {
+                const name = document.getElementById('cell-custom-name').value.trim();
+                const labels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+                if (name) labels[id] = name; else delete labels[id];
+                localStorage.setItem('ims_rack_labels_v1', JSON.stringify(labels));
+                
+                const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+                if (status !== 'auto') statuses[id] = status; else delete statuses[id];
+                localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
+            }
+            
+            document.getElementById('cell-edit-modal').classList.add('hidden');
+            renderMonitorGrid();
+        });
+
+        // Fix tooltips globally to use native title (avoids clipping/z-index issues)
+        function fixTooltips() {
+            document.querySelectorAll('.icon-btn[data-tooltip]').forEach(btn => {
+                btn.setAttribute('title', btn.getAttribute('data-tooltip'));
+                btn.removeAttribute('data-tooltip');
+            });
+        }
+        setInterval(fixTooltips, 1000);
+
+        function getShiftFromTimestamp(ts) {
+            const d = new Date(ts);
+            const h = d.getHours();
+            let dateStr = d.toISOString().split('T')[0];
+            let shift = '';
+            
+            if (h >= 6 && h < 14) {
+                shift = '1st Shift-(6am-2pm)';
+            } else if (h >= 14 && h < 22) {
+                shift = '2nd Shift-(2pm-10pm)';
+            } else {
+                shift = '3rd Shift-(10pm-6am)';
+                if (h < 6) {
+                    const prev = new Date(d);
+                    prev.setDate(d.getDate() - 1);
+                    dateStr = prev.toISOString().split('T')[0];
+                }
+            }
+            return { date: dateStr, shift };
+        }
+
+        // Update Attendance Modal Area Options
+        const attAreaSelect = document.getElementById('att-area');
+        if (attAreaSelect) {
+            attAreaSelect.innerHTML = `
+                <option value="Pick Bin">Pick Bin</option>
+                <optgroup label="Reserved Bin">
+                    ${subAreaOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                </optgroup>
+            `;
+        }
+        // Also update filter dropdown in attendance card
+        if (attFilterArea) {
+             attFilterArea.innerHTML = `<option value="">All Areas</option><option value="Pick Bin">Pick Bin</option>` + 
+             subAreaOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+        }
+
+        renderCountersTable();
+        renderAttendanceTable();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Users Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .wrap{max-width:980px;margin:18px auto;padding:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left}
+    .muted{color:#666}
+    button{padding:6px 8px;border-radius:6px;border:0;background:#2752a7;color:#fff}
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="nav-left">
+      <a href="documents_full.html" class="nav-btn">Full Docs</a>
+      <a href="admin_inbox.html" class="nav-btn">Admin Inbox</a>
+      <a href="users-dashboard.html" id="users-dashboard-page-btn" class="nav-btn active">Users</a>
+      <a href="recycle_bin.html" class="nav-btn">Recycle Bin</a>
+    </div>
+    <div class="nav-title">Document Monitoring System</div>
+    <div class="nav-right">
+      <div class="nav-notifications">
+        <button class="notification-btn" title="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span class="notification-badge">0</span>
+        </button>
+        <div class="notification-menu">
+          <div class="notification-header"><span>Notifications</span><button class="clear-notifications">Clear All</button></div>
+          <ul class="notification-list"></ul>
+        </div>
+      </div>
+      <div class="nav-user" id="nav-user">
+        <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+        <button class="user-btn" id="user-btn" aria-haspopup="true" aria-expanded="false"><span id="username-display"></span></button>
+        <div class="user-menu" id="user-menu" role="menu" aria-label="User menu">
+          <a href="profile.html" id="profile-btn" role="menuitem">Profile</a>
+          <a href="settings.html" role="menuitem">Settings</a>
+          <button id="logout-btn" role="menuitem">Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap card">
+    <h1>Users Dashboard</h1>
+    <div class="tools">
+      <input id="user-search" placeholder="Search users..." />
+      <select id="user-filter-status" style="margin-left:8px; padding:8px; border-radius:6px; border:1px solid #d6dbe6">
+        <option value="all">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="active">Active</option>
+      </select>
+      <button id="user-search-btn" class="icon-btn" title="Search users" aria-label="Search users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </button>
+    </div>
+    <p class="muted">Admin-only view: list and manage registered users.</p>
+    <div id="not-authorized" class="muted" style="display:none">Not authorized. Redirecting to login...</div>
+    <table id="users-table">
+      <thead>
+        <tr><th>Avatar</th><th>Username</th><th>Role</th><th>Points</th><th>Status</th><th>Session</th><th>Created</th><th>Actions</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div style="margin-top:12px">
+      <a href="index.html">Back to app</a>
+    </div>
+  </div>
+
+  <script>
+    const AUTH_ROLE_KEY = 'dms_auth_role_v1';
+    const USERS_STORAGE_KEY = 'dms_users_v1';
+    const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? (location.protocol + '//' + location.hostname + ':3000/api') : (location.protocol + '//' + location.hostname + '/api');
+    const DOCS_STORAGE_KEY = 'dms_docs_v1';
+    // Only allow admin
+    const role = sessionStorage.getItem(AUTH_ROLE_KEY) || null;
+    if(role !== 'admin'){
+      document.getElementById('not-authorized').style.display = '';
+      setTimeout(()=>{ window.location.href = 'index.html'; }, 1200);
+    }
+
+    function loadLocalUsers(){ try{ return JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '{}'); }catch(e){ return {}; } }
+    function saveLocalUsers(u){ try{ localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(u)); }catch(e){} }
+
+    // Try server first (if API reachable), otherwise fallback to localStorage
+    async function fetchUsersFromServer(){
+      try{
+        const token = sessionStorage.getItem('dms_auth_token_v1') || '';
+        const r = await fetch(API_BASE + '/users', { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
+        if(!r.ok) return null;
+        const j = await r.json();
+        return j.users || null;
+      }catch(e){ return null; }
+    }
+
+    async function render(){
+      const t = document.querySelector('#users-table tbody'); t.innerHTML = '';
+      const q = (document.getElementById('user-search') && document.getElementById('user-search').value || '').toLowerCase();
+      const statusFilter = document.getElementById('user-filter-status') ? document.getElementById('user-filter-status').value : 'all';
+      const serverUsers = await fetchUsersFromServer();
+      if(serverUsers){
+        // Sort users: Pending first, then alphabetical
+        serverUsers.sort((a,b) => {
+           if(a.approved === false && b.approved !== false) return -1;
+           if(a.approved !== false && b.approved === false) return 1;
+           return (a.username||'').localeCompare(b.username||'');
+        });
+        // fetch docs to compute points per user (Approved docs count)
+        let docs = [];
+        try{ const dr = await fetch(API_BASE + '/docs'); if(dr && dr.ok){ const jd = await dr.json(); docs = jd.docs || []; } }catch(e){}
+        const pointsMap = {};
+        docs.forEach(d => { try{ if(d && d.owner && String(d.status).toLowerCase() === 'approved'){ pointsMap[d.owner] = (pointsMap[d.owner] || 0) + 1; } }catch(e){} });
+        // fetch sessions to compute online status (admin-only)
+        let sessions = [];
+        try{ const sr = await fetch(API_BASE + '/sessions', { headers: { 'Authorization': (sessionStorage.getItem('dms_auth_token_v1') || '') ? ('Bearer ' + sessionStorage.getItem('dms_auth_token_v1')) : '' } }); if(sr && sr.ok){ const js = await sr.json(); sessions = js.sessions || []; } }catch(e){}
+        const sessionsMap = {};
+        sessions.forEach(s => { if(s && s.username) sessionsMap[s.username] = s; });
+        serverUsers.forEach(u => {
+          if(q && !(u.username||'').toLowerCase().includes(q)) return;
+          if(statusFilter === 'pending' && u.approved !== false) return;
+          if(statusFilter === 'active' && u.approved === false) return;
+          const tr = document.createElement('tr');
+          const avatarHtml = u.avatar ? `<div class="avatar small"><img src="${u.avatar}" alt="avatar"></div>` : `<div class="avatar small">${(u.username||'').split(' ').map(s=>s[0]||'').join('').slice(0,2).toUpperCase() || '?'}</div>`;
+          const pts = pointsMap[u.username] || 0;
+          const sess = sessionsMap[u.username];
+          const sessionHtml = sess ? `<span class="online-dot" title="Online (last seen: ${new Date(sess.lastSeen).toLocaleString()})" style="color:green;font-weight:700">●</span> <small style="color:#333">since ${new Date(sess.created).toLocaleString()}</small>` : '';
+          const statusHtml = (u.approved === false) ? '<span style="color:#d97706;font-weight:bold">Pending</span>' : '<span style="color:#2ecc71;font-weight:bold">Active</span>';
+          tr.innerHTML = `<td style="width:56px">${avatarHtml}</td><td>${u.username}</td><td><select data-user="${u.username}"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td><td>${pts}</td><td>${statusHtml}</td><td>${sessionHtml}</td><td>${u.createdAt?new Date(Number(u.createdAt)).toLocaleString():''}</td><td><button class="icon-btn" title="Delete user" data-delete="${u.username}" aria-label="Delete ${u.username}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button></td>`;
+          t.appendChild(tr);
+        });
+        // wire server-side actions (use API_BASE)
+        document.querySelectorAll('select[data-user]').forEach(s => s.addEventListener('change', async ev => {
+          const uname = s.getAttribute('data-user');
+          const token = sessionStorage.getItem('dms_auth_token_v1') || '';
+          const newRole = s.value;
+          const r = await fetch(API_BASE + '/users/' + encodeURIComponent(uname), { method: 'PUT', headers: { 'Content-Type':'application/json', 'Authorization': token ? ('Bearer ' + token) : '' }, body: JSON.stringify({ role: newRole }) });
+          if(!r.ok){ const j=await r.json().catch(()=>{}); alert((j && j.error) || 'Unable to update role'); render(); return; }
+          alert('Role updated');
+        }));
+        document.querySelectorAll('button[data-delete]').forEach(b => b.addEventListener('click', async ev => {
+          const uname = b.getAttribute('data-delete');
+          if(!confirm('Delete user ' + uname + '?')) return;
+          const token = sessionStorage.getItem('dms_auth_token_v1') || '';
+          const r = await fetch(API_BASE + '/users/' + encodeURIComponent(uname), { method: 'DELETE', headers: { 'Authorization': token ? ('Bearer ' + token) : '' } });
+          if(!r.ok){ const j=await r.json().catch(()=>{}); alert((j && j.error) || 'Unable to delete'); return; }
+          render();
+        }));
+        return;
+      }
+
+      // fallback to local
+      const users = loadLocalUsers();
+      const keys = Object.keys(users).sort((ka, kb) => {
+         const ua = users[ka];
+         const ub = users[kb];
+         if(ua.approved === false && ub.approved !== false) return -1;
+         if(ua.approved !== false && ub.approved === false) return 1;
+         return ka.localeCompare(kb);
+      });
+      if(keys.length === 0){ t.innerHTML = '<tr><td colspan="7" class="muted">No users registered.</td></tr>'; return; }
+      keys.forEach(k => {
+        if(q && !k.toLowerCase().includes(q)) return;
+        const u = users[k];
+        if(statusFilter === 'pending' && u.approved !== false) return;
+        if(statusFilter === 'active' && u.approved === false) return;
+        const tr = document.createElement('tr');
+        // compute points for local fallback from local docs storage
+        let localPoints = 0;
+        try{ const localDocs = JSON.parse(localStorage.getItem(DOCS_STORAGE_KEY) || '[]'); localDocs.forEach(d => { if(d && d.owner === k && String(d.status).toLowerCase() === 'approved') localPoints++; }); }catch(e){}
+        const avatarHtml = u && u.avatar ? `<div class="avatar small"><img src="${u.avatar}" alt="avatar"></div>` : `<div class="avatar small">${(k||'').split(' ').map(s=>s[0]||'').join('').slice(0,2).toUpperCase() || '?'}</div>`;
+        const isPending = u.approved === false;
+        const statusHtml = isPending ? '<span style="color:#d97706;font-weight:bold">Pending</span>' : '<span style="color:#2ecc71;font-weight:bold">Active</span>';
+        const approveBtn = isPending ? `<button class="icon-btn" title="Approve user" data-approve="${k}" style="color:#2ecc71;margin-right:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>` : '';
+        tr.innerHTML = `<td style="width:56px">${avatarHtml}</td><td>${k}</td><td><select data-user="${k}"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td><td>${localPoints}</td><td>${statusHtml}</td><td></td><td>${u.createdAt?new Date(Number(u.createdAt)).toLocaleString():''}</td><td>${approveBtn}<button class="icon-btn" title="Delete user" data-delete="${k}" aria-label="Delete ${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button></td>`;
+        t.appendChild(tr);
+      });
+      // wire selects and deletes (local)
+      document.querySelectorAll('select[data-user]').forEach(s => s.addEventListener('change', ev => {
+        const uname = s.getAttribute('data-user');
+        const users = loadLocalUsers();
+        users[uname] = users[uname] || {}; users[uname].role = s.value; saveLocalUsers(users); alert('Role updated');
+      }));
+      document.querySelectorAll('button[data-approve]').forEach(b => b.addEventListener('click', ev => {
+        const uname = b.getAttribute('data-approve');
+        if(!confirm('Approve user ' + uname + '?')) return;
+        const users = loadLocalUsers();
+        if(users[uname]) { users[uname].approved = true; saveLocalUsers(users); render(); }
+      }));
+      document.querySelectorAll('button[data-delete]').forEach(b => b.addEventListener('click', ev => {
+        const uname = b.getAttribute('data-delete');
+        if(!confirm('Delete user ' + uname + '?')) return;
+        const users = loadLocalUsers(); delete users[uname]; saveLocalUsers(users); render();
+      }));
+
+      if(document.getElementById('user-filter-status')) document.getElementById('user-filter-status').addEventListener('change', render);
+      // Initialize tooltips for generated buttons
+      document.querySelectorAll('.icon-btn[title]').forEach(btn => {
+        btn.setAttribute('data-tooltip', btn.getAttribute('title'));
+        btn.removeAttribute('title');
+      });
+
+        // Update Users Badge
+        const btn = document.getElementById('users-dashboard-page-btn');
+        if(btn){
+           let pending = 0; let active = 0;
+           const list = serverUsers || Object.values(users);
+           list.forEach(u => { if(u.approved === false) pending++; else active++; });
+           let html = 'Users';
+           if(pending > 0) html += ` <span class="nav-badge badge-intervention" title="${pending} Pending" style="background:#d97706">${pending}</span>`;
+           if(active > 0) html += ` <span class="nav-badge badge-received" title="${active} Active" style="background:#2ecc71">${active}</span>`;
+           btn.innerHTML = html;
+        }
+    }
+
+    render();
+  </script>
+</body>
+</html>

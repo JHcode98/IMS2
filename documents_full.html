@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Documents — Full View</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <style>
+      /* Dark Mode Header */
+			body.dark-mode header {
+				background: #1a252f;
+				border-bottom: 1px solid #2c3e50;
+			}
+			body.dark-mode header h1 {
+				color: #ecf0f1;
+			}
+			/* Toast Notification */
+			.toast {
+				visibility: hidden;
+				min-width: 250px;
+				transform: translateX(-50%);
+				background-color: #2ecc71;
+				color: #fff;
+				text-align: center;
+				border-radius: 4px;
+				padding: 16px;
+				position: fixed;
+				z-index: 10000;
+				left: 50%;
+				top: 30px;
+				font-size: 16px;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+				opacity: 0;
+				transition: opacity 0.3s, top 0.3s;
+			}
+			.toast.show {
+				visibility: visible;
+				opacity: 1;
+				top: 50px;
+			}
+			/* Icon Button Style */
+			.icon-btn {
+				padding: 8px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; color: #555;
+			}
+			.icon-btn:hover { background: #f0f0f0; }
+			.icon-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+			/* Mass Delete Button Specific */
+			#mass-delete-all-btn { background-color: #d9534f; color: white; border-color: #d43f3a; }
+			#mass-delete-all-btn:hover { background-color: #c9302c; }
+			#mass-delete-all-btn svg { stroke: white; }
+
+      /* Pagination */
+      .pagination-controls {
+        display: flex; justify-content: space-between; align-items: center; padding: 12px; border-top: 1px solid #eef2f6; background: var(--card); border-radius: 0 0 8px 8px;
+      }
+      .pagination-controls select { padding: 4px 8px; border-radius: 4px; border: 1px solid #d6dbe6; }
+      .pagination-controls .page-info { font-size: 13px; font-weight: 600; color: var(--muted); }
+      .pagination-controls button:disabled { opacity: 0.5; cursor: default; }
+      body.dark-mode .pagination-controls { border-top-color: #333; }
+      body.dark-mode .pagination-controls select { background-color: #2c2c2c; color: #fff; border-color: #444; }
+
+      /* Row highlighting */
+      #docs-table tbody tr {
+        transition: background-color 0.15s ease;
+      }
+      #docs-table tbody tr:hover {
+        background-color: #f1f6fd;
+      }
+      body.dark-mode #docs-table tbody tr:hover { background-color: #2a2a2a; }
+
+      /* Outlook-style action buttons: smaller, transparent, and appear on hover */
+      #docs-table tbody tr .actions .icon-btn,
+      #docs-table tbody tr .actions .returned-label {
+        opacity: 0;
+        transition: opacity 0.2s, background-color 0.2s;
+      }
+      #docs-table tbody tr .actions .icon-btn {
+        padding: 4px; /* Make button smaller */
+        background: transparent; /* Remove default gradient */
+        color: var(--muted); /* Use a more subtle color for the icon */
+        box-shadow: none;
+        border: none;
+      }
+      #docs-table tbody tr:hover .actions .icon-btn,
+      #docs-table tbody tr:focus-within .actions .icon-btn,
+      #docs-table tbody tr:hover .actions .returned-label,
+      #docs-table tbody tr:focus-within .actions .returned-label {
+        opacity: 1;
+      }
+      #docs-table tbody tr .actions .icon-btn:hover {
+        background-color: rgba(0,0,0,0.08);
+        color: var(--accent);
+        transform: none; /* Disable the lift effect */
+        z-index: 100; /* Ensure tooltip overlays the row */
+      }
+      #docs-table tbody tr .actions .icon-btn.delete:hover {
+        background-color: rgba(231, 76, 60, 0.1);
+        color: #e74c3c;
+      }
+      body.dark-mode #docs-table tbody tr .actions .icon-btn:hover { background-color: rgba(255,255,255,0.08); }
+      body.dark-mode #docs-table tbody tr .actions .icon-btn.delete:hover { background-color: rgba(231, 76, 60, 0.2); }
+
+      /* Ensure tooltips are not clipped by cell overflow */
+      #docs-table td.actions { overflow: visible !important; }
+  </style>
+  
+  <body class="full-view no-navbar">
+    <header>
+      <h1>Documents — Full View</h1>
+      <div class="navbar" role="navigation">
+        <div class="nav-left">
+          <a href="documents_full.html" id="documents-full-page-btn" class="nav-btn active" title="Open Full Documents View">Full Docs</a>
+          <a href="admin_inbox.html" id="admin-inbox-page-btn" class="nav-btn" style="display:none" title="Open Admin Inbox Page">Admin Inbox</a>
+          <a href="users-dashboard.html" id="users-dashboard-page-btn" class="nav-btn" style="display:none" title="Open Users Dashboard">Users</a>
+          <a href="recycle_bin.html" id="recycle-bin-page-btn" class="nav-btn" style="display:none" title="Open Recycle Bin">Recycle Bin</a>
+        </div>
+       
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </button>
+          <div class="nav-right">
+          <div class="nav-notifications">
+            <button class="notification-btn" title="Notifications">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              <span class="notification-badge">0</span>
+            </button>
+            <div class="notification-menu">
+              <div class="notification-header"><span>Notifications</span><button class="clear-notifications">Clear All</button></div>
+              <ul class="notification-list"></ul>
+            </div>
+          </div>
+          <div id="clock" class="clock" aria-live="polite"></div>
+          <div id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+          <div class="nav-user" id="nav-user">
+            <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+            <button class="user-btn" id="user-btn" aria-haspopup="true" aria-expanded="false"><span id="username-display"></span> <span id="role-badge" class="role-badge" style="display:none;margin-left:8px"></span></button>
+            <div class="user-menu" id="user-menu" role="menu" aria-label="User menu">
+              <a href="profile.html" id="profile-btn" role="menuitem">Profile</a>
+              <a href="settings.html" role="menuitem">Settings</a>
+              <button id="logout-btn" role="menuitem">Logout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="dashboard" class="hidden">
+        <div style="max-width:100%;margin:18px auto;padding:0 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <a href="index.html">← Back to Dashboard</a>
+            </div>
+            <div>
+              <button id="refresh-docs" style="margin-left:8px">Refresh</button>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="left">
+              <button id="new-doc-btn">New Document</button>
+            </div>
+            <div class="right">
+              <input id="search-control" placeholder="Search control number..." />
+              <button id="search-btn">Search</button>
+              <button id="clear-search">Clear</button>
+              <button id="bulk-update">Update Selected</button>
+              <button id="bulk-delete">Delete Selected</button>
+              <button id="mass-delete-all-btn" class="icon-btn" title="Mass Delete ALL">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+              </button>
+              <select id="date-filter-type" style="padding: 8px; border-radius: 4px; border: 1px solid #d6dbe6; margin-right:4px; display:none;">
+                <option value="created">Created Date</option>
+                <option value="updated">Updated Date</option>
+              </select>
+              <input type="date" id="start-date" style="padding: 8px; border-radius: 4px; border: 1px solid #d6dbe6; margin-right:4px" title="Start Date">
+              <input type="date" id="end-date" style="padding: 8px; border-radius: 4px; border: 1px solid #d6dbe6; margin-right:4px" title="End Date">
+              <button id="filter-date-btn" class="icon-btn" title="Filter Date Range" style="margin-right:4px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              </button>
+              <button id="clear-date-filter-btn" class="icon-btn" title="Clear Date Filter" style="margin-right:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+              <button id="print-btn" class="icon-btn" title="Print Records">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              </button>
+              <input id="import-file" type="file" accept=".csv" />
+              <button id="download-template">Download Template</button>
+              <button id="export-csv">Export CSV</button>
+            </div>
+          </div>
+
+          <div id="new-doc-form" class="card hidden">
+            <h3>Add Document</h3>
+            <form id="doc-form">
+              <label for="control-number">Control Number</label>
+              <input id="control-number" name="controlNumber" placeholder="ECOM-20XX-XXXX" pattern="ECOM-[0-9]{4}-[0-9]{4}" title="Format: ECOM-YYYY-NNNN (e.g. ECOM-2026-0001)" required />
+
+              <label for="doc-title">Title</label>
+              <select id="doc-title" name="title" required>
+                <option value="" disabled selected>Select Title</option>
+                <option>Cycle Count</option>
+                <option>Retrieval Concerns</option>
+                <option>B1T1 Adj</option>
+                <option>LBR</option>
+                <option>Rejected Claims</option>
+                <option>SIS</option>
+                <option>Expired</option>
+                <option>Damaged</option>
+                <option>Manual Picked</option>
+                <option>Receiving Error</option>
+                <option>Other</option>
+              </select>
+              <input id="doc-title-other" name="titleOther" placeholder="Enter title..." style="display:none; margin-top:4px;" />
+
+              <label for="doc-notes">Notes</label>
+              <textarea id="doc-notes" name="notes" rows="3"></textarea>
+
+              <label for="doc-owner">Owner</label>
+              <input id="doc-owner" name="owner" />
+
+              <label for="doc-status">Status</label>
+              <select id="doc-status" name="status">
+                <option>Revision</option>
+                <option>Routing</option>
+                <option>Approved</option>
+                <option>Rejected</option>
+              </select>
+
+              <label for="wins-status">WINS Status</label>
+              <select id="wins-status" name="winsStatus">
+                <option>Approved</option>
+                <option>Pending for Approve</option>
+                <option>Rejected</option>
+              </select>
+
+              <label for="admin-status">Admin Status</label>
+              <select id="admin-status" name="adminStatus">
+                <option value="">Need User Attention</option>
+                <option>Approved</option>
+                <option>Rejected</option>
+              </select>
+
+              <label for="created-at">Created (modify)</label>
+              <input id="created-at" name="createdAt" type="datetime-local" />
+
+              <div class="form-actions">
+                <button type="submit">Save</button>
+                <button type="button" id="cancel-new">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="results" class="card full-results">
+            <h3>Documents</h3>
+            <table id="docs-table">
+              <thead>
+                <tr>
+                  <th style="width:40px"><input type="checkbox" id="select-all" title="Select All"></th>
+                  <th data-sort="controlNumber">Control #</th>
+                  <th data-sort="title">Title</th>
+                  <th data-sort="notes">Notes</th>
+                  <th data-sort="owner">Owner</th>
+                  <th data-sort="status">Status</th>
+                  <th data-sort="winsStatus">WINS Status</th>
+                  <th data-sort="createdAt">Created Date</th>
+                  <th data-sort="updatedAt">Updated Date</th>
+                  <th>Age (days)</th>
+                  <th data-sort="adminStatus">Admin Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div id="pagination-controls" class="pagination-controls">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <label for="rows-per-page" style="font-size:13px; color:var(--muted);">Rows per page:</label>
+                <select id="rows-per-page">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <span id="page-info" class="page-info">Page 1 of 1</span>
+              <div style="display:flex; gap:8px;">
+                <button id="prev-page" class="icon-btn" title="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                <button id="next-page" class="icon-btn" title="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <small>Local demo — data stored in your browser. <br> j.hutalla.</small>
+    </footer>
+
+    <!-- Document modal (same as main app so open/save works) -->
+    <div id="doc-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-overlay" id="modal-overlay"></div>
+      <div class="modal-content card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button class="modal-close" id="modal-close" title="Close">×</button>
+        <h2 id="modal-title">Document Details</h2>
+        <form id="modal-doc-form">
+          <label>Control Number</label>
+          <input id="modal-control" name="controlNumber" required />
+          <label>Owner</label>
+          <input id="modal-owner" name="owner" />
+          <!-- Title / Status / WINS removed from modal; use inline edit form instead -->
+          <label>Created</label>
+          <input id="modal-created" name="createdAt" type="datetime-local" />
+          <label>Notes</label>
+          <textarea id="modal-notes" name="notes" rows="4"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button type="submit">Save</button>
+            <button type="button" id="modal-open-new" title="Open in new tab">Open in new tab ↗</button>
+            <button type="button" id="modal-cancel">Cancel</button>
+          </div>
+          <input type="hidden" id="modal-original-control" />
+        </form>
+      </div>
+    </div>
+
+    <!-- Print Options Modal -->
+    <div id="print-options-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content card" style="max-width: 300px; margin-top: 100px; text-align: center;">
+        <h3>Print Options</h3>
+        <p>Choose which records to print:</p>
+        <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+          <button id="print-filtered-btn" style="background:#2752a7; color:#fff; border:none; padding: 10px; border-radius: 4px; cursor: pointer;">Print Filtered Records</button>
+          <button id="print-all-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding: 10px; border-radius: 4px; cursor: pointer;">Print All Records</button>
+          <button id="cancel-print-btn" style="background:transparent; color:#666; border:none; padding: 5px; cursor: pointer; margin-top: 5px;">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mass Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content card" style="max-width: 400px; margin-top: 100px;">
+        <h3>Confirm Mass Delete</h3>
+        <p>You are about to delete <span id="delete-count" style="font-weight:bold; color:#d9534f">0</span> records.</p>
+        <p class="muted">This action will move all documents to the Recycle Bin. Please enter Supervisor Code to proceed.</p>
+        <div style="margin: 15px 0;">
+          <label for="supervisor-code" style="display:block; margin-bottom:5px; font-weight:bold;">Supervisor Code</label>
+          <input type="password" id="supervisor-code" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="Enter code (e.g. 12345)">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button id="cancel-delete-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancel</button>
+          <button id="confirm-delete-btn" style="background:#d9534f; color:#fff; border:none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Confirm Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-notification" class="toast">Document added successfully!</div>
+    <script>
+      if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('refresh-docs');
+        if(btn) btn.addEventListener('click', () => { try{ window.renderDocs && window.renderDocs(); }catch(e){} });
+
+        // Mass Delete Logic
+        const massDeleteBtn = document.getElementById('mass-delete-all-btn');
+        const deleteModal = document.getElementById('delete-confirm-modal');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const deleteCountSpan = document.getElementById('delete-count');
+        const supervisorCodeInput = document.getElementById('supervisor-code');
+
+        if(massDeleteBtn) {
+          massDeleteBtn.addEventListener('click', () => {
+             if(typeof docs === 'undefined' || docs.length === 0) { alert('No documents to delete.'); return; }
+             deleteCountSpan.textContent = 'ALL (' + docs.length + ')';
+             supervisorCodeInput.value = '';
+             if(deleteModal) deleteModal.classList.remove('hidden');
+          });
+        }
+
+        if(cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', () => { if(deleteModal) deleteModal.classList.add('hidden'); });
+        if(deleteModal) deleteModal.querySelector('.modal-overlay').addEventListener('click', () => deleteModal.classList.add('hidden'));
+
+        if(confirmDeleteBtn) {
+          confirmDeleteBtn.addEventListener('click', () => {
+             const code = supervisorCodeInput.value;
+             if(code !== '12345' && code !== 'admin') {
+               alert('Invalid Supervisor Code!');
+               return;
+             }
+             
+             if(typeof docs !== 'undefined' && docs.length > 0) {
+                const rb = (typeof loadRecycle === 'function') ? loadRecycle() : [];
+                const now = Date.now();
+                docs.forEach(d => rb.unshift(Object.assign({}, d, { deletedAt: now })));
+                docs.length = 0; // Clear array in place
+                if(typeof saveRecycle === 'function') saveRecycle(rb);
+                if(typeof saveDocs === 'function') saveDocs();
+                if(typeof renderDocs === 'function') renderDocs();
+                alert('All documents moved to Recycle Bin.');
+             }
+             if(deleteModal) deleteModal.classList.add('hidden');
+          });
+        }
+
+        // Print Logic
+        const printBtn = document.getElementById('print-btn');
+        const printModal = document.getElementById('print-options-modal');
+        const printFilteredBtn = document.getElementById('print-filtered-btn');
+        const printAllBtn = document.getElementById('print-all-btn');
+        const cancelPrintBtn = document.getElementById('cancel-print-btn');
+
+        if(printBtn && printModal) {
+          printBtn.addEventListener('click', () => {
+            printModal.classList.remove('hidden');
+          });
+          printModal.querySelector('.modal-overlay').addEventListener('click', () => {
+            printModal.classList.add('hidden');
+          });
+        }
+        if(cancelPrintBtn) cancelPrintBtn.addEventListener('click', () => printModal.classList.add('hidden'));
+
+        function getFilteredDocs() {
+          const q = (document.getElementById('search-control').value || '').toLowerCase();
+          let list = (typeof docs !== 'undefined' ? docs : []).slice();
+          if(q){
+            list = list.filter(d => {
+              const created = d.createdAt ? new Date(Number(d.createdAt)).toLocaleString() : '';
+              return (d.controlNumber || '').toLowerCase().includes(q)
+                || (d.title || '').toLowerCase().includes(q)
+                || (d.notes || '').toLowerCase().includes(q)
+                || (d.owner || '').toLowerCase().includes(q)
+                || created.toLowerCase().includes(q);
+            });
+          }
+          if(typeof statusFilter !== 'undefined' && statusFilter) list = list.filter(d => d.status === statusFilter);
+          if(typeof winsFilter !== 'undefined' && winsFilter) list = list.filter(d => d.winsStatus === winsFilter);
+          if(typeof ageStatusFilter !== 'undefined' && ageStatusFilter) list = list.filter(d => d.status === ageStatusFilter);
+          
+          // Date Filter
+          const startVal = document.getElementById('start-date').value;
+          const endVal = document.getElementById('end-date').value;
+          if(startVal || endVal){
+             const startDate = startVal ? new Date(startVal) : null;
+             if(startDate) startDate.setHours(0,0,0,0);
+             const endDate = endVal ? new Date(endVal) : null;
+             if(endDate) endDate.setHours(23,59,59,999);
+             
+             list = list.filter(d => {
+                 const dateVal = d.createdAt; // Default to created
+                 if(!dateVal) return false;
+                 const dt = new Date(Number(dateVal));
+                 if(startDate && dt < startDate) return false;
+                 if(endDate && dt > endDate) return false;
+                 return true;
+             });
+          }
+          return list;
+        }
+
+        function printData(data, title) {
+          const printWindow = window.open('', '_blank');
+          if(!printWindow) { alert('Please allow popups to print.'); return; }
+          let html = `<html><head><title>${title}</title><style>
+            body { font-family: sans-serif; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+            th { background-color: #f0f0f0; }
+            .header { text-align: center; margin-bottom: 20px; }
+          </style></head><body>
+          <div class="header"><h2>${title}</h2><p>Generated on: ${new Date().toLocaleString()}</p><p>Total Records: ${data.length}</p></div>
+          <table><thead><tr>
+            <th>Control #</th><th>Title</th><th>Owner</th><th>Status</th><th>WINS Status</th><th>Created</th><th>Updated</th><th>Notes</th>
+          </tr></thead><tbody>`;
+          data.forEach(d => {
+            html += `<tr>
+              <td>${d.controlNumber}</td><td>${d.title}</td><td>${d.owner||''}</td>
+              <td>${d.status||''}</td><td>${d.winsStatus||''}</td>
+              <td>${d.createdAt ? new Date(Number(d.createdAt)).toLocaleString() : ''}</td>
+              <td>${d.updatedAt ? new Date(Number(d.updatedAt)).toLocaleString() : ''}</td>
+              <td>${d.notes||''}</td>
+            </tr>`;
+          });
+          html += `</tbody></table><script>window.onload = function() { window.print(); window.close(); }<\/script></body></html>`;
+          printWindow.document.write(html);
+          printWindow.document.close();
+        }
+
+        if(printFilteredBtn) printFilteredBtn.addEventListener('click', () => {
+           printData(getFilteredDocs(), 'Documents - Filtered'); printModal.classList.add('hidden');
+        });
+        if(printAllBtn) printAllBtn.addEventListener('click', () => {
+           printData(typeof docs !== 'undefined' ? docs : [], 'Documents - All Records'); printModal.classList.add('hidden');
+        });
+
+        // Date Filter Buttons
+        const filterDateBtn = document.getElementById('filter-date-btn');
+        const clearDateBtn = document.getElementById('clear-date-filter-btn');
+        if(filterDateBtn) filterDateBtn.addEventListener('click', () => { if(window.renderDocs) window.renderDocs(); });
+        if(clearDateBtn) clearDateBtn.addEventListener('click', () => {
+            document.getElementById('start-date').value = '';
+            document.getElementById('end-date').value = '';
+            if(window.renderDocs) window.renderDocs();
+        });
+      });
+    </script>
+
+    <script src="app.js"></script>
+    <!-- profile moved to profile.html -->
+  </body>
+</html>

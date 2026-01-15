@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Admin Inbox — Document Monitoring System</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #2752a7;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 40px auto;
+      }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+      /* Dark Mode Header */
+			body.dark-mode header {
+				background: #1a252f;
+				border-bottom: 1px solid #2c3e50;
+			}
+			body.dark-mode header h1 {
+				color: #ecf0f1;
+			}
+    </style>
+  </head>
+    <body>
+    <header>
+      <h1>Admin Inbox</h1>
+      <div class="navbar" role="navigation">
+        <div class="nav-left">
+            <a href="documents_full.html" id="documents-full-page-btn" class="nav-btn" title="Open Full Documents View">Full Docs</a>
+            <a href="admin_inbox.html" id="admin-inbox-page-btn" class="nav-btn active" title="Open Admin Inbox Page">Admin Inbox</a>
+            <a href="users-dashboard.html" id="users-dashboard-page-btn" class="nav-btn" style="display:none" title="Open Users Dashboard">Users</a>
+            <a href="recycle_bin.html" id="recycle-bin-page-btn" class="nav-btn" title="Open Recycle Bin">Recycle Bin</a>
+          </div>
+        
+        <div class="nav-right">
+          <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+          </button>
+          <div class="nav-user" id="nav-user" style="margin-left:12px">
+            <div class="nav-notifications" style="display:inline-block; margin-right:10px;">
+              <button class="notification-btn" title="Notifications">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <span class="notification-badge">0</span>
+              </button>
+              <div class="notification-menu">
+                <div class="notification-header"><span>Notifications</span><button class="clear-notifications">Clear All</button></div>
+                <ul class="notification-list"></ul>
+              </div>
+            </div>
+            <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+            <button class="user-btn" id="user-btn" aria-haspopup="true" aria-expanded="false"><span id="username-display"></span> <span id="role-badge" class="role-badge" style="display:none;margin-left:8px"></span></button>
+            <div class="user-menu" id="user-menu" role="menu" aria-label="User menu">
+              <a href="index.html" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard</a>
+              <a href="profile.html" id="profile-btn" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profile</a>
+              <a href="settings.html" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Settings</a>
+              <button id="logout-btn" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Logout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Admin-only inbox page. If not signed in as admin, users are redirected to the main dashboard. -->
+      <section id="dashboard" class="hidden">
+        <div style="max-width:980px;margin:18px auto;padding:0 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <a href="index.html">← Back to Dashboard</a>
+            </div>
+           
+          </div>
+
+          <div id="admin-inbox" class="card">
+            <h3>Admin Inbox</h3>
+            <div class="small-nav" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+              <div style="position:relative">
+                <button id="admin-filter-btn-box" class="icon-btn" title="Inbox filters" aria-haspopup="true" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="10" y1="21" x2="10" y2="10"></line><line x1="16" y1="21" x2="16" y2="6"></line></svg>
+                  <span id="badge-forwarded-box" class="nav-badge badge-forwarded" aria-hidden="true" style="margin-left:8px;display:inline-block"></span>
+                  <span id="badge-intervention-box" class="nav-badge badge-intervention" aria-hidden="true" style="margin-left:8px;display:none"></span>
+                </button>
+                <button id="receive-all-btn" class="icon-btn" title="Receive all forwarded" style="margin-left:8px" aria-label="Receive all forwarded">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span class="btn-label" style="margin-left:6px;display:none">Receive All</span>
+                </button>
+                <div id="admin-filter-menu-box" class="card" style="position:absolute;left:0;top:44px;display:none;padding:8px;min-width:180px;box-shadow:0 6px 18px rgba(0,0,0,0.12)">
+                  <button class="icon-btn admin-filter-item-box" data-filter="forwarded" title="Show forwarded">Forwarded <span id="badge-forwarded-menu" class="nav-badge badge-forwarded" style="margin-left:8px">0</span></button>
+                  <button class="icon-btn admin-filter-item-box" data-filter="received" title="Show received">Received <span id="badge-received-menu" class="nav-badge badge-received" style="margin-left:8px">0</span></button>
+                  <button class="icon-btn admin-filter-item-box" data-filter="returned" title="Show returned">Returned <span id="badge-returned-menu" class="nav-badge badge-returned" style="margin-left:8px">0</span></button>
+                  <button class="icon-btn admin-filter-item-box" data-filter="intervention" title="Show needing user attention">Need User Attention <span id="badge-intervention-menu" class="nav-badge badge-intervention" style="margin-left:8px">0</span></button>
+                  <button class="icon-btn admin-filter-item-box" data-filter="all" title="Show all">All</button>
+                </div>
+              </div>
+                <input id="admin-inbox-search" placeholder="Search inbox..." style="flex:1;padding:6px;border:1px solid #e6eef8;border-radius:6px" />
+            </div>
+            <div id="admin-inbox-list"></div>
+            <div id="admin-inbox-pagination" class="sidebar-pagination"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <small>Connected to Database Server. <br>
+      j.hutalla.</small>
+    </footer>
+
+    <!-- Reuse modal so View works here too -->
+    <div id="doc-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-overlay" id="modal-overlay"></div>
+      <div class="modal-content card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button class="modal-close" id="modal-close" title="Close"></button>
+        <h2 id="modal-title">Document Details</h2>
+        <form id="modal-doc-form">
+          <label>Control Number</label>
+          <input id="modal-control" name="controlNumber" required />
+          <label>Owner</label>
+          <input id="modal-owner" name="owner" />
+          <!-- Title / Status / WINS removed from modal; use inline edit form instead -->
+          <label>Created</label>
+          <input id="modal-created" name="createdAt" type="datetime-local" />
+          <label>Notes</label>
+          <textarea id="modal-notes" name="notes" rows="4"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button type="submit">Save</button>
+            <button type="button" id="modal-open-new" title="Open in new tab">Open in new tab ↗</button>
+            <button type="button" id="modal-cancel">Cancel</button>
+          </div>
+          <input type="hidden" id="modal-original-control" />
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Admin-only landing: redirect non-admins back to the main dashboard and show inbox for admins
+      async function updateAdminBadges() {
+        try {
+          // Use global docs if available, otherwise try to load from storage
+          let localDocs = (typeof window.docs !== 'undefined' && Array.isArray(window.docs)) ? window.docs : [];
+          if (localDocs.length === 0) {
+             try {
+                const stored = localStorage.getItem('dms_docs_v1');
+                if (stored) localDocs = JSON.parse(stored);
+             } catch(e) {}
+          }
+
+          try {
+            const res = await fetch('/api/docs');
+            if (res.ok) {
+              const data = await res.json();
+              if (data && Array.isArray(data.docs)) localDocs = data.docs;
+            }
+          } catch (e) { /* ignore fetch error */ }
+
+          // Count statuses
+          const forwarded = localDocs.filter(d => d.forwarded === true).length;
+          const intervention = localDocs.filter(d => !d.adminStatus && !d.forwarded).length;
+          const received = localDocs.filter(d => String(d.adminStatus).toLowerCase() === 'received').length;
+          const returned = localDocs.filter(d => String(d.adminStatus).toLowerCase() === 'returned').length;
+          
+          const bFwd = document.getElementById('badge-forwarded-box');
+          const bInt = document.getElementById('badge-intervention-box');
+          const mFwd = document.getElementById('badge-forwarded-menu');
+          const mInt = document.getElementById('badge-intervention-menu');
+          const mRec = document.getElementById('badge-received-menu');
+          const mRet = document.getElementById('badge-returned-menu');
+
+          if(bFwd) { bFwd.textContent = forwarded; bFwd.style.display = forwarded > 0 ? 'inline-block' : 'none'; }
+          if(bInt) { bInt.textContent = intervention; bInt.style.display = intervention > 0 ? 'inline-block' : 'none'; }
+          if(mFwd) mFwd.textContent = forwarded;
+          if(mInt) mInt.textContent = intervention;
+          if(mRec) mRec.textContent = received;
+          if(mRet) mRet.textContent = returned;
+        } catch(e) { console.error('Badge update error', e); }
+      }
+
+      function updateAttentionIcons() {
+        setTimeout(() => {
+          const list = document.getElementById('admin-inbox-list');
+          if(!list) return;
+          const elements = list.querySelectorAll('*');
+          elements.forEach(el => {
+            if(el.children.length === 0 && (el.textContent.trim() === 'Need User Attention' || el.textContent.trim() === 'Need Intervention')) {
+              if(!el.querySelector('.attn-icon')) {
+                 el.innerHTML = `<svg class="attn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:middle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>Need User Attention`;
+                 el.style.color = '#d97706';
+                 el.style.fontWeight = '600';
+              }
+            }
+          });
+        }, 50);
+      }
+
+      async function initAdminPage() {
+        // Show spinner initially
+        const list = document.getElementById('admin-inbox-list');
+        if(list) list.innerHTML = '<div class="spinner"></div><div style="text-align:center;color:#666;margin-bottom:20px">Loading documents...</div>';
+        
+        // Fetch data from server
+        try {
+           const res = await fetch('/api/docs');
+           if(res.ok) {
+             const j = await res.json();
+             if(j && Array.isArray(j.docs)) {
+               docs = j.docs;
+               // Update localStorage so app.js logic sees it immediately
+               try{ localStorage.setItem('dms_docs_v1', JSON.stringify(docs)); }catch(e){}
+             }
+           }
+        } catch(e) { console.error(e); }
+
+        try{ window.renderAdminInbox && window.renderAdminInbox(); updateAdminBadges(); updateAttentionIcons(); }catch(e){}
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const role = localStorage.getItem('dms_auth_role_v1');
+        const user = localStorage.getItem('dms_auth_v1');
+        if(role !== 'admin'){
+          alert('Admin access required. Redirecting to Dashboard.');
+          window.location.href = 'index.html';
+          return;
+        }
+        // show dashboard immediately
+        const dash = document.getElementById('dashboard'); if(dash) dash.classList.remove('hidden');
+        const ui = document.getElementById('user-info'); if(ui) ui.classList.remove('hidden');
+        const uname = document.getElementById('username-display'); if(uname) uname.textContent = user || '';
+        // wire refresh
+        const btn = document.getElementById('refresh-inbox');
+        if(btn) btn.addEventListener('click', () => { try{ window.renderAdminInbox && window.renderAdminInbox(); updateAdminBadges(); updateAttentionIcons(); }catch(e){} });
+        // Initialize page with spinner and fetch
+        initAdminPage();
+        // activate search input
+        const searchEl = document.getElementById('admin-inbox-search');
+        if(searchEl){ searchEl.addEventListener('input', (ev) => { try{ window.renderAdminInbox && window.renderAdminInbox(); updateAdminBadges(); updateAttentionIcons(); }catch(e){} }); }
+        // wire filter menu (box version)
+        const filterBtnBox = document.getElementById('admin-filter-btn-box');
+        const menuBox = document.getElementById('admin-filter-menu-box');
+        if(filterBtnBox && menuBox){
+          filterBtnBox.addEventListener('click', (e) => { e.stopPropagation(); const open = menuBox.style.display !== 'block'; menuBox.style.display = open ? 'block' : 'none'; filterBtnBox.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+          document.addEventListener('click', () => { menuBox.style.display = 'none'; filterBtnBox.setAttribute('aria-expanded','false'); });
+          menuBox.querySelectorAll('.admin-filter-item-box').forEach(b => b.addEventListener('click', (ev) => {
+            const f = b.getAttribute('data-filter');
+            try{ if(window.setAdminInboxFilter) window.setAdminInboxFilter(f); else { localStorage.setItem('dms_admin_inbox_filter', f); } }catch(e){}
+            updateAttentionIcons();
+            menuBox.style.display = 'none'; filterBtnBox.setAttribute('aria-expanded','false');
+          }));
+          // wire receive-all button to batch function (if present)
+          const rbtn = document.getElementById('receive-all-btn');
+          if(rbtn){ rbtn.addEventListener('click', (ev) => { ev.preventDefault(); try{ if(window.batchReceiveForwarded) window.batchReceiveForwarded(); else alert('Batch receive not available'); }catch(e){ console.error(e); alert('Batch receive failed'); } }); }
+        }
+      });
+    </script>
+
+    <script src="app.js"></script>
+    <!-- Profile modal -->
+    <!-- profile moved to profile.html -->
+  </body>
+</html>
