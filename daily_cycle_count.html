@@ -580,6 +580,15 @@
                     <button id="bulk-edit-btn" class="icon-btn" style="background:#607d8b; color:white; width:auto; padding: 6px 12px; font-size:12px;">Edit</button>
                     <button id="bulk-uncounted-btn" class="icon-btn" style="background:#e74c3c; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Not Counted</button>
                 </div>
+                <div id="monitor-file-actions" style="display:none; gap:5px;">
+                    <button id="monitor-template-btn" class="icon-btn" title="Download Template/Export" style="background:#fff; border:1px solid #ccc;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>
+                    <button id="monitor-upload-btn" class="icon-btn" title="Upload CSV" style="background:#fff; border:1px solid #ccc;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    </button>
+                    <input type="file" id="monitor-file-input" accept=".csv" style="display:none;">
+                </div>
                 <select id="monitor-sub-area-select" style="padding:6px; border-radius:4px; border:1px solid #ccc; min-width: 150px;"></select>
                 <span id="monitor-capacity-info" style="font-size:13px; color:#666; font-weight:bold;"></span>
                 <button class="icon-btn close-modal">&times;</button>
@@ -667,6 +676,10 @@
         const monitorSubAreaSelect = document.getElementById('monitor-sub-area-select');
         const rackingGrid = document.getElementById('racking-grid');
         const monitorBulkActions = document.getElementById('monitor-bulk-actions');
+        const monitorFileActions = document.getElementById('monitor-file-actions');
+        const monitorTemplateBtn = document.getElementById('monitor-template-btn');
+        const monitorUploadBtn = document.getElementById('monitor-upload-btn');
+        const monitorFileInput = document.getElementById('monitor-file-input');
         const bulkCountedBtn = document.getElementById('bulk-counted-btn');
         const bulkUncountedBtn = document.getElementById('bulk-uncounted-btn');
         const bulkCopyNamesBtn = document.getElementById('bulk-copy-names-btn');
@@ -2225,6 +2238,7 @@
                 rackingGrid.style.width = '100%';
                 
                 capacityInfo.textContent = 'Dashboard View';
+                if(monitorFileActions) monitorFileActions.style.display = 'none';
                 statsDiv.textContent = '';
 
                 subAreaOptions.forEach(subArea => {
@@ -2298,6 +2312,7 @@
                 return;
             }
             
+            if(monitorFileActions) monitorFileActions.style.display = 'flex';
             // Config
             const config = subAreaConfigs[area] || { width: 20, levels: 5, total: 100 }; // Default if not defined
             
@@ -2522,6 +2537,109 @@
             document.getElementById('monitor-capacity-info').textContent = `Capacity: ${totalCapacity} positions`;
             const pct = totalCapacity > 0 ? Math.round((totalEffectiveCounted / totalCapacity) * 100) : 0;
             document.getElementById('monitor-stats').innerHTML = `Counted: ${totalEffectiveCounted} / ${totalCapacity} (${pct}%)`;
+        }
+
+        if (monitorTemplateBtn) {
+            monitorTemplateBtn.addEventListener('click', () => {
+                const area = monitorSubAreaSelect.value;
+                if (!area) return;
+                const config = subAreaConfigs[area];
+                if (!config) return;
+                
+                const rows = [['CellID', 'Name', 'Status']];
+                const labels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+                const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+                
+                const addRow = (id) => {
+                    rows.push([id, `"${labels[id] || ''}"`, statuses[id] || '']);
+                };
+
+                if (config.type === 'multi') {
+                    config.blocks.forEach(block => {
+                        const blockCells = block.width * block.levels;
+                        for(let i=0; i<blockCells; i++) {
+                            const rowIdx = Math.floor(i / block.width);
+                            const colIdx = (i % block.width) + 1;
+                            const rowNum = (block.rowBase || 0) + (rowIdx * (block.rowStep || 10));
+                            const label = `${block.prefix}${rowNum}-C${colIdx}`;
+                            addRow(label);
+                        }
+                    });
+                    if (config.floor) {
+                        const floorCells = config.floor.width * config.floor.levels;
+                        for (let i = 0; i < floorCells; i++) {
+                            const label = `${config.floor.prefix}-${i+1}`;
+                            addRow(label);
+                        }
+                    }
+                }
+                
+                const csvContent = rows.map(e => e.join(',')).join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${area}_monitor_template.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        if (monitorUploadBtn) {
+            monitorUploadBtn.addEventListener('click', () => monitorFileInput.click());
+        }
+
+        if (monitorFileInput) {
+            monitorFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const text = event.target.result;
+                    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+                    if (lines.length < 2) { alert('Invalid CSV format or empty file.'); return; }
+                    
+                    const labels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+                    const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+                    let updatedCount = 0;
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        // Simple CSV parse handling quotes
+                        let row = [];
+                        let inQuote = false;
+                        let current = '';
+                        for(let char of lines[i]) {
+                            if(char === '"') { inQuote = !inQuote; continue; }
+                            if(char === ',' && !inQuote) { row.push(current); current = ''; }
+                            else current += char;
+                        }
+                        row.push(current);
+
+                        if (row.length >= 1) {
+                            const id = row[0].trim();
+                            const name = row.length > 1 ? row[1].trim() : '';
+                            const status = row.length > 2 ? row[2].trim() : '';
+                            
+                            if (id) {
+                                if (name) labels[id] = name;
+                                if (status) {
+                                    if (status === 'auto') delete statuses[id];
+                                    else statuses[id] = status;
+                                }
+                                updatedCount++;
+                            }
+                        }
+                    }
+                    
+                    localStorage.setItem('ims_rack_labels_v1', JSON.stringify(labels));
+                    localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
+                    alert(`Updated ${updatedCount} cells.`);
+                    renderMonitorGrid();
+                    monitorFileInput.value = '';
+                };
+                reader.readAsText(file);
+            });
         }
         
         // Drag and Drop Handlers
