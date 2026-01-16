@@ -605,6 +605,7 @@
                     <option value="ongoing">On-going</option>
                     <option value="empty">Empty</option>
                 </select>
+                <input type="text" id="monitor-search-input" placeholder="Search cell..." style="padding:6px; border-radius:4px; border:1px solid #ccc; width: 120px;">
                 <button id="monitor-print-btn" class="icon-btn" title="Print View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                 <button id="monitor-export-btn" class="icon-btn" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                 <button id="monitor-snapshot-btn" class="icon-btn" title="Export Image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
@@ -668,6 +669,7 @@
     </div>
   </div>
 
+  <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
   <script>
     if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
@@ -727,6 +729,7 @@
         const bulkEmptyBtn = document.getElementById('bulk-empty-btn');
         const bulkEditBtn = document.getElementById('bulk-edit-btn');
         const monitorFilterStatus = document.getElementById('monitor-filter-status');
+        const monitorSearchInput = document.getElementById('monitor-search-input');
         const monitorPrintBtn = document.getElementById('monitor-print-btn');
         const monitorExportBtn = document.getElementById('monitor-export-btn');
         const monitorSnapshotBtn = document.getElementById('monitor-snapshot-btn');
@@ -743,6 +746,15 @@
         let supervisorDeleteCallback = null;
         let hourlyChart = null;
         let monitorDashboardChart = null;
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+        }
 
         const STORAGE_KEY_COUNTERS = 'ims_daily_counters_v1';
         const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
@@ -1444,7 +1456,7 @@
                     });
                     
                     saveCountersData(counters);
-                    alert('Hourly data saved!');
+                    showToast('Hourly data saved successfully!');
                     // Refresh chart in modal
                     openHourlyModal(dateStr, shift);
                     // Refresh main productivity chart if visible
@@ -2024,6 +2036,7 @@
                     data.push(newEntry);
                 }
                 saveCountersData(data);
+                showToast('Counter saved successfully!');
                 renderCountersTable();
                 
                 // Reset form but keep date
@@ -2158,6 +2171,7 @@
                     data.push(newEntry);
                 }
                 saveAttendanceData(data);
+                showToast('Attendance saved successfully!');
                 
                 attModal.classList.add('hidden');
                 renderAttendanceTable();
@@ -2333,6 +2347,7 @@
             const statsDiv = document.getElementById('monitor-stats');
             const capacityInfo = document.getElementById('monitor-capacity-info');
             const filterStatus = monitorFilterStatus ? monitorFilterStatus.value : 'all';
+            const searchTerm = monitorSearchInput ? monitorSearchInput.value.toLowerCase() : '';
             
             // Get Data
             let cycleCounts = [];
@@ -2632,6 +2647,11 @@
                             if (filterStatus === 'ongoing' && manualStatus !== 'ongoing') showCell = false;
                             if (filterStatus === 'empty' && manualStatus !== 'empty') showCell = false;
                         }
+                        
+                        if (searchTerm) {
+                            const match = label.toLowerCase().includes(searchTerm) || (customName && customName.toLowerCase().includes(searchTerm));
+                            if (!match) showCell = false;
+                        }
 
                         const cell = document.createElement('div');
                         cell.className = `rack-cell ${statusClass}`;
@@ -2740,6 +2760,11 @@
                             if (filterStatus === 'ongoing' && manualStatus !== 'ongoing') showCell = false;
                             if (filterStatus === 'empty' && manualStatus !== 'empty') showCell = false;
                         }
+                        
+                        if (searchTerm) {
+                            const match = label.toLowerCase().includes(searchTerm) || (customName && customName.toLowerCase().includes(searchTerm));
+                            if (!match) showCell = false;
+                        }
 
                         const cell = document.createElement('div');
                         cell.className = `rack-cell ${statusClass}`;
@@ -2790,15 +2815,16 @@
         }
 
         if(monitorFilterStatus) monitorFilterStatus.addEventListener('change', renderMonitorGrid);
+        if(monitorSearchInput) monitorSearchInput.addEventListener('input', renderMonitorGrid);
 
         if(monitorPrintBtn) {
             monitorPrintBtn.addEventListener('click', () => {
                 const content = document.getElementById('racking-grid');
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write('<html><head><title>Sub Area Monitor</title>');
-                printWindow.document.write('<style>.rack-cell { border: 1px solid #ccc; width: 40px; height: 25px; display: inline-block; margin: 1px; text-align: center; font-size: 8px; vertical-align: top; position: relative; } .counted { background: #e8f5e9; } .ongoing { background: #fff9c4; } .uncounted { background: #ffebee; } .empty { background: #e1f5fe; } .not-part { background: #cfd8dc; } .selected { border-color: #2752a7; } .pallet-icon { display: none; } .floor-element { display: none; } .cell-name { display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; overflow: hidden; text-overflow: ellipsis; background: transparent; box-shadow: none; font-size: 7px; }</style>');
+                printWindow.document.write('<style>.rack-cell { border: 1px solid #ccc; width: 40px; height: 25px; display: inline-block; margin: 1px; text-align: center; font-size: 8px; vertical-align: top; position: relative; } .counted { background: #e8f5e9; } .ongoing { background: #fff9c4; } .uncounted { background: #ffebee; } .empty { background: #e1f5fe; } .not-part { background: #cfd8dc; } .selected { border-color: #2752a7; } .pallet-icon { display: none; } .floor-element { display: none; } .cell-checkbox { display: none; } .cell-name { display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; overflow: hidden; text-overflow: ellipsis; background: transparent; box-shadow: none; font-size: 8px; font-weight: bold; }</style>');
                 printWindow.document.write('</head><body>');
-                printWindow.document.write(`<h2>${monitorSubAreaSelect.value} Monitor</h2>`);
+                printWindow.document.write(`<h2>${monitorSubAreaSelect.value} Monitor - Status: ${monitorFilterStatus.value}</h2>`);
                 printWindow.document.write(content.innerHTML);
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
@@ -3066,6 +3092,7 @@
             localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
             monitorSelectedCells.clear();
             updateMonitorControls();
+            showToast('Bulk status updated successfully!');
             renderMonitorGrid();
         }
         
@@ -3182,6 +3209,7 @@
                 if (status !== 'auto') statuses[id] = status; else delete statuses[id];
                 localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
             }
+             showToast('Cell updated successfully!');
             
             document.getElementById('cell-edit-modal').classList.add('hidden');
             renderMonitorGrid();
