@@ -259,6 +259,10 @@
       <button id="monitor-sub-area-btn" class="icon-btn" title="Monitor Sub Area" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Monitor
       </button>
+      <div style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #ccc; padding-left:10px;">
+          <input type="checkbox" id="auto-refresh-check" title="Auto Refresh every 15s">
+          <label for="auto-refresh-check" style="font-size:13px; cursor:pointer;">Auto Refresh</label>
+      </div>
     </div>
     <div class="card resizable-box" id="manage-counters-card" style="min-height: 600px; margin-bottom: 20px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -277,7 +281,7 @@
             <button id="export-counters-btn" class="icon-btn" title="Export CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </button>
-            <button id="archive-btn" class="icon-btn" title="View Archived">
+            <button id="archive-btn" class="icon-btn" title="Toggle Archive View" style="min-width: 100px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
             </button>
         </div>
@@ -603,6 +607,7 @@
                 </select>
                 <button id="monitor-print-btn" class="icon-btn" title="Print View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                 <button id="monitor-export-btn" class="icon-btn" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                <button id="monitor-snapshot-btn" class="icon-btn" title="Export Image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                 <div id="monitor-bulk-actions" style="display:none; gap:5px;">
                     <button id="bulk-copy-names-btn" class="icon-btn" style="background:#3498db; color:white; width:auto; padding: 6px 12px; font-size:12px;">Copy Names</button>
                     <button id="bulk-paste-names-btn" class="icon-btn" style="background:#9b59b6; color:white; width:auto; padding: 6px 12px; font-size:12px;">Paste Names</button>
@@ -724,6 +729,7 @@
         const monitorFilterStatus = document.getElementById('monitor-filter-status');
         const monitorPrintBtn = document.getElementById('monitor-print-btn');
         const monitorExportBtn = document.getElementById('monitor-export-btn');
+        const monitorSnapshotBtn = document.getElementById('monitor-snapshot-btn');
         
         // Hourly Modal
         const hourlyModal = document.getElementById('hourly-modal');
@@ -1231,6 +1237,7 @@
              const savedActuals = counterEntry && counterEntry.hourlyActuals ? counterEntry.hourlyActuals : null;
              let totalAct = 0;
              let totalTgt = 0;
+             let totalPallet = 0;
              const savedPallets = counterEntry && counterEntry.hourlyPallets ? counterEntry.hourlyPallets : {};
              const savedNotes = counterEntry && counterEntry.hourlyNotes ? counterEntry.hourlyNotes : {};
 
@@ -1277,6 +1284,7 @@
                 
                 totalAct += act;
                 totalTgt += tgt;
+                totalPallet += (Number(pallet) || 0);
                 
                 hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee;">
                     <div style="padding-left: 5px;">${label}</div>
@@ -1289,11 +1297,13 @@
              
              const totalVar = totalAct - totalTgt;
              const totalVarColor = totalVar >= 0 ? '#2ecc71' : '#e74c3c';
-             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0;">
+             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0;">
                 <div style="padding-left: 5px;">Total</div>
+                <div id="hourly-total-pallet">${totalPallet}</div>
                 <div id="hourly-total-act">${totalAct}</div>
                 <div id="hourly-total-tgt">${totalTgt}</div>
                 <div id="hourly-total-var" style="color:${totalVarColor}">${(totalVar > 0 ? '+' : '') + totalVar}</div>
+                <div></div>
              </div>`;
              
              hourlyDetailsContainer.innerHTML = hourlyDetailsHtml;
@@ -1334,7 +1344,7 @@
         const hourlyDetailsDiv = document.getElementById('hourly-details');
         if (hourlyDetailsDiv) {
             hourlyDetailsDiv.addEventListener('input', (e) => {
-                if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input')) {
+                if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input') || e.target.classList.contains('hourly-pallet-input')) {
                     const row = e.target.closest('div[style*="display:grid"]');
                     const act = parseInt(row.querySelector('.hourly-actual-input').value) || 0;
                     const tgt = parseInt(row.querySelector('.hourly-target-input').value) || 0;
@@ -1347,13 +1357,16 @@
                     row.style.backgroundColor = variance < 0 ? '#fff5f5' : '';
                     
                     // Update totals
-                    let tAct = 0, tTgt = 0;
+                    let tAct = 0, tTgt = 0, tPallet = 0;
                     hourlyDetailsDiv.querySelectorAll('.hourly-actual-input').forEach(i => tAct += (parseInt(i.value)||0));
                     hourlyDetailsDiv.querySelectorAll('.hourly-target-input').forEach(i => tTgt += (parseInt(i.value)||0));
+                    hourlyDetailsDiv.querySelectorAll('.hourly-pallet-input').forEach(i => tPallet += (parseInt(i.value)||0));
                     const tVar = tAct - tTgt;
                     
                     document.getElementById('hourly-total-act').textContent = tAct;
                     document.getElementById('hourly-total-tgt').textContent = tTgt;
+                    const tPalletDiv = document.getElementById('hourly-total-pallet');
+                    if(tPalletDiv) tPalletDiv.textContent = tPallet;
                     const tVarDiv = document.getElementById('hourly-total-var');
                     if(tVarDiv) {
                         tVarDiv.textContent = (tVar > 0 ? '+' : '') + tVar;
@@ -1669,7 +1682,12 @@
             archiveBtn.addEventListener('click', () => {
                 showArchiveOnly = !showArchiveOnly;
                 archiveBtn.classList.toggle('active-filter', showArchiveOnly);
+                archiveBtn.innerHTML = showArchiveOnly 
+                    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg> Back to Active`
+                    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg> View Archived`;
+                
                 renderCountersTable();
+                renderAttendanceTable();
             });
         }
 
@@ -3128,6 +3146,16 @@
 
         renderCountersTable();
         renderAttendanceTable();
+
+        // Auto Refresh
+        setInterval(() => {
+            const check = document.getElementById('auto-refresh-check');
+            if(check && check.checked) {
+                if(document.querySelector('.modal:not(.hidden)')) return; // Don't refresh if modal open
+                renderCountersTable();
+                renderAttendanceTable();
+            }
+        }, 15000);
     });
   </script>
 </body>
