@@ -2694,6 +2694,7 @@
                     
                     const floorHeader = document.createElement('h4');
                     floorHeader.textContent = 'FLOOR';
+                    floorHeader.classList.add('floor-element');
                     floorHeader.style.width = '100%';
                     floorHeader.style.textAlign = 'center';
                     floorHeader.style.margin = '30px 0 10px 0';
@@ -2703,6 +2704,7 @@
                     rackingGrid.appendChild(floorHeader);
 
                     const floorDiv = document.createElement('div');
+                    floorDiv.classList.add('floor-element');
                     floorDiv.style.display = 'grid';
                     floorDiv.style.gridTemplateColumns = `repeat(${config.floor.width}, 1fr)`;
                     floorDiv.style.gap = '2px';
@@ -2794,13 +2796,60 @@
                 const content = document.getElementById('racking-grid');
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write('<html><head><title>Sub Area Monitor</title>');
-                printWindow.document.write('<style>.rack-cell { border: 1px solid #ccc; width: 40px; height: 25px; display: inline-block; margin: 1px; text-align: center; font-size: 8px; vertical-align: top; } .counted { background: #e8f5e9; } .ongoing { background: #fff9c4; } .uncounted { background: #ffebee; } .empty { background: #e1f5fe; } .not-part { background: #cfd8dc; } .selected { border-color: #2752a7; }</style>');
+                printWindow.document.write('<style>.rack-cell { border: 1px solid #ccc; width: 40px; height: 25px; display: inline-block; margin: 1px; text-align: center; font-size: 8px; vertical-align: top; position: relative; } .counted { background: #e8f5e9; } .ongoing { background: #fff9c4; } .uncounted { background: #ffebee; } .empty { background: #e1f5fe; } .not-part { background: #cfd8dc; } .selected { border-color: #2752a7; } .pallet-icon { display: none; } .floor-element { display: none; } .cell-name { display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; overflow: hidden; text-overflow: ellipsis; background: transparent; box-shadow: none; font-size: 7px; }</style>');
                 printWindow.document.write('</head><body>');
                 printWindow.document.write(`<h2>${monitorSubAreaSelect.value} Monitor</h2>`);
                 printWindow.document.write(content.innerHTML);
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
                 setTimeout(() => printWindow.print(), 500);
+            });
+        }
+
+        if(monitorExportBtn) {
+            monitorExportBtn.addEventListener('click', () => {
+                const area = monitorSubAreaSelect.value;
+                if (!area) return;
+                const config = subAreaConfigs[area];
+                if (!config) return;
+
+                const rows = [['CellID', 'Name', 'Status']];
+                const labels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
+                const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+
+                const addRow = (id) => {
+                    rows.push([id, `"${labels[id] || ''}"`, statuses[id] || '']);
+                };
+
+                if (config.type === 'multi') {
+                    config.blocks.forEach(block => {
+                        const blockCells = block.width * block.levels;
+                        for(let i=0; i<blockCells; i++) {
+                            const rowIdx = Math.floor(i / block.width);
+                            const colIdx = (i % block.width) + 1;
+                            const rowNum = (block.rowBase || 0) + (rowIdx * (block.rowStep || 10));
+                            const label = `${block.prefix}${rowNum}-C${colIdx}`;
+                            addRow(label);
+                        }
+                    });
+                    if (config.floor) {
+                        const floorCells = config.floor.width * config.floor.levels;
+                        for (let i = 0; i < floorCells; i++) {
+                            const label = `${config.floor.prefix}-${i+1}`;
+                            addRow(label);
+                        }
+                    }
+                }
+                
+                const csvContent = rows.map(e => e.join(',')).join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${area}_monitor_export.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             });
         }
 
