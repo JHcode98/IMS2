@@ -3404,6 +3404,7 @@
                 // Let's ignore deleted records for duration calculation logic to keep it clean.
                 
                 let duration = '-';
+                let isHigh = false;
                 if (!log.deleted) {
                     if (log.action === 'Start') {
                         userLastStart[log.userId] = log.timestamp;
@@ -3413,6 +3414,7 @@
                             const diff = new Date(log.timestamp) - new Date(start);
                             const mins = Math.round(diff / 60000);
                             duration = `${mins} min`;
+                            if (mins >= 30) isHigh = true;
                             sessions.push({ user: log.userId, duration: mins, end: log.timestamp });
                             // Don't delete start, allowing multiple ends? No, usually pairs.
                             // delete userLastStart[log.userId]; // Uncomment if strict pairs
@@ -3421,7 +3423,7 @@
                 }
                 
                 if (!log.deleted || showDeleted) {
-                    rowsData.push({ ...log, durationDisplay: duration });
+                    rowsData.push({ ...log, durationDisplay: duration, isHigh });
                 }
             });
             
@@ -3436,6 +3438,7 @@
                     const timeStr = new Date(log.timestamp).toLocaleTimeString();
                     const color = log.action === 'Start' ? '#2ecc71' : '#e74c3c';
                     const rowStyle = log.deleted ? 'opacity: 0.5; text-decoration: line-through; background: #f9f9f9;' : '';
+                    const durationStyle = log.isHigh ? 'color:#e74c3c; font-weight:bold;' : '';
                     
                     const tr = document.createElement('tr');
                     tr.style.cssText = rowStyle;
@@ -3445,14 +3448,15 @@
                         actionsHtml += `<button class="icon-btn" onclick="editTimestamp('${log.id}')" title="Edit" style="padding:2px 4px; margin-right:4px;">✎</button>`;
                         actionsHtml += `<button class="icon-btn" onclick="deleteTimestamp('${log.id}')" title="Delete" style="padding:2px 4px; color:#d9534f;">&times;</button>`;
                     } else {
-                        actionsHtml += `<button class="icon-btn" onclick="restoreTimestamp('${log.id}')" title="Restore" style="padding:2px 4px; color:#2ecc71;">♻</button>`;
+                        actionsHtml += `<button class="icon-btn" onclick="restoreTimestamp('${log.id}')" title="Restore" style="padding:2px 4px; color:#2ecc71; margin-right:4px;">♻</button>`;
+                        actionsHtml += `<button class="icon-btn" onclick="purgeTimestamp('${log.id}')" title="Permanently Delete" style="padding:2px 4px; color:#c0392b;">🗑</button>`;
                     }
 
                     tr.innerHTML = `
                         <td style="padding:8px; border-bottom:1px solid #eee;">${timeStr}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${log.userId}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee; color:${color}; font-weight:bold;">${log.action}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${log.durationDisplay}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee; ${durationStyle}">${log.durationDisplay}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${actionsHtml}</td>
                     `;
                     timestampTableBody.appendChild(tr);
@@ -3533,6 +3537,14 @@
             const data = getTimestamps();
             const item = data.find(d => d.id === id);
             if(item) { delete item.deleted; saveTimestamps(data); renderTimestamps(); }
+        };
+
+        window.purgeTimestamp = function(id) {
+            if(!confirm('Permanently delete this log? This cannot be undone.')) return;
+            let data = getTimestamps();
+            data = data.filter(d => d.id !== id);
+            saveTimestamps(data);
+            renderTimestamps();
         };
         
         window.editTimestamp = function(id) {
