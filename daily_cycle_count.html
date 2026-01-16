@@ -137,6 +137,10 @@
         background-color: #cfd8dc;
         border-color: #b0bec5;
     }
+    .rack-cell.ongoing {
+        background-color: #fff9c4;
+        border-color: #fbc02d;
+    }
     .rack-cell.counted .pallet-icon {
         fill: #7f8c8d;
         opacity: 0.5;
@@ -194,6 +198,12 @@
     .rack-cell:hover .cell-checkbox {
         opacity: 1;
     }
+    /* Archive Button Hover Effect */
+    .btn-archive-row { color: #f39c12; border-color: #f39c12; }
+    .btn-archive-row:hover { background-color: #f39c12; color: white; }
+    
+    /* Row Checkbox Hover */
+    .row-select-label:hover { background-color: #f0f0f0; border-radius: 4px; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -267,8 +277,8 @@
             <button id="export-counters-btn" class="icon-btn" title="Export CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </button>
-            <button id="archive-btn" class="icon-btn" title="Archive (Past Days)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+            <button id="archive-btn" class="icon-btn" title="View Archived">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
             </button>
         </div>
       </div>
@@ -325,6 +335,7 @@
                       <th style="padding: 12px; text-align: left;">1st Shift (6am-2pm)</th>
                       <th style="padding: 12px; text-align: left;">2nd Shift (2pm-10pm)</th>
                       <th style="padding: 12px; text-align: left;">3rd Shift (10pm-6am)</th>
+                      <th style="padding: 12px; text-align: left;">Actions</th>
                   </tr>
               </thead>
               <tbody></tbody>
@@ -350,6 +361,12 @@
             <button class="icon-btn expand-toggle-btn" title="Collapse" style="padding:4px; border:none; background:transparent; color:var(--muted);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select id="att-filter-shift" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Shifts</option>
+                <option value="1st Shift-(6am-2pm)">1st Shift</option>
+                <option value="2nd Shift-(2pm-10pm)">2nd Shift</option>
+                <option value="3rd Shift-(10pm-6am)">3rd Shift</option>
+            </select>
             <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Roles</option>
                 <option value="IC Support">IC Support</option>
@@ -382,6 +399,7 @@
                   <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
                       <th style="padding: 12px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-att" title="Select All"></th>
                       <th class="sortable" data-sort="date" style="padding: 12px; text-align: left;">Date <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="userId" style="padding: 12px; text-align: left;">User ID <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="shift" style="padding: 12px; text-align: left;">Shift <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="name" style="padding: 12px; text-align: left;">Name <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="role" style="padding: 12px; text-align: left;">Role <span class="sort-icon"></span></th>
@@ -431,6 +449,10 @@
                     <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
                     <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
                 </select>
+            </div>
+            <div>
+                <label for="att-user-id">User ID (Optional)</label>
+                <input type="text" id="att-user-id" placeholder="Enter User ID" style="width:100%">
             </div>
             <div>
                 <label for="att-name">Counter Name</label>
@@ -572,10 +594,20 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">Sub Area Monitor</h3>
             <div style="display:flex; gap:10px; align-items:center;">
+                <select id="monitor-filter-status" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
+                    <option value="all">All Status</option>
+                    <option value="counted">Counted</option>
+                    <option value="uncounted">Not Counted</option>
+                    <option value="ongoing">On-going</option>
+                    <option value="empty">Empty</option>
+                </select>
+                <button id="monitor-print-btn" class="icon-btn" title="Print View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+                <button id="monitor-export-btn" class="icon-btn" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                 <div id="monitor-bulk-actions" style="display:none; gap:5px;">
                     <button id="bulk-copy-names-btn" class="icon-btn" style="background:#3498db; color:white; width:auto; padding: 6px 12px; font-size:12px;">Copy Names</button>
                     <button id="bulk-paste-names-btn" class="icon-btn" style="background:#9b59b6; color:white; width:auto; padding: 6px 12px; font-size:12px;">Paste Names</button>
                     <button id="bulk-counted-btn" class="icon-btn" style="background:#2ecc71; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Counted</button>
+                    <button id="bulk-ongoing-btn" class="icon-btn" style="background:#f1c40f; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark On-going</button>
                     <button id="bulk-empty-btn" class="icon-btn" style="background:#03a9f4; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Empty</button>
                     <button id="bulk-edit-btn" class="icon-btn" style="background:#607d8b; color:white; width:auto; padding: 6px 12px; font-size:12px;">Edit</button>
                     <button id="bulk-uncounted-btn" class="icon-btn" style="background:#e74c3c; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Not Counted</button>
@@ -619,6 +651,7 @@
             <select id="cell-status" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
                 <option value="auto">Auto (Default)</option>
                 <option value="counted">Counted</option>
+                <option value="ongoing">On-going count</option>
                 <option value="empty">Empty</option>
                 <option value="not-part">Not Part</option>
                 <option value="uncounted">Not Counted</option>
@@ -658,6 +691,7 @@
         const attSearchInput = document.getElementById('att-search');
         const attFilterRole = document.getElementById('att-filter-role');
         const attFilterArea = document.getElementById('att-filter-area');
+        const attFilterShift = document.getElementById('att-filter-shift');
         const countersSearchInput = document.getElementById('counters-search');
         const deleteSelectedCountersBtn = document.getElementById('delete-selected-counters-btn');
         const clearCountersFiltersBtn = document.getElementById('clear-counters-filters-btn');
@@ -681,11 +715,15 @@
         const monitorUploadBtn = document.getElementById('monitor-upload-btn');
         const monitorFileInput = document.getElementById('monitor-file-input');
         const bulkCountedBtn = document.getElementById('bulk-counted-btn');
+        const bulkOngoingBtn = document.getElementById('bulk-ongoing-btn');
         const bulkUncountedBtn = document.getElementById('bulk-uncounted-btn');
         const bulkCopyNamesBtn = document.getElementById('bulk-copy-names-btn');
         const bulkPasteNamesBtn = document.getElementById('bulk-paste-names-btn');
         const bulkEmptyBtn = document.getElementById('bulk-empty-btn');
         const bulkEditBtn = document.getElementById('bulk-edit-btn');
+        const monitorFilterStatus = document.getElementById('monitor-filter-status');
+        const monitorPrintBtn = document.getElementById('monitor-print-btn');
+        const monitorExportBtn = document.getElementById('monitor-export-btn');
         
         // Hourly Modal
         const hourlyModal = document.getElementById('hourly-modal');
@@ -813,7 +851,8 @@
 
         function getCountersData() {
             try {
-                return JSON.parse(localStorage.getItem(STORAGE_KEY_COUNTERS) || '[]');
+                const d = JSON.parse(localStorage.getItem(STORAGE_KEY_COUNTERS) || '[]');
+                return Array.isArray(d) ? d : [];
             } catch (e) {
                 console.error('Error parsing daily counters data', e);
                 return [];
@@ -857,6 +896,11 @@
             if (showArchiveOnly) {
                 const today = new Date().toISOString().split('T')[0];
                 data = data.filter(d => d.date < today);
+                data = data.filter(d => d.archived === true || d.date < today);
+            } else {
+                // Show active (not archived)
+                // But wait, user wants to manually archive.
+                data = data.filter(d => !d.archived);
             }
             
             const searchTerm = countersSearchInput ? countersSearchInput.value.toLowerCase() : '';
@@ -913,6 +957,9 @@
             
             paginatedDates.forEach(date => {
                 const tr = document.createElement('tr');
+                const isPast = new Date(date) < new Date(new Date().toISOString().split('T')[0]);
+                const archiveAction = isPast && !showArchiveOnly ? `<button class="icon-btn btn-archive-row" onclick="archiveDate('${date}')" title="Archive Date" style="margin-left:5px; padding:2px 6px; font-size:10px;">Archive</button>` : '';
+                
                 let html = `<td style="padding:12px;border-bottom:1px solid #eee;"><input type="checkbox" class="counter-row-checkbox" data-date="${date}"></td><td style="padding:12px;border-bottom:1px solid #eee; font-weight:bold;">${date}</td>`;
                 
                 shifts.forEach(shift => {
@@ -996,10 +1043,22 @@
                         html += `<td style="padding:12px;border-bottom:1px solid #eee; color:#ccc;">-</td>`;
                     }
                 });
+                html += `<td style="padding:12px;border-bottom:1px solid #eee;">${archiveAction}</td>`;
                 tr.innerHTML = html;
                 countersTableBody.appendChild(tr);
             });
             setTimeout(fixTooltips, 0);
+        }
+
+        window.archiveDate = function(date) {
+            if(!confirm(`Archive all counters for ${date}?`)) return;
+            let data = getCountersData();
+            data.forEach(d => {
+                if(d.date === date) d.archived = true;
+            });
+            saveCountersData(data);
+            renderCountersTable();
+            renderAttendanceTable(); // Refresh attendance if needed
         }
 
         if (countersTableBody) {
@@ -1155,7 +1214,7 @@
              
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
-             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee;"><p>Hour</p><p>Actual</p><p>Target</p><p>Variance</p></div>';
+             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee;"><p>Hour</p><p>Pallet Act</p><p>Actual (Items)</p><p>Target</p><p>Variance</p><p>Notes</p></div>';
 
              const hourlyData = {};
              const hourlyTargets = {};
@@ -1171,6 +1230,8 @@
              const savedActuals = counterEntry && counterEntry.hourlyActuals ? counterEntry.hourlyActuals : null;
              let totalAct = 0;
              let totalTgt = 0;
+             const savedPallets = counterEntry && counterEntry.hourlyPallets ? counterEntry.hourlyPallets : {};
+             const savedNotes = counterEntry && counterEntry.hourlyNotes ? counterEntry.hourlyNotes : {};
 
              // Initialize hours
              for (let d = new Date(start); d < end; d.setHours(d.getHours() + 1)) {
@@ -1207,6 +1268,8 @@
              Object.keys(hourlyData).forEach(label => {
                 const act = hourlyData[label] || 0;
                 const tgt = hourlyTargets[label] || 0;
+                const pallet = savedPallets[label] || 0;
+                const note = savedNotes[label] || '';
                 const variance = act - tgt;
                 const varColor = variance >= 0 ? '#2ecc71' : '#e74c3c';
                 const rowBg = variance < 0 ? 'background-color: #fff5f5;' : '';
@@ -1214,11 +1277,13 @@
                 totalAct += act;
                 totalTgt += tgt;
                 
-                hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee;">
+                hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee;">
                     <div style="padding-left: 5px;">${label}</div>
-                    <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 80px; padding: 4px;"></div>
-                    <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 80px; padding: 4px;"></div>
-                    <div class="hourly-variance" style="font-weight:bold; color:${varColor}">${(variance > 0 ? '+' : '') + variance}</div></div>`;
+                    <div><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}" style="width: 100%; padding: 4px;"></div>
+                    <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 100%; padding: 4px;"></div>
+                    <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 100%; padding: 4px;"></div>
+                    <div class="hourly-variance" style="font-weight:bold; color:${varColor}">${(variance > 0 ? '+' : '') + variance}</div>
+                    <div><input type="text" class="hourly-note-input" data-hour="${label}" value="${note}" style="width: 100%; padding: 4px;" placeholder="Notes"></div></div>`;
              });
              
              const totalVar = totalAct - totalTgt;
@@ -1335,6 +1400,8 @@
                 if (counterIndex > -1) {
                     if (!counters[counterIndex].hourlyTargets) counters[counterIndex].hourlyTargets = {};
                     if (!counters[counterIndex].hourlyActuals) counters[counterIndex].hourlyActuals = {};
+                    if (!counters[counterIndex].hourlyPallets) counters[counterIndex].hourlyPallets = {};
+                    if (!counters[counterIndex].hourlyNotes) counters[counterIndex].hourlyNotes = {};
                     
                     document.querySelectorAll('.hourly-target-input').forEach(input => {
                         const hour = input.dataset.hour;
@@ -1349,6 +1416,15 @@
                         if (!isNaN(value) && value >= 0) {
                             counters[counterIndex].hourlyActuals[hour] = value;
                         }
+                    });
+                    document.querySelectorAll('.hourly-pallet-input').forEach(input => {
+                        const hour = input.dataset.hour;
+                        const value = parseInt(input.value, 10);
+                        if (!isNaN(value) && value >= 0) counters[counterIndex].hourlyPallets[hour] = value;
+                    });
+                    document.querySelectorAll('.hourly-note-input').forEach(input => {
+                        const hour = input.dataset.hour;
+                        counters[counterIndex].hourlyNotes[hour] = input.value;
                     });
                     
                     saveCountersData(counters);
@@ -1369,16 +1445,20 @@
             exportHourlyBtn.addEventListener('click', () => {
                 const rows = [];
                 rows.push(['Hour', 'Actual', 'Target', 'Variance']);
+                rows.push(['Hour', 'Pallet Actual', 'Actual Items', 'Target', 'Variance', 'Notes']);
                 
                 // Data rows
                 const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
                 inputs.forEach(input => {
                     const rowDiv = input.closest('div[style*="display:grid"]');
                     const hour = rowDiv.children[0].textContent.trim();
+                    const pallet = rowDiv.querySelector('.hourly-pallet-input').value;
                     const act = input.value;
                     const tgt = rowDiv.querySelector('.hourly-target-input').value;
                     const variance = rowDiv.querySelector('.hourly-variance').textContent;
                     rows.push([`"${hour}"`, act, tgt, variance]);
+                    const note = rowDiv.querySelector('.hourly-note-input').value;
+                    rows.push([`"${hour}"`, pallet, act, tgt, variance, `"${note}"`]);
                 });
                 
                 // Total row
@@ -1622,6 +1702,21 @@
                 data = data.filter(item => globalSubAreas.includes(item.area));
             }
 
+            // Archived filter (hide archived dates unless in archive mode)
+            if (!showArchiveOnly) {
+                const counters = getCountersData();
+                // If date is archived in counters, hide attendance?
+                // Let's assume yes.
+                const archivedDates = new Set(counters.filter(c => c.archived).map(c => c.date));
+                data = data.filter(item => !archivedDates.has(item.date));
+            } else {
+                // In archive mode, maybe show all? Or only archived?
+                // Let's show only archived dates
+                const counters = getCountersData();
+                const archivedDates = new Set(counters.filter(c => c.archived).map(c => c.date));
+                data = data.filter(item => archivedDates.has(item.date));
+            }
+
             // Search filter
             const searchTerm = attSearchInput ? attSearchInput.value.toLowerCase() : '';
             if (searchTerm) {
@@ -1640,6 +1735,10 @@
             const areaFilter = attFilterArea ? attFilterArea.value : '';
             if (areaFilter) {
                 data = data.filter(item => item.area === areaFilter);
+            }
+            const shiftFilter = attFilterShift ? attFilterShift.value : '';
+            if (shiftFilter) {
+                data = data.filter(item => item.shift === shiftFilter);
             }
             
             // Sorting
@@ -1703,6 +1802,7 @@
                 tr.innerHTML = `
                     <td style="padding:12px;border-bottom:1px solid #eee"><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.date}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.userId || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.shift}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.name}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.role || '-'}</td>
@@ -1736,12 +1836,14 @@
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
                 const headers = ['Date', 'Shift', 'Name', 'Role', 'Area', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
                 dataToPrint.forEach(item => {
                     printWindow.document.write('<tr>');
                     printWindow.document.write(`<td>${item.date}</td>`);
+                    printWindow.document.write(`<td>${item.userId || ''}</td>`);
                     printWindow.document.write(`<td>${item.shift}</td>`);
                     printWindow.document.write(`<td>${item.name}</td>`);
                     printWindow.document.write(`<td>${item.role || '-'}</td>`);
@@ -1857,6 +1959,7 @@
 
         if (attFilterRole) attFilterRole.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
         if (attFilterArea) attFilterArea.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
+        if (attFilterShift) attFilterShift.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
 
         const attPaginationControls = document.getElementById('att-pagination-controls');
         if (attPaginationControls) {
@@ -2006,6 +2109,7 @@
                     id: editId || Date.now().toString(),
                     date: document.getElementById('att-date').value,
                     shift: document.getElementById('att-shift').value,
+                    userId: document.getElementById('att-user-id').value.trim(),
                     name: document.getElementById('att-name').value.trim(),
                     role: document.getElementById('att-role').value,
                     area: document.getElementById('att-area').value,
@@ -2047,12 +2151,14 @@
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
                 
                 const headers = ['Date', 'Shift', 'Name', 'Role', 'Area', 'Break Out', 'Break In', 'Duration'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Break Out', 'Break In', 'Duration'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
                     const dur = getDuration(item.breakOut, item.breakIn);
                     const row = [
                         item.date, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.breakOut || '', item.breakIn || '', dur
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.breakOut || '', item.breakIn || '', dur
                     ];
                     rows.push(row.join(','));
                 });
@@ -2086,6 +2192,7 @@
                         document.getElementById('att-modal-title').textContent = 'Edit Attendance';
                         document.getElementById('att-edit-id').value = item.id;
                         document.getElementById('att-date').value = item.date;
+                        document.getElementById('att-user-id').value = item.userId || '';
                         document.getElementById('att-shift').value = item.shift;
                         document.getElementById('att-name').value = item.name;
                         document.getElementById('att-role').value = item.role;
@@ -2196,6 +2303,8 @@
             
             monitorSubAreaSelect.addEventListener('change', () => {
                 monitorSelectedCells.clear();
+                // Reset filter
+                if(monitorFilterStatus) monitorFilterStatus.value = 'all';
                 updateMonitorControls();
                 renderMonitorGrid();
             });
@@ -2206,6 +2315,7 @@
             const rackingGrid = document.getElementById('racking-grid');
             const statsDiv = document.getElementById('monitor-stats');
             const capacityInfo = document.getElementById('monitor-capacity-info');
+            const filterStatus = monitorFilterStatus ? monitorFilterStatus.value : 'all';
             
             // Get Data
             let cycleCounts = [];
@@ -2225,6 +2335,7 @@
             const isCellCounted = (label, isAuto) => {
                 const manualStatus = customStatuses[label];
                 if (manualStatus === 'counted') return true;
+                if (manualStatus === 'ongoing') return false; // ongoing is not counted yet
                 if (manualStatus === 'uncounted') return false;
                 return isAuto;
             };
@@ -2429,20 +2540,37 @@
                     blockWrapper.appendChild(headerDiv);
 
                     const blockDiv = document.createElement('div');
-                    blockDiv.style.display = 'grid';
-                    blockDiv.style.gridTemplateColumns = `repeat(${block.width}, 1fr)`;
+                    blockDiv.style.display = 'flex';
+                    blockDiv.style.flexDirection = 'column';
                     blockDiv.style.gap = '2px';
                     blockDiv.style.width = '100%';
                     
-                    const blockCells = block.width * block.levels;
-                    
-                    for (let i = 0; i < blockCells; i++) {
+                    // Loop rows (levels)
+                    for (let r = 0; r < block.levels; r++) {
+                        const rowDiv = document.createElement('div');
+                        rowDiv.style.display = 'grid';
+                        rowDiv.style.gridTemplateColumns = `30px repeat(${block.width}, 1fr)`; // Add column for row checkbox
+                        rowDiv.style.gap = '2px';
+                        rowDiv.style.width = '100%';
+
+                        // Row Checkbox
+                        const rowCheckDiv = document.createElement('div');
+                        rowCheckDiv.className = 'row-select-label';
+                        rowCheckDiv.style.display = 'flex';
+                        rowCheckDiv.style.alignItems = 'center';
+                        rowCheckDiv.style.justifyContent = 'center';
+                        rowCheckDiv.style.cursor = 'pointer';
+                        rowCheckDiv.innerHTML = `<input type="checkbox" class="row-checkbox-monitor" title="Select Row">`;
+                        rowCheckDiv.querySelector('input').onclick = (e) => toggleRowSelection(blockIndex, r, e.target.checked, block.width, block.prefix, block.rowBase, block.rowStep);
+                        rowDiv.appendChild(rowCheckDiv);
+
+                        for (let c = 0; c < block.width; c++) {
                         const isAutoCounted = globalCellIndex < countedCount;
                         globalCellIndex++;
                         
                         // Generate Label: Prefix + RowNum + Col
-                        const rowIdx = Math.floor(i / block.width);
-                        const colIdx = (i % block.width) + 1;
+                        const rowIdx = r;
+                        const colIdx = c + 1;
                         const rowNum = (block.rowBase || 0) + (rowIdx * (block.rowStep || 10));
                         const label = `${block.prefix}${rowNum}-C${colIdx}`;
                         
@@ -2519,7 +2647,9 @@
                             cell.appendChild(nameSpan);
                         }
                         
-                        blockDiv.appendChild(cell);
+                        rowDiv.appendChild(cell);
+                    }
+                    blockDiv.appendChild(rowDiv);
                     }
                     blockWrapper.appendChild(blockDiv);
                     rackingGrid.appendChild(blockWrapper);
@@ -2785,6 +2915,28 @@
                     }
                 }
             });
+            updateMonitorControls();
+        }
+
+        function toggleRowSelection(blockIndex, rowIdx, isChecked, width, prefix, rowBase, rowStep) {
+            const rowNum = (rowBase || 0) + (rowIdx * (rowStep || 10));
+            for (let c = 1; c <= width; c++) {
+                const label = `${prefix}${rowNum}-C${c}`;
+                const cell = document.querySelector(`.rack-cell[data-id="${label}"]`);
+                if (cell) {
+                    const cb = cell.querySelector('.cell-checkbox');
+                    if (cb) {
+                        cb.checked = isChecked;
+                        if (isChecked) {
+                            monitorSelectedCells.add(label);
+                            cell.classList.add('selected');
+                        } else {
+                            monitorSelectedCells.delete(label);
+                            cell.classList.remove('selected');
+                        }
+                    }
+                }
+            }
             updateMonitorControls();
         }
 
