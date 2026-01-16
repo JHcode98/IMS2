@@ -718,6 +718,7 @@
                 <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <h4 style="margin:0;">Today's Logs</h4>
                     <div style="display:flex; gap:5px; align-items:center;">
+                        <input type="text" id="ts-filter-user" placeholder="Filter User" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                         <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-deleted"> Show Deleted</label>
                         <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
                     </div>
@@ -738,7 +739,10 @@
                 </div>
             </div>
             <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
-                <h4 style="margin-top:0;">Session Durations (Minutes)</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin-top:0;">Session Durations (Minutes)</h4>
+                    <span id="ts-total-duration" style="font-size:12px; font-weight:bold; color:#2752a7;"></span>
+                </div>
                 <div style="flex: 1; position: relative; min-height: 300px;">
                     <canvas id="timestamp-chart"></canvas>
                 </div>
@@ -821,6 +825,7 @@
         const timestampTableBody = document.querySelector('#timestamp-table tbody');
         const tsShowDeleted = document.getElementById('ts-show-deleted');
         const tsExportBtn = document.getElementById('ts-export-btn');
+        const tsFilterUser = document.getElementById('ts-filter-user');
         
         // Hourly Modal
         const hourlyModal = document.getElementById('hourly-modal');
@@ -3376,9 +3381,13 @@
             const data = getTimestamps();
             const today = new Date().toISOString().split('T')[0];
             const showDeleted = tsShowDeleted ? tsShowDeleted.checked : false;
+            const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             
             // Filter for today
             let todaysLogs = data.filter(d => d.timestamp.startsWith(today));
+            if (filterUser) {
+                todaysLogs = todaysLogs.filter(d => d.userId.toLowerCase().includes(filterUser));
+            }
             
             // Sort ascending to calculate sessions
             todaysLogs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -3450,6 +3459,14 @@
                 });
             }
             
+            // Calculate Total Duration
+            const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            const totalStr = (h > 0 ? h + 'h ' : '') + m + 'm';
+            const totalEl = document.getElementById('ts-total-duration');
+            if(totalEl) totalEl.textContent = `Total: ${totalStr}`;
+
             renderTimestampChart(sessions);
         }
 
@@ -3572,6 +3589,7 @@
         if(btnStartCount) btnStartCount.addEventListener('click', () => logTimestamp('Start'));
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
         if(tsShowDeleted) tsShowDeleted.addEventListener('change', renderTimestamps);
+        if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
     });
   </script>
 </body>
