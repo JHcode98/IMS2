@@ -888,6 +888,7 @@
                 const ts = c.createdDate || c.date;
                 if(ts) {
                     const info = getShiftFromTimestamp(ts);
+                    if (!info.date || !info.shift) return;
                     const key = `${info.date}|${info.shift}`;
                     actualsMap[key] = (actualsMap[key] || 0) + 1;
                 }
@@ -1309,6 +1310,7 @@
              const targetLineData = Object.values(hourlyTargets);
  
              const ctx = document.getElementById('hourly-chart');
+             if (typeof Chart !== 'undefined') {
              if (hourlyChart) hourlyChart.destroy();
              hourlyChart = new Chart(ctx, {
                  type: 'bar',
@@ -1325,6 +1327,7 @@
                      scales: { y: { beginAtZero: true, title: { display: true, text: 'Items Counted' } } } 
                  }
              });
+             }
         }
 
         // Dynamic Variance Calculation
@@ -1835,7 +1838,6 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'Shift', 'Name', 'Role', 'Area', 'Signature'];
                 const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
@@ -2149,15 +2151,12 @@
             exportAttBtn.addEventListener('click', () => {
                 const data = getAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
-                
-                const headers = ['Date', 'Shift', 'Name', 'Role', 'Area', 'Break Out', 'Break In', 'Duration'];
                 const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Break Out', 'Break In', 'Duration'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
                     const dur = getDuration(item.breakOut, item.breakIn);
                     const row = [
-                        item.date, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.breakOut || '', item.breakIn || '', dur
                         item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.breakOut || '', item.breakIn || '', dur
                     ];
                     rows.push(row.join(','));
@@ -2326,9 +2325,9 @@
             try { cycleCounts = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch(e){}
             
             // Filter by date (Global Filter)
-            const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+            const start = (globalStartDate && globalStartDate.value) ? new Date(globalStartDate.value) : null;
             if (start) start.setHours(0,0,0,0);
-            const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+            const end = (globalEndDate && globalEndDate.value) ? new Date(globalEndDate.value) : null;
             if (end) end.setHours(23,59,59,999);
             
             // Helper to check if a cell is counted
@@ -2364,10 +2363,10 @@
                     let areaCounted = 0;
                     
                     // Filter counts for this area
-                    const areaCounts = cycleCounts.filter(c => {
-                        const d = new Date(c.createdDate || c.date);
+                    const areaCounts = cycleCounts.filter(item => {
+                        const d = new Date(item.createdDate || item.date);
                         const dateMatch = (!start || d >= start) && (!end || d <= end);
-                        const locMatch = (c.location || '').toUpperCase().startsWith(subArea);
+                        const locMatch = (item.location || '').toUpperCase().startsWith(subArea);
                         return dateMatch && locMatch;
                     });
                     const countedCount = areaCounts.length;
@@ -2456,6 +2455,7 @@
                 chartContainer.appendChild(canvas);
                 rackingGrid.appendChild(chartContainer);
 
+                if (typeof Chart !== 'undefined') {
                 if (monitorDashboardChart) {
                     monitorDashboardChart.destroy();
                     monitorDashboardChart = null;
@@ -2484,6 +2484,7 @@
                         }
                     }
                 });
+                }
 
                 // Render Cards Grid
                 const cardsGrid = document.createElement('div');
@@ -2502,11 +2503,11 @@
             const config = subAreaConfigs[area] || { width: 20, levels: 5, total: 100 }; // Default if not defined
             
             // Filter counts for this area
-            const areaCounts = cycleCounts.filter(c => {
-                const d = new Date(c.createdDate || c.date);
+            const areaCounts = cycleCounts.filter(item => {
+                const d = new Date(item.createdDate || item.date);
                 const dateMatch = (!start || d >= start) && (!end || d <= end);
                 // Match location starting with area name
-                const locMatch = (c.location || '').toUpperCase().startsWith(area);
+                const locMatch = (item.location || '').toUpperCase().startsWith(area);
                 return dateMatch && locMatch;
             });
             
@@ -2729,6 +2730,7 @@
                 rackingGrid.style.gridTemplateColumns = `repeat(${config.width}, 1fr)`;
                 rackingGrid.style.maxWidth = `${config.width * CELL_SIZE}px`;
                 rackingGrid.style.width = '100%';
+                const totalCells = (config.total || (config.width * config.levels)) || 0;
                 for (let i = 0; i < totalCells; i++) {
                     const cell = document.createElement('div');
                     cell.className = `rack-cell ${i < countedCount ? 'counted' : ''}`;
@@ -3088,6 +3090,7 @@
 
         function getShiftFromTimestamp(ts) {
             const d = new Date(ts);
+            if (isNaN(d.getTime())) return { date: '', shift: '' };
             const h = d.getHours();
             let dateStr = d.toISOString().split('T')[0];
             let shift = '';
