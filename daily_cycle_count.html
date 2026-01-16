@@ -2602,6 +2602,9 @@
                         if (manualStatus === 'counted') {
                             isCounted = true;
                             statusClass = 'counted';
+                        } else if (manualStatus === 'ongoing') {
+                            isCounted = false;
+                            statusClass = 'ongoing';
                         } else if (manualStatus === 'uncounted') {
                             isCounted = false;
                             statusClass = 'uncounted';
@@ -2621,8 +2624,18 @@
                             if(isCounted) totalEffectiveCounted++;
                         }
                         
+                        // Filter Logic
+                        let showCell = true;
+                        if (filterStatus !== 'all') {
+                            if (filterStatus === 'counted' && !isCounted) showCell = false;
+                            if (filterStatus === 'uncounted' && (isCounted || manualStatus === 'empty' || manualStatus === 'not-part' || manualStatus === 'ongoing')) showCell = false;
+                            if (filterStatus === 'ongoing' && manualStatus !== 'ongoing') showCell = false;
+                            if (filterStatus === 'empty' && manualStatus !== 'empty') showCell = false;
+                        }
+
                         const cell = document.createElement('div');
                         cell.className = `rack-cell ${statusClass}`;
+                        if (!showCell) cell.style.opacity = '0.1';
                         
                         // Drag & Drop Attributes
                         cell.draggable = true;
@@ -2707,6 +2720,7 @@
                         let statusClass = '';
                         let isCounted = false;
                         if (manualStatus === 'counted') { isCounted = true; statusClass = 'counted'; }
+                        else if (manualStatus === 'ongoing') { isCounted = false; statusClass = 'ongoing'; }
                         else if (manualStatus === 'uncounted') { isCounted = false; statusClass = 'uncounted'; }
                         else if (manualStatus === 'empty') { isCounted = true; statusClass = 'empty'; }
                         else if (manualStatus === 'not-part') { isCounted = false; statusClass = 'not-part'; }
@@ -2716,8 +2730,18 @@
                             floorCounted++;
                         }
                         
+                        // Filter Logic
+                        let showCell = true;
+                        if (filterStatus !== 'all') {
+                            if (filterStatus === 'counted' && !isCounted) showCell = false;
+                            if (filterStatus === 'uncounted' && (isCounted || manualStatus === 'empty' || manualStatus === 'not-part' || manualStatus === 'ongoing')) showCell = false;
+                            if (filterStatus === 'ongoing' && manualStatus !== 'ongoing') showCell = false;
+                            if (filterStatus === 'empty' && manualStatus !== 'empty') showCell = false;
+                        }
+
                         const cell = document.createElement('div');
                         cell.className = `rack-cell ${statusClass}`;
+                        if (!showCell) cell.style.opacity = '0.1';
                         cell.draggable = true;
                         cell.addEventListener('dragstart', handleDragStart);
                         cell.addEventListener('dragover', handleDragOver);
@@ -2761,6 +2785,23 @@
             document.getElementById('monitor-capacity-info').textContent = `Capacity: ${totalCapacity} positions`;
             const pct = totalCapacity > 0 ? Math.round((totalEffectiveCounted / totalCapacity) * 100) : 0;
             document.getElementById('monitor-stats').innerHTML = `Counted: ${totalEffectiveCounted} / ${totalCapacity} (${pct}%)`;
+        }
+
+        if(monitorFilterStatus) monitorFilterStatus.addEventListener('change', renderMonitorGrid);
+
+        if(monitorPrintBtn) {
+            monitorPrintBtn.addEventListener('click', () => {
+                const content = document.getElementById('racking-grid');
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write('<html><head><title>Sub Area Monitor</title>');
+                printWindow.document.write('<style>.rack-cell { border: 1px solid #ccc; width: 40px; height: 25px; display: inline-block; margin: 1px; text-align: center; font-size: 8px; vertical-align: top; } .counted { background: #e8f5e9; } .ongoing { background: #fff9c4; } .uncounted { background: #ffebee; } .empty { background: #e1f5fe; } .not-part { background: #cfd8dc; } .selected { border-color: #2752a7; }</style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write(`<h2>${monitorSubAreaSelect.value} Monitor</h2>`);
+                printWindow.document.write(content.innerHTML);
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 500);
+            });
         }
 
         if (monitorTemplateBtn) {
