@@ -204,6 +204,31 @@
     
     /* Row Checkbox Hover */
     .row-select-label:hover { background-color: #f0f0f0; border-radius: 4px; }
+    
+    /* Toast Notification Styles */
+    .toast {
+        visibility: hidden;
+        min-width: 250px;
+        transform: translateX(-50%);
+        background-color: #2ecc71;
+        color: #fff;
+        text-align: center;
+        border-radius: 4px;
+        padding: 16px;
+        position: fixed;
+        z-index: 20000;
+        left: 50%;
+        top: 30px;
+        font-size: 16px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        opacity: 0;
+        transition: opacity 0.3s, top 0.3s;
+    }
+    .toast.show {
+        visibility: visible;
+        opacity: 1;
+        top: 50px;
+    }
   </style>
 </head>
 <body class="inventory-mode">
@@ -258,6 +283,9 @@
       </button>
       <button id="monitor-sub-area-btn" class="icon-btn" title="Monitor Sub Area" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Monitor
+      </button>
+      <button id="counter-timestamp-btn" class="icon-btn" title="Counter Timestamp" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Timestamp
       </button>
       <div style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #ccc; padding-left:10px;">
           <input type="checkbox" id="auto-refresh-check" title="Auto Refresh every 15s">
@@ -669,6 +697,34 @@
     </div>
   </div>
 
+  <!-- Counter Timestamp Modal -->
+  <div id="timestamp-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 500px; margin: 50px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Counter Timestamp</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="margin-bottom:15px;">
+            <label for="ts-user-id" style="font-weight:bold;">User ID / Name</label>
+            <input type="text" id="ts-user-id" placeholder="Scan or Enter User ID" style="width:100%; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <button id="btn-start-count" class="icon-btn" style="flex:1; background:#2ecc71; color:white; padding:12px; font-weight:bold; justify-content:center;">Start Counting</button>
+            <button id="btn-end-count" class="icon-btn" style="flex:1; background:#e74c3c; color:white; padding:12px; font-weight:bold; justify-content:center;">End Counting</button>
+        </div>
+        <h4>Today's Logs</h4>
+        <div style="max-height:300px; overflow-y:auto; border:1px solid #eee; border-radius:4px;">
+            <table id="timestamp-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="background:#f9f9f9; border-bottom:1px solid #eee;"><th style="padding:8px; text-align:left;">Time</th><th style="padding:8px; text-align:left;">User</th><th style="padding:8px; text-align:left;">Action</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+  </div>
+
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
   <script>
@@ -734,6 +790,14 @@
         const monitorExportBtn = document.getElementById('monitor-export-btn');
         const monitorSnapshotBtn = document.getElementById('monitor-snapshot-btn');
         
+        // Timestamp Modal
+        const timestampBtn = document.getElementById('counter-timestamp-btn');
+        const timestampModal = document.getElementById('timestamp-modal');
+        const tsUserIdInput = document.getElementById('ts-user-id');
+        const btnStartCount = document.getElementById('btn-start-count');
+        const btnEndCount = document.getElementById('btn-end-count');
+        const timestampTableBody = document.querySelector('#timestamp-table tbody');
+        
         // Hourly Modal
         const hourlyModal = document.getElementById('hourly-modal');
         const snapshotModal = document.getElementById('snapshot-modal');
@@ -759,6 +823,7 @@
         const STORAGE_KEY_COUNTERS = 'ims_daily_counters_v1';
         const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
         const STORAGE_KEY_CC = 'ims_cycle_count_v1';
+        const STORAGE_KEY_TIMESTAMPS = 'ims_counter_timestamps_v1';
         
         let showArchiveOnly = false;
         let attCurrentPage = 1;
@@ -2822,7 +2887,7 @@
                 const content = document.getElementById('racking-grid');
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write('<html><head><title>Sub Area Monitor</title>');
-                printWindow.document.write('<style>.rack-cell { border: 1px solid #ccc; width: 40px; height: 25px; display: inline-block; margin: 1px; text-align: center; font-size: 8px; vertical-align: top; position: relative; } .counted { background: #e8f5e9; } .ongoing { background: #fff9c4; } .uncounted { background: #ffebee; } .empty { background: #e1f5fe; } .not-part { background: #cfd8dc; } .selected { border-color: #2752a7; } .pallet-icon { display: none; } .floor-element { display: none; } .cell-checkbox { display: none; } .cell-name { display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; overflow: hidden; text-overflow: ellipsis; background: transparent; box-shadow: none; font-size: 8px; font-weight: bold; }</style>');
+                printWindow.document.write('<style>.rack-cell { border: 1px solid #ccc; width: 40px; height: 25px; display: inline-block; margin: 1px; text-align: center; font-size: 8px; vertical-align: top; position: relative; } .counted { background: #e8f5e9; } .ongoing { background: #fff9c4; } .uncounted { background: #ffebee; } .empty { background: #e1f5fe; } .not-part { background: #cfd8dc; } .selected { border-color: #2752a7; } .pallet-icon { display: none; } .floor-element { display: none; } .cell-checkbox, .block-select-all, .row-select-label, input[type=checkbox], label { display: none !important; } .cell-name { display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; overflow: hidden; text-overflow: ellipsis; background: transparent; box-shadow: none; font-size: 8px; font-weight: bold; }</style>');
                 printWindow.document.write('</head><body>');
                 printWindow.document.write(`<h2>${monitorSubAreaSelect.value} Monitor - Status: ${monitorFilterStatus.value}</h2>`);
                 printWindow.document.write(content.innerHTML);
@@ -3274,6 +3339,58 @@
                 renderAttendanceTable();
             }
         }, 15000);
+
+        // Counter Timestamp Logic
+        function getTimestamps() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TIMESTAMPS) || '[]'); } catch(e) { return []; }
+        }
+        function saveTimestamps(data) {
+            localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
+        }
+        function renderTimestamps() {
+            const data = getTimestamps();
+            const today = new Date().toISOString().split('T')[0];
+            const todaysLogs = data.filter(d => d.timestamp.startsWith(today)).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            timestampTableBody.innerHTML = '';
+            if(todaysLogs.length === 0) {
+                timestampTableBody.innerHTML = '<tr><td colspan="3" style="padding:10px; text-align:center; color:#999;">No logs for today.</td></tr>';
+                return;
+            }
+            todaysLogs.forEach(log => {
+                const timeStr = new Date(log.timestamp).toLocaleTimeString();
+                const color = log.action === 'Start' ? '#2ecc71' : '#e74c3c';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="padding:8px; border-bottom:1px solid #eee;">${timeStr}</td><td style="padding:8px; border-bottom:1px solid #eee;">${log.userId}</td><td style="padding:8px; border-bottom:1px solid #eee; color:${color}; font-weight:bold;">${log.action}</td>`;
+                timestampTableBody.appendChild(tr);
+            });
+        }
+        function logTimestamp(action) {
+            const userId = tsUserIdInput.value.trim();
+            if(!userId) { alert('Please enter User ID.'); return; }
+            const data = getTimestamps();
+            data.push({
+                id: Date.now().toString(),
+                userId: userId,
+                action: action,
+                timestamp: new Date().toISOString()
+            });
+            saveTimestamps(data);
+            renderTimestamps();
+            showToast(`${action} recorded for ${userId}`);
+            tsUserIdInput.value = '';
+            tsUserIdInput.focus();
+        }
+
+        if(timestampBtn) {
+            timestampBtn.addEventListener('click', () => {
+                timestampModal.classList.remove('hidden');
+                renderTimestamps();
+                setTimeout(() => tsUserIdInput.focus(), 100);
+            });
+        }
+        if(btnStartCount) btnStartCount.addEventListener('click', () => logTimestamp('Start'));
+        if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
     });
   </script>
 </body>
