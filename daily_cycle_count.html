@@ -31,17 +31,11 @@
     .card-content.hidden { display: none; }
     /* Resizable box */
     .resizable-box {
-        resize: both;
-        overflow: auto;
-        min-width: 300px;
-        min-height: 200px;
+        resize: both; overflow: auto; min-width: 300px; min-height: 200px;
     }
     /* Full height chart container for back card */
     .chart-container-back {
-        flex: 1;
-        position: relative;
-        width: 100%;
-        min-height: 0;
+        flex: 1; position: relative; width: 100%; min-height: 0;
     }
     /* Ensure modal is on top of navbar (z-index 9999) */
     .modal { z-index: 10001 !important; }
@@ -572,7 +566,7 @@
             </div>
         </div>
         <div id="hourly-report-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
-        <div id="hourly-chart-container">
+        <div style="position:relative; flex: 1; min-height: 0; width:100%;">
             <canvas id="hourly-chart"></canvas>
         </div>
         <div id="hourly-details" style="margin-top:10px; flex: 1; overflow-y: auto;">
@@ -1352,7 +1346,7 @@
              
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
-             let hourlyDetailsHtml = '<div class="hourly-header"><div>Hour</div><div>Pallet Act</div><div>Actual (Items)</div><div>Target</div><div>Variance</div><div>Notes</div></div>';
+             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee;"><p>Hour</p><p>Pallet Act</p><p>Actual (Items)</p><p>Target</p><p>Variance</p><p>Notes</p></div>';
 
              const hourlyData = {};
              const hourlyTargets = {};
@@ -1437,9 +1431,9 @@
                 totalAct += act;
                 totalTgt += tgt;
                 totalPallet += (Number(pallet) || 0);
-                
-                hourlyDetailsHtml += `<div class="hourly-row" style="${rowBg}">
-                    <div>${label}</div>
+
+                hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee;">
+                    <div style="padding-left: 5px;">${label}</div>
                     <div><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}" style="width: 100%; padding: 4px;"></div>
                     <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 100%; padding: 4px;"></div>
                     <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 100%; padding: 4px;"></div>
@@ -1449,8 +1443,8 @@
              
              const totalVar = totalAct - totalTgt;
              const totalVarColor = totalVar >= 0 ? '#2ecc71' : '#e74c3c';
-             hourlyDetailsHtml += `<div class="hourly-footer">
-                <div>Total</div>
+             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0;">
+                <div style="padding-left: 5px;">Total</div>
                 <div id="hourly-total-pallet">${totalPallet}</div>
                 <div id="hourly-total-act">${totalAct}</div>
                 <div id="hourly-total-tgt">${totalTgt}</div>
@@ -1497,7 +1491,7 @@
         if (hourlyDetailsDiv) {
             hourlyDetailsDiv.addEventListener('input', (e) => {
                 if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input') || e.target.classList.contains('hourly-pallet-input')) {
-                    const row = e.target.closest('.hourly-row');
+                    const row = e.target.closest('div[style*="display:grid"]');
                     const act = parseInt(row.querySelector('.hourly-actual-input').value) || 0;
                     const tgt = parseInt(row.querySelector('.hourly-target-input').value) || 0;
                     const variance = act - tgt;
@@ -1527,7 +1521,7 @@
                     
                     // Update Chart Real-time
                     if (hourlyChart) {
-                        const rows = document.querySelectorAll('.hourly-row');
+                        const rows = document.querySelectorAll('#hourly-details > div[style*="display:grid"]');
                         const actuals = [];
                         const targets = [];
                         let cumulative = [];
@@ -1618,7 +1612,7 @@
                 // Data rows
                 const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
                 inputs.forEach(input => {
-                    const rowDiv = input.closest('.hourly-row');
+                    const rowDiv = input.closest('div[style*="display:grid"]');
                     const hour = rowDiv.children[0].textContent.trim();
                     const pallet = rowDiv.querySelector('.hourly-pallet-input').value;
                     const act = input.value;
@@ -1657,7 +1651,7 @@
             let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Act | Tgt | Var\n---|---|---|---\n`;
             
             document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
-                const row = input.closest('.hourly-row');
+                const row = input.closest('div[style*="display:grid"]');
                 const hour = row.children[0].textContent.trim();
                 const tgt = row.querySelector('.hourly-target-input').value;
                 const variance = row.querySelector('.hourly-variance').textContent;
