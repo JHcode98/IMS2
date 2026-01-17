@@ -436,9 +436,11 @@
                       <th class="sortable" data-sort="name" style="padding: 12px; text-align: left;">Name <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="role" style="padding: 12px; text-align: left;">Role <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="area" style="padding: 12px; text-align: left;">Area <span class="sort-icon"></span></th>
+                      <th style="padding: 12px; text-align: left;">Time In</th>
                       <th style="padding: 12px; text-align: left;">Break Out</th>
                       <th style="padding: 12px; text-align: left;">Break In</th>
                       <th class="sortable" data-sort="duration" style="padding: 12px; text-align: left;">Duration <span class="sort-icon"></span></th>
+                      <th style="padding: 12px; text-align: left;">Status</th>
                       <th style="padding: 12px; text-align: left;">Action</th>
                   </tr>
               </thead>
@@ -484,7 +486,7 @@
             </div>
             <div>
                 <label for="att-user-id">User ID (Optional)</label>
-                <input type="text" id="att-user-id" placeholder="Enter User ID" style="width:100%">
+                <input type="text" id="att-user-id" placeholder="Auto-generated or Enter ID" style="width:100%">
             </div>
             <div>
                 <label for="att-name">Counter Name</label>
@@ -502,6 +504,17 @@
                 <select id="att-area" style="width:100%">
                     <option value="Pick Bin">Pick Bin</option>
                     <option value="Reserved Bin">Reserved Bin</option>
+                </select>
+            </div>
+            <div>
+                <label for="att-time-in">Time In</label>
+                <input type="time" id="att-time-in" style="width:100%">
+            </div>
+            <div>
+                <label for="att-status">Status</label>
+                <select id="att-status" style="width:100%">
+                    <option value="Full counter">Full counter</option>
+                    <option value="Temporary slide to Other task">Temporary slide to Other task</option>
                 </select>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -1935,9 +1948,11 @@
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.name}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.role || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.area || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.timeIn || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.breakOut || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.breakIn || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee; font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.status || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
                         <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
@@ -1963,7 +1978,7 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Duration', 'Status', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
@@ -1975,6 +1990,11 @@
                     printWindow.document.write(`<td>${item.name}</td>`);
                     printWindow.document.write(`<td>${item.role || '-'}</td>`);
                     printWindow.document.write(`<td>${item.area || '-'}</td>`);
+                    printWindow.document.write(`<td>${item.timeIn || ''}</td>`);
+                    printWindow.document.write(`<td>${item.breakOut || ''}</td>`);
+                    printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
+                    printWindow.document.write(`<td>${getDuration(item.breakOut, item.breakIn)}</td>`);
+                    printWindow.document.write(`<td>${item.status || ''}</td>`);
                     printWindow.document.write('<td class="sig"></td>'); // Empty signature cell
                     printWindow.document.write('</tr>');
                 });
@@ -2218,6 +2238,19 @@
                 attForm.reset();
                 document.getElementById('att-edit-id').value = '';
                 document.getElementById('att-date').valueAsDate = new Date();
+                
+                // Auto-fill Shift based on current time
+                const now = new Date();
+                const h = now.getHours();
+                let shiftVal = '3rd Shift-(10pm-6am)';
+                if (h >= 6 && h < 14) shiftVal = '1st Shift-(6am-2pm)';
+                else if (h >= 14 && h < 22) shiftVal = '2nd Shift-(2pm-10pm)';
+                document.getElementById('att-shift').value = shiftVal;
+
+                // Random 2-digit User ID
+                const randId = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+                document.getElementById('att-user-id').value = randId;
+
                 attModal.classList.remove('hidden');
             });
         }
@@ -2241,8 +2274,10 @@
                     name: document.getElementById('att-name').value.trim(),
                     role: document.getElementById('att-role').value,
                     area: document.getElementById('att-area').value,
+                    timeIn: document.getElementById('att-time-in').value,
                     breakIn: document.getElementById('att-break-in').value,
-                    breakOut: document.getElementById('att-break-out').value
+                    breakOut: document.getElementById('att-break-out').value,
+                    status: document.getElementById('att-status').value
                 };
                 if(!newEntry.name) return;
 
@@ -2278,13 +2313,13 @@
             exportAttBtn.addEventListener('click', () => {
                 const data = getAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Break Out', 'Break In', 'Duration'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Duration', 'Status'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
                     const dur = getDuration(item.breakOut, item.breakIn);
                     const row = [
-                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.breakOut || '', item.breakIn || '', dur
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', dur, `"${item.status||''}"`
                     ];
                     rows.push(row.join(','));
                 });
@@ -2323,8 +2358,10 @@
                         document.getElementById('att-name').value = item.name;
                         document.getElementById('att-role').value = item.role;
                         document.getElementById('att-area').value = item.area;
+                        document.getElementById('att-time-in').value = item.timeIn || '';
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
+                        document.getElementById('att-status').value = item.status || 'Full counter';
                         attModal.classList.remove('hidden');
                     }
                 }
