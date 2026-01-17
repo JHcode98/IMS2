@@ -997,6 +997,7 @@ function forwardDoc(controlNumber){
   addToHistory(doc, 'Forwarded', 'Forwarded to Admin');
   saveDocs();
   renderDocs();
+  addNotification('Document forwarded to Admin');
 }
 
 // Admin receives forwarded document (acknowledge)
@@ -1017,6 +1018,7 @@ function receiveDoc(controlNumber){
   renderDocs();
   // refresh admin inbox view as well
   try{ renderAdminInbox(); }catch(e){}
+  addNotification('Document received');
 }  
 
 // Batch receive: mark multiple forwarded docs as received (respects current adminInboxFilter/search)
@@ -1055,6 +1057,7 @@ function batchReceiveForwarded(){
     try{ updateAdminInboxBadge(); }catch(e){}
     try{ if(USE_SERVER) fetch(API_BASE + '/docs', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ docs })}).catch(()=>{}); }catch(e){}
     announceStatus('Marked ' + toReceive.length + ' forwarded document(s) as received');
+    addNotification('Marked ' + toReceive.length + ' documents as received');
   }catch(e){ console.error(e); alert('Error receiving documents'); }
 }
 window.batchReceiveForwarded = batchReceiveForwarded;
@@ -1124,6 +1127,7 @@ function returnToIC(controlNumber){
   saveDocs();
   renderDocs();
   try{ renderAdminInbox(); }catch(e){}
+  addNotification('Document returned to IC');
 } 
 
 function showDashboard(userName){
@@ -1592,6 +1596,7 @@ if(docsTableBody) docsTableBody.addEventListener('click', e => {
     doc.updatedAt = Date.now();
     addToHistory(doc, 'Updated', 'Notes updated inline');
     saveDocs();
+    addNotification('Note updated successfully');
     // restore cell
     const notesCell = tr.querySelector('.notes-cell');
     notesCell.innerHTML = `<span class="notes-text" title="${escapeHtml(doc.notes || '')}">${escapeHtml(doc.notes || '')}</span><button type="button" class="note-edit-btn" data-note-edit="${escapeHtml(doc.controlNumber)}">✎</button>`;
@@ -1635,6 +1640,7 @@ if(docsTableBody) docsTableBody.addEventListener('click', e => {
     if(!isAdmin){ alert('Only admin may receive forwarded documents.'); return; }
     if(confirm(`Mark document ${ctrl} as received?`)){
       receiveDoc(ctrl);
+      addNotification('Document received');
     }
     return;
   }
@@ -1650,6 +1656,7 @@ if(docsTableBody) docsTableBody.addEventListener('click', e => {
     if(confirm(`Confirm returning ${ctrl}${reason ? ' with reason: "' + reason + '"' : ''}?`)){
       returnToIC(ctrl, String(reason || ''));
       renderDocs();
+      addNotification('Document returned to IC');
     }
     return;
   }
@@ -2575,6 +2582,7 @@ bulkDeleteBtn && bulkDeleteBtn.addEventListener('click', () => {
       saveRecycle(rb);
       saveDocs();
       renderDocs();
+      addNotification(`${selected.length} documents deleted`);
     }
   }
 });
