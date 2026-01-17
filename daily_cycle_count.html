@@ -513,7 +513,18 @@
             <div>
                 <label for="att-status">Status</label>
                 <select id="att-status" style="width:100%">
-                    <option value="Full counter">Full time counter</option>
+                    <option value="Full counter">Full counter</option>
+                    <option value="Temporary slide to Other task">Temporary slide to Other task</option>
+                </select>
+            </div>
+            <div>
+                <label for="att-time-in">Time In</label>
+                <input type="time" id="att-time-in" style="width:100%">
+            </div>
+            <div>
+                <label for="att-status">Status</label>
+                <select id="att-status" style="width:100%">
+                    <option value="Full counter">Full counter</option>
                     <option value="Temporary slide to Other task">Temporary slide to Other task</option>
                 </select>
             </div>
@@ -561,7 +572,7 @@
             </div>
         </div>
         <div id="hourly-report-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
-        <div style="position:relative; flex: 1; min-height: 0; width:100%;">
+        <div id="hourly-chart-container">
             <canvas id="hourly-chart"></canvas>
         </div>
         <div id="hourly-details" style="margin-top:10px; flex: 1; overflow-y: auto;">
@@ -1341,7 +1352,7 @@
              
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
-             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee;"><p>Hour</p><p>Pallet Act</p><p>Actual (Items)</p><p>Target</p><p>Variance</p><p>Notes</p></div>';
+             let hourlyDetailsHtml = '<div class="hourly-header"><div>Hour</div><div>Pallet Act</div><div>Actual (Items)</div><div>Target</div><div>Variance</div><div>Notes</div></div>';
 
              const hourlyData = {};
              const hourlyTargets = {};
@@ -1374,7 +1385,28 @@
                  
                  // Use saved hourly target or default
                  const savedTarget = counterEntry && counterEntry.hourlyTargets && counterEntry.hourlyTargets[label];
-                 hourlyTargets[label] = savedTarget !== undefined ? savedTarget : defaultHourlyTarget;
+                 
+                 // Dynamic Target Calculation based on attendance time
+                 let activeCount = 0;
+                 if (rate > 0) {
+                     shiftAtt.forEach(p => {
+                         if (!p.timeIn) { activeCount++; } 
+                         else {
+                             const [ph, pm] = p.timeIn.split(':').map(Number);
+                             // Simple check: if they clocked in before the end of this hour slot
+                             let pDate = new Date(start);
+                             if (shift.includes('3rd') && ph < 12) pDate.setDate(pDate.getDate() + 1);
+                             pDate.setHours(ph, pm, 0, 0);
+                             
+                             // If they arrived before or during this hour (e.g. before next hour starts)
+                             const nextHour = new Date(d); nextHour.setHours(d.getHours() + 1);
+                             if (pDate < nextHour) activeCount++;
+                         }
+                     });
+                     hourlyTargets[label] = activeCount * rate;
+                 } else {
+                     hourlyTargets[label] = savedTarget !== undefined ? savedTarget : defaultHourlyTarget;
+                 }
              }
  
              // Only calculate from cycleCounts if no manual actuals are saved
@@ -1406,8 +1438,8 @@
                 totalTgt += tgt;
                 totalPallet += (Number(pallet) || 0);
                 
-                hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee;">
-                    <div style="padding-left: 5px;">${label}</div>
+                hourlyDetailsHtml += `<div class="hourly-row" style="${rowBg}">
+                    <div>${label}</div>
                     <div><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}" style="width: 100%; padding: 4px;"></div>
                     <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 100%; padding: 4px;"></div>
                     <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 100%; padding: 4px;"></div>
@@ -1417,8 +1449,8 @@
              
              const totalVar = totalAct - totalTgt;
              const totalVarColor = totalVar >= 0 ? '#2ecc71' : '#e74c3c';
-             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0;">
-                <div style="padding-left: 5px;">Total</div>
+             hourlyDetailsHtml += `<div class="hourly-footer">
+                <div>Total</div>
                 <div id="hourly-total-pallet">${totalPallet}</div>
                 <div id="hourly-total-act">${totalAct}</div>
                 <div id="hourly-total-tgt">${totalTgt}</div>
@@ -1465,7 +1497,7 @@
         if (hourlyDetailsDiv) {
             hourlyDetailsDiv.addEventListener('input', (e) => {
                 if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input') || e.target.classList.contains('hourly-pallet-input')) {
-                    const row = e.target.closest('div[style*="display:grid"]');
+                    const row = e.target.closest('.hourly-row');
                     const act = parseInt(row.querySelector('.hourly-actual-input').value) || 0;
                     const tgt = parseInt(row.querySelector('.hourly-target-input').value) || 0;
                     const variance = act - tgt;
@@ -1495,7 +1527,7 @@
                     
                     // Update Chart Real-time
                     if (hourlyChart) {
-                        const rows = document.querySelectorAll('#hourly-details > div[style*="display:grid"]');
+                        const rows = document.querySelectorAll('.hourly-row');
                         const actuals = [];
                         const targets = [];
                         let cumulative = [];
@@ -1586,7 +1618,7 @@
                 // Data rows
                 const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
                 inputs.forEach(input => {
-                    const rowDiv = input.closest('div[style*="display:grid"]');
+                    const rowDiv = input.closest('.hourly-row');
                     const hour = rowDiv.children[0].textContent.trim();
                     const pallet = rowDiv.querySelector('.hourly-pallet-input').value;
                     const act = input.value;
@@ -1625,7 +1657,7 @@
             let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Act | Tgt | Var\n---|---|---|---\n`;
             
             document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
-                const row = input.closest('div[style*="display:grid"]');
+                const row = input.closest('.hourly-row');
                 const hour = row.children[0].textContent.trim();
                 const tgt = row.querySelector('.hourly-target-input').value;
                 const variance = row.querySelector('.hourly-variance').textContent;
@@ -1995,6 +2027,11 @@
                     printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
                     printWindow.document.write(`<td>${getDuration(item.breakOut, item.breakIn)}</td>`);
                     printWindow.document.write(`<td>${item.status || ''}</td>`);
+                    printWindow.document.write(`<td>${item.timeIn || ''}</td>`);
+                    printWindow.document.write(`<td>${item.breakOut || ''}</td>`);
+                    printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
+                    printWindow.document.write(`<td>${getDuration(item.breakOut, item.breakIn)}</td>`);
+                    printWindow.document.write(`<td>${item.status || ''}</td>`);
                     printWindow.document.write('<td class="sig"></td>'); // Empty signature cell
                     printWindow.document.write('</tr>');
                 });
@@ -2146,7 +2183,7 @@
                 let data = getCountersData();
                 if (editId) {
                     const index = data.findIndex(item => item.id === editId);
-                    if (index > -1) data[index] = newEntry;
+                    if (index > -1) data[index] = { ...data[index], ...newEntry }; // Merge to preserve hourly data
                 } else {
                     data.push(newEntry);
                 }
