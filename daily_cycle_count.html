@@ -718,7 +718,7 @@
   <!-- Counter Timestamp Modal -->
   <div id="timestamp-modal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content card" style="max-width: 900px; margin: 50px auto;">
+    <div class="modal-content card" style="max-width: 95vw; margin: 50px auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">Counter Timestamp</h3>
             <button class="icon-btn close-modal">&times;</button>
@@ -745,9 +745,10 @@
                     <table id="timestamp-table" style="width:100%; border-collapse:collapse; font-size:13px;">
                         <thead>
                             <tr style="background:#f9f9f9; border-bottom:1px solid #eee;">
-                                <th style="padding:8px; text-align:left;">Time</th>
-                                <th style="padding:8px; text-align:left;">User</th>
-                                <th style="padding:8px; text-align:left;">Action</th>
+                                <th style="padding:8px; text-align:left;">User ID</th>
+                                <th style="padding:8px; text-align:left;">Name</th>
+                                <th style="padding:8px; text-align:left;">Start Time</th>
+                                <th style="padding:8px; text-align:left;">End Time</th>
                                 <th style="padding:8px; text-align:left;">Duration</th>
                                 <th style="padding:8px; text-align:left;">Actions</th>
                             </tr>
@@ -3447,99 +3448,123 @@
         }
         function renderTimestamps() {
             const data = getTimestamps();
+            const attendance = getAttendanceData();
             const today = new Date().toISOString().split('T')[0];
             const showDeleted = tsShowDeleted ? tsShowDeleted.checked : false;
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             
             // Filter for today
             let todaysLogs = data.filter(d => d.timestamp.startsWith(today));
-            if (filterUser) {
-                todaysLogs = todaysLogs.filter(d => d.userId.toLowerCase().includes(filterUser));
-            }
             
             // Sort ascending to calculate sessions
             todaysLogs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
             
-            const userLastStart = {};
             const sessions = [];
-            const rowsData = [];
+            const openSessions = {};
             
             todaysLogs.forEach(log => {
-                // Skip deleted for calculation if we want strict sessions, 
-                // but usually we want to see deleted logs in the table if checked.
-                // For duration calc, we should probably ignore deleted records to avoid bad math,
-                // unless the user wants to see what *was* there. 
-                // Let's ignore deleted records for duration calculation logic to keep it clean.
+                if (log.deleted && !showDeleted) return;
                 
-                let duration = '-';
-                let isHigh = false;
-                if (!log.deleted) {
-                    if (log.action === 'Start') {
-                        userLastStart[log.userId] = log.timestamp;
-                    } else if (log.action === 'End') {
-                        const start = userLastStart[log.userId];
-                        if (start) {
-                            const diff = new Date(log.timestamp) - new Date(start);
-                            const mins = Math.round(diff / 60000);
-                            duration = `${mins} min`;
-                            if (mins >= 30) isHigh = true;
-                            sessions.push({ user: log.userId, duration: mins, end: log.timestamp });
-                            // Don't delete start, allowing multiple ends? No, usually pairs.
-                            // delete userLastStart[log.userId]; // Uncomment if strict pairs
-                        }
+                if (log.action === 'Start') {
+                    if (openSessions[log.userId]) {
+                        sessions.push(openSessions[log.userId]); // Push incomplete previous session
                     }
-                }
-                
-                if (!log.deleted || showDeleted) {
-                    rowsData.push({ ...log, durationDisplay: duration, isHigh });
+                    openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null };
+                } else if (log.action === 'End') {
+                    if (openSessions[log.userId]) {
+                        const session = openSessions[log.userId];
+                        session.endLog = log;
+                        sessions.push(session);
+                        delete openSessions[log.userId];
+                    } else {
+                        // Orphaned end
+                        sessions.push({ userId: log.userId, startLog: null, endLog: log });
+                    }
                 }
             });
             
-            // Reverse for display (newest first)
-            rowsData.reverse();
+            // Add remaining open sessions
+            Object.values(openSessions).forEach(s => sessions.push(s));
+
+            // Filter sessions by user input
+            let filteredSessions = sessions;
+            if (filterUser) {
+                filteredSessions = sessions.filter(s => s.userId.toLowerCase().includes(filterUser));
+            }
+
+            // Sort descending (newest first)
+            filteredSessions.sort((a,b) => {
+                const tA = a.startLog ? a.startLog.timestamp : (a.endLog ? a.endLog.timestamp : '');
+                const tB = b.startLog ? b.startLog.timestamp : (b.endLog ? b.endLog.timestamp : '');
+                return new Date(tB) - new Date(tA);
+            });
             
             timestampTableBody.innerHTML = '';
-            if(rowsData.length === 0) {
+            if(filteredSessions.length === 0) {
                 timestampTableBody.innerHTML = '<tr><td colspan="5" style="padding:10px; text-align:center; color:#999;">No logs for today.</td></tr>';
             } else {
-                rowsData.forEach(log => {
-                    const timeStr = new Date(log.timestamp).toLocaleTimeString();
-                    const color = log.action === 'Start' ? '#2ecc71' : '#e74c3c';
-                    const rowStyle = log.deleted ? 'opacity: 0.5; text-decoration: line-through; background: #f9f9f9;' : '';
-                    const durationStyle = log.isHigh ? 'color:#e74c3c; font-weight:bold;' : '';
+                filteredSessions.forEach(session => {
+                    const userId = session.userId;
+                    // Lookup Name
+                    const attRecord = attendance.find(a => a.userId === userId && a.date === today);
+                    const name = attRecord ? attRecord.name : '-';
+
+                    const startStr = session.startLog ? new Date(session.startLog.timestamp).toLocaleTimeString() : '-';
+                    const endStr = session.endLog ? new Date(session.endLog.timestamp).toLocaleTimeString() : '-';
                     
-                    const tr = document.createElement('tr');
-                    tr.style.cssText = rowStyle;
-                    
-                    let actionsHtml = '';
-                    if (!log.deleted) {
-                        actionsHtml += `<button class="icon-btn" onclick="editTimestamp('${log.id}')" title="Edit" style="padding:2px 4px; margin-right:4px;">✎</button>`;
-                        actionsHtml += `<button class="icon-btn" onclick="deleteTimestamp('${log.id}')" title="Delete" style="padding:2px 4px; color:#d9534f;">&times;</button>`;
-                    } else {
-                        actionsHtml += `<button class="icon-btn" onclick="restoreTimestamp('${log.id}')" title="Restore" style="padding:2px 4px; color:#2ecc71; margin-right:4px;">♻</button>`;
-                        actionsHtml += `<button class="icon-btn" onclick="purgeTimestamp('${log.id}')" title="Permanently Delete" style="padding:2px 4px; color:#c0392b;">🗑</button>`;
+                    let duration = '-';
+                    let isHigh = false;
+                    let durationMins = 0;
+
+                    if (session.startLog && session.endLog) {
+                        const diff = new Date(session.endLog.timestamp) - new Date(session.startLog.timestamp);
+                        durationMins = Math.round(diff / 60000);
+                        duration = `${durationMins} min`;
+                        if (durationMins >= 30) isHigh = true;
+                    } else if (session.startLog) {
+                        duration = 'Active';
                     }
 
+                    // Add duration to session object for chart
+                    session.duration = durationMins;
+                    
+                    const tr = document.createElement('tr');
+                    if ((session.startLog && session.startLog.deleted) || (session.endLog && session.endLog.deleted)) {
+                        tr.style.opacity = '0.5';
+                        tr.style.background = '#f9f9f9';
+                    }
+                    
+                    const idsToDelete = [session.startLog?.id, session.endLog?.id].filter(x=>x).join(',');
+
                     tr.innerHTML = `
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${timeStr}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${log.userId}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee; color:${color}; font-weight:bold;">${log.action}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee; ${durationStyle}">${log.durationDisplay}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${actionsHtml}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee;">${userId}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee;">${name}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee; color:#2ecc71; font-weight:bold;">${startStr}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee; color:#e74c3c; font-weight:bold;">${endStr}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee; ${isHigh ? 'color:#e74c3c; font-weight:bold;' : (duration==='Active'?'color:#2ecc71;font-weight:bold':'')}">${duration}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee;">
+                            <button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Delete Session" style="color:#d9534f;">&times;</button>
+                        </td>
                     `;
                     timestampTableBody.appendChild(tr);
                 });
             }
             
             // Calculate Total Duration
-            const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
+            const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
             const h = Math.floor(totalMinutes / 60);
             const m = totalMinutes % 60;
             const totalStr = (h > 0 ? h + 'h ' : '') + m + 'm';
             const totalEl = document.getElementById('ts-total-duration');
             if(totalEl) totalEl.textContent = `Total: ${totalStr}`;
 
-            renderTimestampChart(sessions);
+            // Prepare chart data (completed sessions only)
+            const chartSessions = sessions.filter(s => s.endLog && s.duration > 0).map(s => ({
+                user: s.userId,
+                duration: s.duration,
+                end: s.endLog.timestamp
+            }));
+            renderTimestampChart(chartSessions);
         }
 
         function renderTimestampChart(sessions) {
@@ -3581,6 +3606,17 @@
             const userId = tsUserIdInput.value.trim();
             if(!userId) { alert('Please enter User ID.'); return; }
             const data = getTimestamps();
+            
+            // Validation: Cannot End without Start
+            if (action === 'End') {
+                const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const lastLog = userLogs[userLogs.length - 1];
+                if (!lastLog || lastLog.action !== 'Start') {
+                    alert(`Cannot End: No active 'Start' found for User ID ${userId}.`);
+                    return;
+                }
+            }
+
             data.push({
                 id: Date.now().toString(),
                 userId: userId,
@@ -3594,38 +3630,16 @@
             tsUserIdInput.focus();
         }
 
-        window.deleteTimestamp = function(id) {
-            if(!confirm('Delete this log?')) return;
+        window.deleteSession = function(ids) {
+            if(!confirm('Delete this session?')) return;
+            const idArray = ids.split(',');
             const data = getTimestamps();
-            const item = data.find(d => d.id === id);
-            if(item) { item.deleted = true; saveTimestamps(data); renderTimestamps(); }
-        };
-        
-        window.restoreTimestamp = function(id) {
-            const data = getTimestamps();
-            const item = data.find(d => d.id === id);
-            if(item) { delete item.deleted; saveTimestamps(data); renderTimestamps(); }
-        };
-
-        window.purgeTimestamp = function(id) {
-            if(!confirm('Permanently delete this log? This cannot be undone.')) return;
-            let data = getTimestamps();
-            data = data.filter(d => d.id !== id);
+            idArray.forEach(id => {
+                const item = data.find(d => d.id === id);
+                if(item) item.deleted = true;
+            });
             saveTimestamps(data);
             renderTimestamps();
-        };
-        
-        window.editTimestamp = function(id) {
-            const data = getTimestamps();
-            const item = data.find(d => d.id === id);
-            if(!item) return;
-            
-            const newTimeStr = prompt("Enter new time (YYYY-MM-DDTHH:mm:ss)", item.timestamp);
-            if(newTimeStr && new Date(newTimeStr).getTime()) {
-                item.timestamp = newTimeStr;
-                saveTimestamps(data);
-                renderTimestamps();
-            }
         };
 
         if(tsExportBtn) {
