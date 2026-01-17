@@ -653,7 +653,7 @@
                 </select>
                 <input type="text" id="monitor-search-input" placeholder="Search cell..." style="padding:6px; border-radius:4px; border:1px solid #ccc; width: 120px;">
                 <button id="monitor-print-btn" class="icon-btn" title="Print View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
-                <button id="monitor-export-btn" class="icon-btn" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                <button id="monitor-export-btn" class="icon-btn" title="Export CSV (All/Filtered)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                 <button id="monitor-snapshot-btn" class="icon-btn" title="Export Image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                 <div id="monitor-bulk-actions" style="display:none; gap:5px;">
                     <button id="bulk-copy-names-btn" class="icon-btn" style="background:#3498db; color:white; width:auto; padding: 6px 12px; font-size:12px;">Copy Names</button>
@@ -2091,6 +2091,7 @@
                     renderAttendanceTable();
                     renderCountersTable();
                     updateAttendanceActionButtons();
+                    showToast(`${selectedIds.length} attendance records deleted`);
                 });
             });
         }
@@ -2108,6 +2109,7 @@
                     renderCountersTable();
                     deleteSelectedCountersBtn.style.display = 'none';
                     if(selectAllCounters) selectAllCounters.checked = false;
+                    showToast(`${selectedDates.length} counter records deleted`);
                 });
             });
         }
@@ -2223,6 +2225,7 @@
                         data = data.filter(item => item.id !== id);
                         saveCountersData(data);
                         renderCountersTable();
+                        showToast('Counter deleted successfully');
                     }
                 } else if (btn.classList.contains('edit-counter-btn')) {
                     const data = getCountersData();
@@ -2391,6 +2394,7 @@
                         saveAttendanceData(data);
                         renderAttendanceTable();
                         renderCountersTable(); // Update counts
+                        showToast('Attendance entry deleted');
                     }
                 } else if (btn.classList.contains('edit-att-btn')) {
                     const data = getAttendanceData();
@@ -3012,45 +3016,87 @@
 
         if(monitorExportBtn) {
             monitorExportBtn.addEventListener('click', () => {
-                const area = monitorSubAreaSelect.value;
-                if (!area) return;
-                const config = subAreaConfigs[area];
-                if (!config) return;
-
-                const rows = [['CellID', 'Name', 'Status']];
+                const currentArea = monitorSubAreaSelect.value;
+                const areasToExport = currentArea ? [currentArea] : subAreaOptions;
+                const filterStatus = monitorFilterStatus ? monitorFilterStatus.value : 'all';
+                
+                const rows = [['Area', 'CellID', 'Name', 'Status', 'Manual Override']];
                 const labels = JSON.parse(localStorage.getItem('ims_rack_labels_v1') || '{}');
                 const statuses = JSON.parse(localStorage.getItem('ims_rack_status_v1') || '{}');
+                let cycleCounts = [];
+                try { cycleCounts = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch(e){}
 
-                const addRow = (id) => {
-                    rows.push([id, `"${labels[id] || ''}"`, statuses[id] || '']);
-                };
+                // Date filter for auto-count calculation
+                const start = (globalStartDate && globalStartDate.value) ? new Date(globalStartDate.value) : null;
+                if (start) start.setHours(0,0,0,0);
+                const end = (globalEndDate && globalEndDate.value) ? new Date(globalEndDate.value) : null;
+                if (end) end.setHours(23,59,59,999);
 
-                if (config.type === 'multi') {
-                    config.blocks.forEach(block => {
-                        const blockCells = block.width * block.levels;
-                        for(let i=0; i<blockCells; i++) {
-                            const rowIdx = Math.floor(i / block.width);
-                            const colIdx = (i % block.width) + 1;
-                            const rowNum = (block.rowBase || 0) + (rowIdx * (block.rowStep || 10));
-                            const label = `${block.prefix}${rowNum}-C${colIdx}`;
-                            addRow(label);
-                        }
+                areasToExport.forEach(area => {
+                    const config = subAreaConfigs[area];
+                    if (!config) return;
+
+                    // Calculate countedCount for this area (for Auto status)
+                    const areaCounts = cycleCounts.filter(item => {
+                        const d = new Date(item.createdDate || item.date);
+                        const dateMatch = (!start || d >= start) && (!end || d <= end);
+                        const locMatch = (item.location || '').toUpperCase().startsWith(area);
+                        return dateMatch && locMatch;
                     });
-                    if (config.floor) {
-                        const floorCells = config.floor.width * config.floor.levels;
-                        for (let i = 0; i < floorCells; i++) {
-                            const label = `${config.floor.prefix}-${i+1}`;
-                            addRow(label);
+                    const countedCount = areaCounts.length;
+                    let globalCellIndex = 0;
+
+                    const processCell = (label, isAutoCounted) => {
+                        const manualStatus = statuses[label];
+                        let status = 'Uncounted';
+                        if (manualStatus === 'counted') status = 'Counted';
+                        else if (manualStatus === 'ongoing') status = 'On-going';
+                        else if (manualStatus === 'empty') status = 'Empty';
+                        else if (manualStatus === 'not-part') status = 'Not Part';
+                        else if (manualStatus === 'uncounted') status = 'Uncounted';
+                        else if (isAutoCounted) status = 'Counted';
+
+                        // Apply Filter
+                        if (filterStatus !== 'all') {
+                            if (filterStatus === 'counted' && status !== 'Counted') return;
+                            if (filterStatus === 'uncounted' && status !== 'Uncounted') return;
+                            if (filterStatus === 'ongoing' && status !== 'On-going') return;
+                            if (filterStatus === 'empty' && status !== 'Empty') return;
+                        }
+                        rows.push([area, label, `"${labels[label] || ''}"`, status, manualStatus || '']);
+                    };
+
+                    if (config.type === 'multi') {
+                        config.blocks.forEach(block => {
+                            const blockCells = block.width * block.levels;
+                            for(let i=0; i<blockCells; i++) {
+                                const isAutoCounted = globalCellIndex < countedCount;
+                                globalCellIndex++;
+                                const rowIdx = Math.floor(i / block.width);
+                                const colIdx = (i % block.width) + 1;
+                                const rowNum = (block.rowBase || 0) + (rowIdx * (block.rowStep || 10));
+                                const label = `${block.prefix}${rowNum}-C${colIdx}`;
+                                processCell(label, isAutoCounted);
+                            }
+                        });
+                        if (config.floor) {
+                            const floorCells = config.floor.width * config.floor.levels;
+                            for (let i = 0; i < floorCells; i++) {
+                                const isAutoCounted = globalCellIndex < countedCount;
+                                globalCellIndex++;
+                                const label = `${config.floor.prefix}-${i+1}`;
+                                processCell(label, isAutoCounted);
+                            }
                         }
                     }
-                }
+                });
                 
                 const csvContent = rows.map(e => e.join(',')).join('\n');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.setAttribute('href', url);
-                link.setAttribute('download', `${area}_monitor_export.csv`);
+                link.setAttribute('download', `${currentArea || 'All_Areas'}_monitor_export.csv`);
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -3754,6 +3800,7 @@
             });
             saveTimestamps(data);
             renderTimestamps();
+            showToast('Session deleted');
         };
         
         window.purgeSession = function(ids) {
@@ -3763,6 +3810,7 @@
             data = data.filter(d => !idArray.includes(d.id));
             saveTimestamps(data);
             renderTimestamps();
+            showToast('Session permanently deleted');
         };
 
         if(tsMassDeleteBtn) {
@@ -3780,6 +3828,7 @@
                 });
                 saveTimestamps(data);
                 renderTimestamps();
+                showToast('Mass delete successful');
             });
         }
 
