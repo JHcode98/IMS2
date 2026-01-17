@@ -729,13 +729,16 @@
                     <label for="ts-user-id" style="font-weight:bold;">User ID / Name</label>
                     <input type="text" id="ts-user-id" placeholder="Scan or Enter User ID" style="width:100%; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:4px;">
                 </div>
-                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
                     <button id="btn-start-count" class="icon-btn" style="flex:1; background:#2ecc71; color:white; padding:12px; font-weight:bold; justify-content:center;">Start Counting</button>
+                    <button id="btn-break-start" class="icon-btn" style="flex:1; background:#f1c40f; color:white; padding:12px; font-weight:bold; justify-content:center;">Start Break</button>
+                    <button id="btn-break-end" class="icon-btn" style="flex:1; background:#f39c12; color:white; padding:12px; font-weight:bold; justify-content:center;">End Break</button>
                     <button id="btn-end-count" class="icon-btn" style="flex:1; background:#e74c3c; color:white; padding:12px; font-weight:bold; justify-content:center;">End Counting</button>
                 </div>
                 <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <h4 style="margin:0;">Today's Logs</h4>
                     <div style="display:flex; gap:5px; align-items:center;">
+                        <input type="date" id="ts-date-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
                         <input type="text" id="ts-filter-user" placeholder="Filter User" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                         <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-deleted"> Show Deleted</label>
                         <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
@@ -747,9 +750,11 @@
                             <tr style="background:#f9f9f9; border-bottom:1px solid #eee;">
                                 <th style="padding:8px; text-align:left;">User ID</th>
                                 <th style="padding:8px; text-align:left;">Name</th>
+                                <th style="padding:8px; text-align:left;">Shift</th>
                                 <th style="padding:8px; text-align:left;">Start Time</th>
                                 <th style="padding:8px; text-align:left;">End Time</th>
                                 <th style="padding:8px; text-align:left;">Duration</th>
+                                <th style="padding:8px; text-align:left;">Break</th>
                                 <th style="padding:8px; text-align:left;">Actions</th>
                             </tr>
                         </thead>
@@ -764,6 +769,10 @@
                 </div>
                 <div style="flex: 1; position: relative; min-height: 300px;">
                     <canvas id="timestamp-chart"></canvas>
+                </div>
+                <div id="ts-stats-section" style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                    <h5 style="margin:0 0 5px 0;">Top & Bottom Duration per Shift</h5>
+                    <div id="ts-shift-stats" style="font-size:12px;"></div>
                 </div>
             </div>
         </div>
@@ -840,11 +849,14 @@
         const timestampModal = document.getElementById('timestamp-modal');
         const tsUserIdInput = document.getElementById('ts-user-id');
         const btnStartCount = document.getElementById('btn-start-count');
+        const btnBreakStart = document.getElementById('btn-break-start');
+        const btnBreakEnd = document.getElementById('btn-break-end');
         const btnEndCount = document.getElementById('btn-end-count');
         const timestampTableBody = document.querySelector('#timestamp-table tbody');
         const tsShowDeleted = document.getElementById('ts-show-deleted');
         const tsExportBtn = document.getElementById('ts-export-btn');
         const tsFilterUser = document.getElementById('ts-filter-user');
+        const tsDateFilter = document.getElementById('ts-date-filter');
         
         // Hourly Modal
         const hourlyModal = document.getElementById('hourly-modal');
@@ -859,6 +871,9 @@
         let hourlyChart = null;
         let monitorDashboardChart = null;
         let timestampChart = null;
+
+        // Set default date for timestamp filter
+        if(tsDateFilter) tsDateFilter.valueAsDate = new Date();
 
         function showToast(message) {
             const toast = document.getElementById('toast-notification');
@@ -3449,12 +3464,12 @@
         function renderTimestamps() {
             const data = getTimestamps();
             const attendance = getAttendanceData();
-            const today = new Date().toISOString().split('T')[0];
+            const filterDate = tsDateFilter ? tsDateFilter.value : new Date().toISOString().split('T')[0];
             const showDeleted = tsShowDeleted ? tsShowDeleted.checked : false;
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             
-            // Filter for today
-            let todaysLogs = data.filter(d => d.timestamp.startsWith(today));
+            // Filter for selected date
+            let todaysLogs = data.filter(d => d.timestamp.startsWith(filterDate));
             
             // Sort ascending to calculate sessions
             todaysLogs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -3469,7 +3484,19 @@
                     if (openSessions[log.userId]) {
                         sessions.push(openSessions[log.userId]); // Push incomplete previous session
                     }
-                    openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null };
+                    openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null, breaks: [], currentBreakStart: null };
+                } else if (log.action === 'Start Break') {
+                    if (openSessions[log.userId]) {
+                        openSessions[log.userId].currentBreakStart = log;
+                    }
+                } else if (log.action === 'End Break') {
+                    if (openSessions[log.userId] && openSessions[log.userId].currentBreakStart) {
+                        const bStart = new Date(openSessions[log.userId].currentBreakStart.timestamp);
+                        const bEnd = new Date(log.timestamp);
+                        const bDur = (bEnd - bStart) / 60000; // minutes
+                        openSessions[log.userId].breaks.push({ start: openSessions[log.userId].currentBreakStart, end: log, duration: bDur });
+                        openSessions[log.userId].currentBreakStart = null;
+                    }
                 } else if (log.action === 'End') {
                     if (openSessions[log.userId]) {
                         const session = openSessions[log.userId];
@@ -3478,7 +3505,7 @@
                         delete openSessions[log.userId];
                     } else {
                         // Orphaned end
-                        sessions.push({ userId: log.userId, startLog: null, endLog: log });
+                        sessions.push({ userId: log.userId, startLog: null, endLog: log, breaks: [] });
                     }
                 }
             });
@@ -3489,7 +3516,14 @@
             // Filter sessions by user input
             let filteredSessions = sessions;
             if (filterUser) {
-                filteredSessions = sessions.filter(s => s.userId.toLowerCase().includes(filterUser));
+                const terms = filterUser.split(' ').filter(t => t);
+                filteredSessions = sessions.filter(s => {
+                    const attRecord = attendance.find(a => a.userId === s.userId && a.date === filterDate);
+                    const name = attRecord ? attRecord.name : '';
+                    const shiftInfo = s.startLog ? getShiftFromTimestamp(s.startLog.timestamp) : { shift: '' };
+                    const searchStr = (s.userId + ' ' + name + ' ' + shiftInfo.shift).toLowerCase();
+                    return terms.every(term => searchStr.includes(term));
+                });
             }
 
             // Sort descending (newest first)
@@ -3506,19 +3540,26 @@
                 filteredSessions.forEach(session => {
                     const userId = session.userId;
                     // Lookup Name
-                    const attRecord = attendance.find(a => a.userId === userId && a.date === today);
+                    const attRecord = attendance.find(a => a.userId === userId && a.date === filterDate);
                     const name = attRecord ? attRecord.name : '-';
 
                     const startStr = session.startLog ? new Date(session.startLog.timestamp).toLocaleTimeString() : '-';
                     const endStr = session.endLog ? new Date(session.endLog.timestamp).toLocaleTimeString() : '-';
                     
+                    // Determine Shift
+                    const shiftInfo = session.startLog ? getShiftFromTimestamp(session.startLog.timestamp) : { shift: '-' };
+                    const shiftDisplay = shiftInfo.shift.split('-')[0] || '-';
+
                     let duration = '-';
                     let isHigh = false;
                     let durationMins = 0;
+                    
+                    const totalBreakMins = session.breaks ? session.breaks.reduce((acc, b) => acc + b.duration, 0) : 0;
 
                     if (session.startLog && session.endLog) {
                         const diff = new Date(session.endLog.timestamp) - new Date(session.startLog.timestamp);
-                        durationMins = Math.round(diff / 60000);
+                        const grossMins = diff / 60000;
+                        durationMins = Math.round(grossMins - totalBreakMins);
                         duration = `${durationMins} min`;
                         if (durationMins >= 30) isHigh = true;
                     } else if (session.startLog) {
@@ -3527,6 +3568,7 @@
 
                     // Add duration to session object for chart
                     session.duration = durationMins;
+                    session.shift = shiftInfo.shift;
                     
                     const tr = document.createElement('tr');
                     if ((session.startLog && session.startLog.deleted) || (session.endLog && session.endLog.deleted)) {
@@ -3534,16 +3576,22 @@
                         tr.style.background = '#f9f9f9';
                     }
                     
-                    const idsToDelete = [session.startLog?.id, session.endLog?.id].filter(x=>x).join(',');
+                    const idsToDelete = [session.startLog?.id, session.endLog?.id, ...(session.breaks || []).flatMap(b => [b.start.id, b.end.id])].filter(x=>x).join(',');
+                    const isDeleted = (session.startLog && session.startLog.deleted);
+                    const deleteAction = isDeleted 
+                        ? `<button class="icon-btn" onclick="purgeSession('${idsToDelete}')" title="Permanently Delete" style="color:#c0392b;">🗑</button>`
+                        : `<button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Delete Session" style="color:#d9534f;">&times;</button>`;
 
                     tr.innerHTML = `
                         <td style="padding:8px; border-bottom:1px solid #eee;">${userId}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${name}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee;">${shiftDisplay}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee; color:#2ecc71; font-weight:bold;">${startStr}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee; color:#e74c3c; font-weight:bold;">${endStr}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee; ${isHigh ? 'color:#e74c3c; font-weight:bold;' : (duration==='Active'?'color:#2ecc71;font-weight:bold':'')}">${duration}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee;">${Math.round(totalBreakMins)}m</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">
-                            <button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Delete Session" style="color:#d9534f;">&times;</button>
+                            ${deleteAction}
                         </td>
                     `;
                     timestampTableBody.appendChild(tr);
@@ -3561,10 +3609,48 @@
             // Prepare chart data (completed sessions only)
             const chartSessions = sessions.filter(s => s.endLog && s.duration > 0).map(s => ({
                 user: s.userId,
+                shift: s.shift,
                 duration: s.duration,
                 end: s.endLog.timestamp
             }));
             renderTimestampChart(chartSessions);
+            renderShiftStats(chartSessions);
+        }
+
+        function renderShiftStats(sessions) {
+            const container = document.getElementById('ts-shift-stats');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            // Group by Shift
+            const shifts = {};
+            sessions.forEach(s => {
+                if(!s.shift) return;
+                if(!shifts[s.shift]) shifts[s.shift] = [];
+                shifts[s.shift].push(s);
+            });
+            
+            Object.keys(shifts).forEach(shift => {
+                const list = shifts[shift];
+                if(list.length === 0) return;
+                
+                // Aggregate by user
+                const userDurations = {};
+                list.forEach(s => {
+                    userDurations[s.user] = (userDurations[s.user] || 0) + s.duration;
+                });
+                
+                const sortedUsers = Object.entries(userDurations).sort((a,b) => b[1] - a[1]);
+                const top = sortedUsers[0];
+                const bottom = sortedUsers[sortedUsers.length - 1];
+                
+                const div = document.createElement('div');
+                div.style.cssText = "min-width: 150px; border: 1px solid #eee; padding: 8px; border-radius: 4px; background: #f9f9f9;";
+                div.innerHTML = `<strong>${shift.split('-')[0]}</strong><br>
+                <span style="color:#2ecc71">Top: ${top[0]} (${top[1]}m)</span><br>
+                <span style="color:#e74c3c">Bot: ${bottom[0]} (${bottom[1]}m)</span>`;
+                container.appendChild(div);
+            });
         }
 
         function renderTimestampChart(sessions) {
@@ -3606,12 +3692,13 @@
             const userId = tsUserIdInput.value.trim();
             if(!userId) { alert('Please enter User ID.'); return; }
             const data = getTimestamps();
+            const now = new Date();
             
             // Validation: Cannot End without Start
-            if (action === 'End') {
+            if (action === 'End' || action === 'Start Break' || action === 'End Break') {
                 const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 const lastLog = userLogs[userLogs.length - 1];
-                if (!lastLog || lastLog.action !== 'Start') {
+                if (!lastLog || (lastLog.action === 'End')) {
                     alert(`Cannot End: No active 'Start' found for User ID ${userId}.`);
                     return;
                 }
@@ -3621,7 +3708,7 @@
                 id: Date.now().toString(),
                 userId: userId,
                 action: action,
-                timestamp: new Date().toISOString()
+                timestamp: now.toISOString()
             });
             saveTimestamps(data);
             renderTimestamps();
@@ -3641,12 +3728,21 @@
             saveTimestamps(data);
             renderTimestamps();
         };
+        
+        window.purgeSession = function(ids) {
+            if(!confirm('Permanently delete this session? This cannot be undone.')) return;
+            const idArray = ids.split(',');
+            let data = getTimestamps();
+            data = data.filter(d => !idArray.includes(d.id));
+            saveTimestamps(data);
+            renderTimestamps();
+        };
 
         if(tsExportBtn) {
             tsExportBtn.addEventListener('click', () => {
                 const data = getTimestamps();
-                const today = new Date().toISOString().split('T')[0];
-                const logs = data.filter(d => d.timestamp.startsWith(today)).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const filterDate = tsDateFilter ? tsDateFilter.value : new Date().toISOString().split('T')[0];
+                const logs = data.filter(d => d.timestamp.startsWith(filterDate)).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 
                 if(logs.length === 0) { alert('No logs to export.'); return; }
                 
@@ -3655,7 +3751,7 @@
                 
                 logs.forEach(l => {
                     rows.push([
-                        l.timestamp,
+                        `"${new Date(l.timestamp).toLocaleString()}"`,
                         `"${l.userId}"`,
                         l.action,
                         l.deleted ? 'Deleted' : 'Active'
@@ -3666,7 +3762,7 @@
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.setAttribute('href', url);
-                link.setAttribute('download', `counter_timestamps_${today}.csv`);
+                link.setAttribute('download', `counter_timestamps_${filterDate}.csv`);
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -3681,9 +3777,12 @@
             });
         }
         if(btnStartCount) btnStartCount.addEventListener('click', () => logTimestamp('Start'));
+        if(btnBreakStart) btnBreakStart.addEventListener('click', () => logTimestamp('Start Break'));
+        if(btnBreakEnd) btnBreakEnd.addEventListener('click', () => logTimestamp('End Break'));
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
         if(tsShowDeleted) tsShowDeleted.addEventListener('change', renderTimestamps);
         if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
+        if(tsDateFilter) tsDateFilter.addEventListener('change', renderTimestamps);
     });
   </script>
 </body>
