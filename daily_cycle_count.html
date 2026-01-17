@@ -1346,7 +1346,7 @@
              
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
-             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee;"><p>Hour</p><p>Pallet Act</p><p>Actual (Items)</p><p>Target</p><p>Variance</p><p>Notes</p></div>';
+             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee; text-align: center;"><div style="text-align: left; padding-left: 5px;">Hour</div><div>Pallet Act</div><div>Actual (Items)</div><div>Target</div><div>Variance</div><div style="text-align: left;">Notes</div></div>';
 
              const hourlyData = {};
              const hourlyTargets = {};
@@ -1432,19 +1432,19 @@
                 totalTgt += tgt;
                 totalPallet += (Number(pallet) || 0);
 
-                hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee;">
-                    <div style="padding-left: 5px;">${label}</div>
-                    <div><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}" style="width: 100%; padding: 4px;"></div>
-                    <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 100%; padding: 4px;"></div>
-                    <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 100%; padding: 4px;"></div>
+                hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee; text-align: center;">
+                    <div style="text-align: left; padding-left: 5px;">${label}</div>
+                    <div><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}" style="width: 100%; padding: 4px; text-align: center;"></div>
+                    <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 100%; padding: 4px; text-align: center;"></div>
+                    <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 100%; padding: 4px; text-align: center;"></div>
                     <div class="hourly-variance" style="font-weight:bold; color:${varColor}">${(variance > 0 ? '+' : '') + variance}</div>
                     <div><input type="text" class="hourly-note-input" data-hour="${label}" value="${note}" style="width: 100%; padding: 4px;" placeholder="Notes"></div></div>`;
              });
              
              const totalVar = totalAct - totalTgt;
              const totalVarColor = totalVar >= 0 ? '#2ecc71' : '#e74c3c';
-             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0;">
-                <div style="padding-left: 5px;">Total</div>
+             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0; text-align: center;">
+                <div style="text-align: left; padding-left: 5px;">Total</div>
                 <div id="hourly-total-pallet">${totalPallet}</div>
                 <div id="hourly-total-act">${totalAct}</div>
                 <div id="hourly-total-tgt">${totalTgt}</div>
