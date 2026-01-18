@@ -764,13 +764,25 @@
                 </div>
             </div>
             <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h4 style="margin-top:0;">Analytics</h4>
-                </div>
-                <div id="ts-att-stats" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;"></div>
-                <div id="ts-shift-stats" style="margin-bottom: 10px; font-size:12px;"></div>
-                <div style="flex: 1; position: relative; min-height: 300px;">
-                    <canvas id="timestamp-chart"></canvas>
+                <div class="flip-container" id="ts-flip-container" style="flex: 1; margin-bottom: 0; min-height: 400px;">
+                    <div class="flip-inner" style="height: 100%;">
+                        <div class="flip-front" style="height: 100%; display: flex; flex-direction: column; padding: 15px; border: 1px solid #eee;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <h4 style="margin:0;">Analytics Overview</h4>
+                                <button id="ts-flip-to-chart" class="icon-btn" title="View Chart" style="background:#6f42c1; color:white;">📊 Chart</button>
+                            </div>
+                            <div id="ts-analytics-content" style="flex: 1; overflow-y: auto;"></div>
+                        </div>
+                        <div class="flip-back" style="height: 100%; display: flex; flex-direction: column; padding: 15px; border: 1px solid #eee;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <h4 style="margin:0;">Activity Chart</h4>
+                                <button id="ts-flip-to-stats" class="icon-btn" title="View Stats" style="background:#6f42c1; color:white;">📋 Stats</button>
+                            </div>
+                            <div style="flex: 1; position: relative; min-height: 0;">
+                                <canvas id="timestamp-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -856,6 +868,11 @@
         const tsFilterUser = document.getElementById('ts-filter-user');
         const tsDateFilter = document.getElementById('ts-date-filter');
         const tsMassDeleteBtn = document.getElementById('ts-mass-delete-btn');
+        
+        // Timestamp Flip Logic
+        const tsFlipContainer = document.getElementById('ts-flip-container');
+        document.getElementById('ts-flip-to-chart').addEventListener('click', () => tsFlipContainer.classList.add('flipped'));
+        document.getElementById('ts-flip-to-stats').addEventListener('click', () => tsFlipContainer.classList.remove('flipped'));
         
         // Hourly Modal
         const hourlyModal = document.getElementById('hourly-modal');
@@ -3686,71 +3703,95 @@
                 end: s.endLog.timestamp
             }));
             renderTimestampChart(chartSessions);
-            renderShiftStats(chartSessions);
-            renderAttendanceStats(filterDate);
+            renderTsAnalytics(sessions, filterDate);
         }
 
-        function renderShiftStats(sessions) {
-            const container = document.getElementById('ts-shift-stats');
+        function renderTsAnalytics(sessions, date) {
+            const container = document.getElementById('ts-analytics-content');
             if(!container) return;
             container.innerHTML = '';
             
-            // Group by Shift
-            const shifts = {};
-            sessions.forEach(s => {
-                if(!s.shift) return;
-                if(!shifts[s.shift]) shifts[s.shift] = [];
-                shifts[s.shift].push(s);
-            });
-            
-            Object.keys(shifts).forEach(shift => {
-                const list = shifts[shift];
-                if(list.length === 0) return;
-                
-                // Aggregate by user
-                const userDurations = {};
-                list.forEach(s => {
-                    userDurations[s.user] = (userDurations[s.user] || 0) + s.duration;
-                });
-                
-                const sortedUsers = Object.entries(userDurations).sort((a,b) => b[1] - a[1]);
-                const top = sortedUsers[0];
-                const bottom = sortedUsers[sortedUsers.length - 1];
-                
-                const div = document.createElement('div');
-                div.style.cssText = "margin-bottom: 5px; border: 1px solid #eee; padding: 8px; border-radius: 4px; background: #f9f9f9;";
-                div.innerHTML = `<strong>${shift.split('-')[0]}</strong><br>
-                <span style="color:#2ecc71">Top: ${top[0]} (${top[1]}m)</span><br>
-                <span style="color:#e74c3c">Bot: ${bottom[0]} (${bottom[1]}m)</span>`;
-                container.appendChild(div);
-            });
-        }
-
-        function renderAttendanceStats(date) {
-            const container = document.getElementById('ts-att-stats');
-            if(!container) return;
-            container.innerHTML = '';
-            
+            // 1. Attendance Stats (Full vs Temp)
             const attendance = getAttendanceData().filter(a => a.date === date);
-            const stats = { full: 0, temp: 0 };
-            
+            const attStats = { full: 0, temp: 0 };
             attendance.forEach(a => {
-                if(a.status === 'Full counter') stats.full++;
-                if(a.status === 'Temporary slide to Other task') stats.temp++;
+                if(a.status === 'Full counter') attStats.full++;
+                if(a.status === 'Temporary slide to Other task') attStats.temp++;
+            });
+
+            // 2. Session Stats
+            const userStarts = {};
+            let totalDuration = 0;
+            let completedSessions = 0;
+            let activeSessions = 0;
+            let totalBreaks = 0;
+
+            sessions.forEach(s => {
+                userStarts[s.userId] = (userStarts[s.userId] || 0) + 1;
+                if (s.duration > 0) {
+                    totalDuration += s.duration;
+                    completedSessions++;
+                } else if (!s.endLog) {
+                    activeSessions++;
+                }
+                if (s.breaks) totalBreaks += s.breaks.length;
             });
             
-            const card1 = document.createElement('div');
-            card1.className = 'card';
-            card1.style.cssText = "padding:10px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;";
-            card1.innerHTML = `<div style="font-size:20px; font-weight:bold; color:#2ecc71;">${stats.full}</div><div style="font-size:11px; color:#2e7d32;">Full Counters</div>`;
+            // Find Most/Least Frequent
+            let mostFreqUser = '-'; let mostFreqCount = 0;
+            let leastFreqUser = '-'; let leastFreqCount = Infinity;
             
-            const card2 = document.createElement('div');
-            card2.className = 'card';
-            card2.style.cssText = "padding:10px; text-align:center; background:#fff3e0; border:1px solid #ffe0b2; margin:0;";
-            card2.innerHTML = `<div style="font-size:20px; font-weight:bold; color:#f57c00;">${stats.temp}</div><div style="font-size:11px; color:#ef6c00;">Temp Slide</div>`;
-            
-            container.appendChild(card1);
-            container.appendChild(card2);
+            Object.entries(userStarts).forEach(([user, count]) => {
+                if (count > mostFreqCount) { mostFreqCount = count; mostFreqUser = user; }
+                if (count < leastFreqCount) { leastFreqCount = count; leastFreqUser = user; }
+            });
+            if (leastFreqCount === Infinity) leastFreqCount = 0;
+
+            const avgDuration = completedSessions > 0 ? Math.round(totalDuration / completedSessions) : 0;
+
+            // Render HTML
+            let html = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div class="card" style="padding:10px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
+                        <div style="font-size:20px; font-weight:bold; color:#2ecc71;">${attStats.full}</div>
+                        <div style="font-size:11px; color:#2e7d32;">Full Counters</div>
+                    </div>
+                    <div class="card" style="padding:10px; text-align:center; background:#fff3e0; border:1px solid #ffe0b2; margin:0;">
+                        <div style="font-size:20px; font-weight:bold; color:#f57c00;">${attStats.temp}</div>
+                        <div style="font-size:11px; color:#ef6c00;">Temp Slide</div>
+                    </div>
+                </div>
+
+                <div style="background:#f8f9fa; border-radius:6px; padding:12px; margin-bottom:10px; border:1px solid #eee;">
+                    <h5 style="margin:0 0 8px 0; color:#2752a7;">Session Insights</h5>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
+                        <span>Most Frequent Start:</span>
+                        <strong>${mostFreqUser} (${mostFreqCount})</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
+                        <span>Least Frequent Start:</span>
+                        <strong>${leastFreqUser} (${leastFreqCount})</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
+                        <span>Avg. Duration:</span>
+                        <strong>${avgDuration} min</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:13px;">
+                        <span>Active Sessions:</span>
+                        <strong style="color:${activeSessions > 0 ? '#2ecc71' : '#666'}">${activeSessions}</strong>
+                    </div>
+                </div>
+
+                <div style="background:#fff; border-radius:6px; padding:12px; border:1px solid #eee;">
+                    <h5 style="margin:0 0 8px 0; color:#666;">Suggestions & Stats</h5>
+                    <ul style="margin:0; padding-left:20px; font-size:12px; color:#555;">
+                        <li>Total Breaks Taken: <strong>${totalBreaks}</strong></li>
+                        <li>Completed Sessions: <strong>${completedSessions}</strong></li>
+                        <li>Unique Counters: <strong>${Object.keys(userStarts).length}</strong></li>
+                    </ul>
+                </div>
+            `;
+            container.innerHTML = html;
         }
 
         function renderTimestampChart(sessions) {
