@@ -3720,10 +3720,29 @@
             
             // 1. Attendance Stats (Full vs Temp)
             const attendance = getAttendanceData().filter(a => a.date === date);
-            const attStats = { full: 0, temp: 0 };
+            
+            // Identify active users (no end log) from the sessions passed
+            const activeUserIds = new Set(sessions.filter(s => !s.endLog).map(s => s.userId));
+            
+            const shiftData = {
+                '1st Shift-(6am-2pm)': { full: 0, fullActive: 0, temp: 0 },
+                '2nd Shift-(2pm-10pm)': { full: 0, fullActive: 0, temp: 0 },
+                '3rd Shift-(10pm-6am)': { full: 0, fullActive: 0, temp: 0 }
+            };
+            
+            let totalTemp = 0;
+
             attendance.forEach(a => {
-                if(a.status === 'Full counter') attStats.full++;
-                if(a.status === 'Temporary slide to Other task') attStats.temp++;
+                if (shiftData[a.shift]) {
+                    if (a.status === 'Full counter') {
+                        shiftData[a.shift].full++;
+                        if (activeUserIds.has(a.userId)) shiftData[a.shift].fullActive++;
+                    }
+                    if (a.status === 'Temporary slide to Other task') {
+                        shiftData[a.shift].temp++;
+                        totalTemp++;
+                    }
+                }
             });
 
             // 2. Session Stats
@@ -3766,14 +3785,24 @@
 
             // Render HTML
             let html = `
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-                    <div class="card" style="padding:10px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
-                        <div style="font-size:20px; font-weight:bold; color:#2ecc71;">${attStats.full}</div>
-                        <div style="font-size:11px; color:#2e7d32;">Full Counters</div>
+                <div style="margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <h5 style="margin:0; color:#2752a7;">Full Counters (Active / Total)</h5>
+                        <span style="font-size:11px; color:#f57c00; font-weight:bold;">Temp Slide: ${totalTemp}</span>
                     </div>
-                    <div class="card" style="padding:10px; text-align:center; background:#fff3e0; border:1px solid #ffe0b2; margin:0;">
-                        <div style="font-size:20px; font-weight:bold; color:#f57c00;">${attStats.temp}</div>
-                        <div style="font-size:11px; color:#ef6c00;">Temp Slide</div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;">
+                        <div class="card" style="padding:8px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
+                            <div style="font-size:10px; color:#2e7d32; margin-bottom:2px;">1st Shift</div>
+                            <div style="font-weight:bold; color:#2ecc71; font-size:14px;">${shiftData['1st Shift-(6am-2pm)'].fullActive} <span style="color:#2e7d32; font-size:11px;">/ ${shiftData['1st Shift-(6am-2pm)'].full}</span></div>
+                        </div>
+                        <div class="card" style="padding:8px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
+                            <div style="font-size:10px; color:#2e7d32; margin-bottom:2px;">2nd Shift</div>
+                            <div style="font-weight:bold; color:#2ecc71; font-size:14px;">${shiftData['2nd Shift-(2pm-10pm)'].fullActive} <span style="color:#2e7d32; font-size:11px;">/ ${shiftData['2nd Shift-(2pm-10pm)'].full}</span></div>
+                        </div>
+                        <div class="card" style="padding:8px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
+                            <div style="font-size:10px; color:#2e7d32; margin-bottom:2px;">3rd Shift</div>
+                            <div style="font-weight:bold; color:#2ecc71; font-size:14px;">${shiftData['3rd Shift-(10pm-6am)'].fullActive} <span style="color:#2e7d32; font-size:11px;">/ ${shiftData['3rd Shift-(10pm-6am)'].full}</span></div>
+                        </div>
                     </div>
                 </div>
 
