@@ -661,7 +661,7 @@
                     <button id="bulk-edit-btn" class="icon-btn" style="background:#607d8b; color:white; width:auto; padding: 6px 12px; font-size:12px;">Edit</button>
                     <button id="bulk-uncounted-btn" class="icon-btn" style="background:#e74c3c; color:white; width:auto; padding: 6px 12px; font-size:12px;">Mark Not Counted</button>
                 </div>
-                <div id="monitor-file-actions" style="display:none; gap:5px;">
+                <div id="monitor-file-actions" style="display:none; gap:5px; align-items: center;">
                     <button id="monitor-template-btn" class="icon-btn" title="Download Template/Export" style="background:#fff; border:1px solid #ccc;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     </button>
@@ -669,6 +669,9 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                     </button>
                     <input type="file" id="monitor-file-input" accept=".csv" style="display:none;">
+                    <div id="upload-progress-container" style="display:none; width: 100px; height: 20px; background: #eee; border-radius: 4px; overflow: hidden; border: 1px solid #ccc;">
+                        <div id="upload-progress-bar" style="height: 100%; width: 0%; background: #2ecc71; color: white; font-size: 10px; display: flex; align-items: center; justify-content: center;">0%</div>
+                    </div>
                 </div>
                 <select id="monitor-sub-area-select" style="padding:6px; border-radius:4px; border:1px solid #ccc; min-width: 150px;"></select>
                 <span id="monitor-capacity-info" style="font-size:13px; color:#666; font-weight:bold;"></span>
@@ -3158,8 +3161,27 @@
             monitorFileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+                
+                if (!confirm(`Are you sure you want to upload "${file.name}"? This will overwrite existing cell data.`)) {
+                    monitorFileInput.value = '';
+                    return;
+                }
+
+                const progressBar = document.getElementById('upload-progress-bar');
+                const progressContainer = document.getElementById('upload-progress-container');
+                if (progressContainer) progressContainer.style.display = 'block';
+                if (progressBar) { progressBar.style.width = '0%'; progressBar.textContent = '0%'; }
+
                 const reader = new FileReader();
+                reader.onprogress = (event) => {
+                    if (event.lengthComputable && progressBar) {
+                        const percent = Math.round((event.loaded / event.total) * 100);
+                        progressBar.style.width = percent + '%';
+                        progressBar.textContent = percent + '%';
+                    }
+                };
                 reader.onload = (event) => {
+                    if (progressContainer) setTimeout(() => { progressContainer.style.display = 'none'; }, 500);
                     const text = event.target.result;
                     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
                     if (lines.length < 2) { alert('Invalid CSV format or empty file.'); return; }
@@ -3200,6 +3222,11 @@
                     localStorage.setItem('ims_rack_status_v1', JSON.stringify(statuses));
                     alert(`Updated ${updatedCount} cells.`);
                     renderMonitorGrid();
+                    monitorFileInput.value = '';
+                };
+                reader.onerror = () => {
+                    if (progressContainer) progressContainer.style.display = 'none';
+                    alert('Error reading file');
                     monitorFileInput.value = '';
                 };
                 reader.readAsText(file);
