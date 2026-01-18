@@ -466,61 +466,58 @@
         </div>
         <form id="att-modal-form" style="display: grid; gap: 15px;">
             <input type="hidden" id="att-edit-id">
-            <div>
-                <label for="att-date">Date</label>
-                <input type="date" id="att-date" required style="width:100%">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-date">Date</label>
+                    <input type="date" id="att-date" required style="width:100%">
+                </div>
+                <div>
+                    <label for="att-shift">Shift</label>
+                    <select id="att-shift" required style="width:100%">
+                        <option value="1st Shift-(6am-2pm)">1st Shift-(6am-2pm)</option>
+                        <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
+                        <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label for="att-shift">Shift</label>
-                <select id="att-shift" required style="width:100%">
-                    <option value="1st Shift-(6am-2pm)">1st Shift-(6am-2pm)</option>
-                    <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
-                    <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
-                </select>
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+                <div>
+                    <label for="att-user-id">User ID</label>
+                    <input type="text" id="att-user-id" placeholder="ID" style="width:100%">
+                </div>
+                <div>
+                    <label for="att-name">Counter Name</label>
+                    <input type="text" id="att-name" required placeholder="Enter Name" style="width:100%">
+                </div>
             </div>
-            <div>
-                <label for="att-user-id">User ID (Optional)</label>
-                <input type="text" id="att-user-id" placeholder="Auto-generated or Enter ID" style="width:100%">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-role">Role</label>
+                    <select id="att-role" style="width:100%">
+                        <option value="IC Support">IC Support</option>
+                        <option value="IC Back up">IC Back up</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="att-area">Area</label>
+                    <select id="att-area" style="width:100%">
+                        <option value="Pick Bin">Pick Bin</option>
+                        <option value="Reserved Bin">Reserved Bin</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label for="att-name">Counter Name</label>
-                <input type="text" id="att-name" required placeholder="Enter Name" style="width:100%">
-            </div>
-            <div>
-                <label for="att-role">Role</label>
-                <select id="att-role" style="width:100%">
-                    <option value="IC Support">IC Support</option>
-                    <option value="IC Back up">IC Back up</option>
-                </select>
-            </div>
-            <div>
-                <label for="att-area">Area</label>
-                <select id="att-area" style="width:100%">
-                    <option value="Pick Bin">Pick Bin</option>
-                    <option value="Reserved Bin">Reserved Bin</option>
-                </select>
-            </div>
-            <div>
-                <label for="att-time-in">Time In</label>
-                <input type="time" id="att-time-in" style="width:100%">
-            </div>
-            <div>
-                <label for="att-status">Status</label>
-                <select id="att-status" style="width:100%">
-                    <option value="Full counter">Full counter</option>
-                    <option value="Temporary slide to Other task">Temporary slide to Other task</option>
-                </select>
-            </div>
-            <div>
-                <label for="att-time-in">Time In</label>
-                <input type="time" id="att-time-in" style="width:100%">
-            </div>
-            <div>
-                <label for="att-status">Status</label>
-                <select id="att-status" style="width:100%">
-                    <option value="Full counter">Full counter</option>
-                    <option value="Temporary slide to Other task">Temporary slide to Other task</option>
-                </select>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-time-in">Time In</label>
+                    <input type="time" id="att-time-in" style="width:100%">
+                </div>
+                <div>
+                    <label for="att-status">Status</label>
+                    <select id="att-status" style="width:100%">
+                        <option value="Full counter">Full counter</option>
+                        <option value="Temporary slide to Other task">Temporary slide to Other task</option>
+                    </select>
+                </div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
@@ -532,9 +529,9 @@
                     <input type="time" id="att-break-in" style="width:100%">
                 </div>
             </div>
-            <div style="text-align:right; margin-top:10px;">
-                <button type="button" class="icon-btn close-modal" style="margin-right:5px;">Cancel</button>
-                <button type="submit" class="icon-btn" style="background: #2752a7; color: white;">Save</button>
+            <div style="text-align:right; margin-top:10px; border-top: 1px solid #eee; padding-top: 15px;">
+                <button type="button" class="icon-btn close-modal" style="margin-right:5px; border: 1px solid #ccc; padding: 8px 16px;">Close</button>
+                <button type="submit" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 16px;">Save</button>
             </div>
         </form>
     </div>
