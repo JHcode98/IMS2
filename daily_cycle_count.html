@@ -874,6 +874,11 @@
         document.getElementById('ts-flip-to-chart').addEventListener('click', () => tsFlipContainer.classList.add('flipped'));
         document.getElementById('ts-flip-to-stats').addEventListener('click', () => tsFlipContainer.classList.remove('flipped'));
         
+        // Counters Flip Logic
+        const countersFlipContainer = document.getElementById('counters-flip-container');
+        document.getElementById('counters-flip-to-summary').addEventListener('click', () => { countersFlipContainer.classList.add('flipped'); renderCountersSummary(); });
+        document.getElementById('counters-flip-to-table').addEventListener('click', () => countersFlipContainer.classList.remove('flipped'));
+        
         // Hourly Modal
         const hourlyModal = document.getElementById('hourly-modal');
         const snapshotModal = document.getElementById('snapshot-modal');
@@ -3747,6 +3752,14 @@
             });
             if (leastFreqCount === Infinity) leastFreqCount = 0;
 
+            // Build User List Table
+            let userListHtml = '<div style="margin-top:10px; max-height:150px; overflow-y:auto; border:1px solid #eee;"><table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f9f9f9;"><th style="padding:4px; text-align:left;">User</th><th style="padding:4px; text-align:right;">Starts</th></tr></thead><tbody>';
+            const sortedUsers = Object.entries(userStarts).sort((a,b) => b[1] - a[1]);
+            sortedUsers.forEach(([u, c]) => {
+                userListHtml += `<tr><td style="padding:4px; border-bottom:1px solid #eee;">${u}</td><td style="padding:4px; border-bottom:1px solid #eee; text-align:right;">${c}</td></tr>`;
+            });
+            userListHtml += '</tbody></table></div>';
+
             const avgDuration = completedSessions > 0 ? Math.round(totalDuration / completedSessions) : 0;
 
             // Render HTML
@@ -3780,6 +3793,10 @@
                         <span>Active Sessions:</span>
                         <strong style="color:${activeSessions > 0 ? '#2ecc71' : '#666'}">${activeSessions}</strong>
                     </div>
+                    <div style="margin-top:8px;">
+                        <h6 style="margin:0 0 4px 0; color:#666;">Starts per User</h6>
+                        ${userListHtml}
+                    </div>
                 </div>
 
                 <div style="background:#fff; border-radius:6px; padding:12px; border:1px solid #eee;">
@@ -3791,6 +3808,63 @@
                     </ul>
                 </div>
             `;
+            container.innerHTML = html;
+        }
+        
+        function renderCountersSummary() {
+            const container = document.getElementById('counters-summary-content');
+            if(!container) return;
+            
+            let data = getCountersData();
+            // Apply same filters as table if desired, or just show all active
+            if (showArchiveOnly) {
+                const today = new Date().toISOString().split('T')[0];
+                data = data.filter(d => d.archived === true || d.date < today);
+            } else {
+                data = data.filter(d => !d.archived);
+            }
+            
+            // Load actuals
+            let cycleCounts = [];
+            try { cycleCounts = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch(e){}
+            const actualsMap = {};
+            cycleCounts.forEach(c => {
+                const ts = c.createdDate || c.date;
+                if(ts) {
+                    const info = getShiftFromTimestamp(ts);
+                    if (!info.date || !info.shift) return;
+                    const key = `${info.date}|${info.shift}`;
+                    actualsMap[key] = (actualsMap[key] || 0) + 1;
+                }
+            });
+
+            const shiftStats = {
+                '1st Shift-(6am-2pm)': 0,
+                '2nd Shift-(2pm-10pm)': 0,
+                '3rd Shift-(10pm-6am)': 0
+            };
+            let total24Output = 0;
+
+            data.forEach(item => {
+                let act = 0;
+                if (item.hourlyActuals) {
+                    act = Object.values(item.hourlyActuals).reduce((a, b) => a + (Number(b)||0), 0);
+                } else {
+                    act = actualsMap[`${item.date}|${item.shift}`] || 0;
+                }
+                if (shiftStats[item.shift] !== undefined) {
+                    shiftStats[item.shift] += act;
+                }
+                total24Output += act;
+            });
+
+            let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                <div class="stat-card"><div class="stat-value">${shiftStats['1st Shift-(6am-2pm)']}</div><div class="stat-label">1st Shift Total</div></div>
+                <div class="stat-card"><div class="stat-value">${shiftStats['2nd Shift-(2pm-10pm)']}</div><div class="stat-label">2nd Shift Total</div></div>
+                <div class="stat-card"><div class="stat-value">${shiftStats['3rd Shift-(10pm-6am)']}</div><div class="stat-label">3rd Shift Total</div></div>
+                <div class="stat-card" style="border-color:#2752a7;"><div class="stat-value" style="color:#2752a7;">${total24Output}</div><div class="stat-label">Total Output (24hrs)</div></div>
+            </div>`;
+            
             container.innerHTML = html;
         }
 
