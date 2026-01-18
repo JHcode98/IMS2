@@ -3817,6 +3817,7 @@
             const container = document.getElementById('counters-summary-content');
             if(!container) return;
             
+            const attendance = getAttendanceData();
             let data = getCountersData();
             // Apply same filters as table if desired, or just show all active
             if (showArchiveOnly) {
@@ -3840,12 +3841,18 @@
                 }
             });
 
-            const shiftStats = {
+            const shiftOutput = {
+                '1st Shift-(6am-2pm)': 0,
+                '2nd Shift-(2pm-10pm)': 0,
+                '3rd Shift-(10pm-6am)': 0
+            };
+            const shiftCounters = {
                 '1st Shift-(6am-2pm)': 0,
                 '2nd Shift-(2pm-10pm)': 0,
                 '3rd Shift-(10pm-6am)': 0
             };
             let total24Output = 0;
+            let total24Counters = 0;
 
             data.forEach(item => {
                 let act = 0;
@@ -3854,17 +3861,39 @@
                 } else {
                     act = actualsMap[`${item.date}|${item.shift}`] || 0;
                 }
-                if (shiftStats[item.shift] !== undefined) {
-                    shiftStats[item.shift] += act;
+                
+                // Calculate active counters for this shift item
+                let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift);
+                if (typeof globalSubAreas !== 'undefined' && globalSubAreas.length > 0) {
+                    shiftAtt = shiftAtt.filter(a => globalSubAreas.includes(a.area));
+                }
+                const actCounters = shiftAtt.length;
+
+                if (shiftOutput[item.shift] !== undefined) {
+                    shiftOutput[item.shift] += act;
+                    shiftCounters[item.shift] += actCounters;
                 }
                 total24Output += act;
+                total24Counters += actCounters;
             });
 
             let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
-                <div class="stat-card"><div class="stat-value">${shiftStats['1st Shift-(6am-2pm)']}</div><div class="stat-label">1st Shift Total</div></div>
-                <div class="stat-card"><div class="stat-value">${shiftStats['2nd Shift-(2pm-10pm)']}</div><div class="stat-label">2nd Shift Total</div></div>
-                <div class="stat-card"><div class="stat-value">${shiftStats['3rd Shift-(10pm-6am)']}</div><div class="stat-label">3rd Shift Total</div></div>
-                <div class="stat-card" style="border-color:#2752a7;"><div class="stat-value" style="color:#2752a7;">${total24Output}</div><div class="stat-label">Total Output (24hrs)</div></div>
+                <div class="stat-card">
+                    <div class="stat-value">${shiftOutput['1st Shift-(6am-2pm)']} <span style="font-size:14px; color:#666; font-weight:normal;">items</span></div>
+                    <div class="stat-label">1st Shift (${shiftCounters['1st Shift-(6am-2pm)']} counters)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${shiftOutput['2nd Shift-(2pm-10pm)']} <span style="font-size:14px; color:#666; font-weight:normal;">items</span></div>
+                    <div class="stat-label">2nd Shift (${shiftCounters['2nd Shift-(2pm-10pm)']} counters)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${shiftOutput['3rd Shift-(10pm-6am)']} <span style="font-size:14px; color:#666; font-weight:normal;">items</span></div>
+                    <div class="stat-label">3rd Shift (${shiftCounters['3rd Shift-(10pm-6am)']} counters)</div>
+                </div>
+                <div class="stat-card" style="border-color:#2752a7;">
+                    <div class="stat-value" style="color:#2752a7;">${total24Output} <span style="font-size:14px; color:#666; font-weight:normal;">items</span></div>
+                    <div class="stat-label">Total 24hrs (${total24Counters} counters)</div>
+                </div>
             </div>`;
             
             container.innerHTML = html;
