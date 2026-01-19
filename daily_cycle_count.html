@@ -25,49 +25,6 @@
     }
     .flip-front { z-index: 2; transform: rotateY(0deg); position: relative; }
     .flip-back { transform: rotateY(180deg); position: absolute; height: 100%; top: 0; overflow-y: auto; }
-    
-    /* Reporting Table Style */
-    .reporting-table {
-        border-collapse: collapse;
-        width: 100%;
-        font-family: 'Segoe UI', sans-serif;
-        font-size: 12px;
-        color: #333;
-    }
-    .reporting-table th, .reporting-table td {
-        border: 1px solid #ccc;
-        padding: 4px 6px;
-        text-align: center;
-    }
-    .reporting-table th {
-        background-color: #f0f2f5;
-        font-weight: 600;
-    }
-    .reporting-table input {
-        border: none; background: transparent; width: 100%; text-align: center; font-family: inherit; font-size: inherit;
-    }
-    .reporting-table input:focus { background: #eef; outline: 2px solid #2752a7; }
-    /* Reporting Table Style */
-    .reporting-table {
-        border-collapse: collapse;
-        width: 100%;
-        font-family: 'Segoe UI', sans-serif;
-        font-size: 12px;
-        color: #333;
-    }
-    .reporting-table th, .reporting-table td {
-        border: 1px solid #ccc;
-        padding: 4px 6px;
-        text-align: center;
-    }
-    .reporting-table th {
-        background-color: #f0f2f5;
-        font-weight: 600;
-    }
-    .reporting-table input {
-        border: none; background: transparent; width: 100%; text-align: center; font-family: inherit; font-size: inherit;
-    }
-    .reporting-table input:focus { background: #eef; outline: 2px solid #2752a7; }
   </style>
   <style>
     /* Card content expand/collapse */
@@ -381,14 +338,6 @@
               <input type="number" id="counter-target-pallet" min="0" placeholder="Reserved Bin" style="width:100%">
           </div>
           <div>
-              <label for="counter-target-reserved-sku">Tgt Items (Reserved)</label>
-              <input type="number" id="counter-target-reserved-sku" min="0" placeholder="Items on Pallets" style="width:100%">
-          </div>
-          <div>
-              <label for="counter-target-reserved-sku">Tgt Items (Reserved)</label>
-              <input type="number" id="counter-target-reserved-sku" min="0" placeholder="Items on Pallets" style="width:100%">
-          </div>
-          <div>
               <label for="counter-target-pick">Tgt Pick Bins</label>
               <input type="number" id="counter-target-pick" min="0" placeholder="Pick Bin" style="width:100%">
           </div>
@@ -610,7 +559,7 @@
   <!-- Hourly Monitor Modal -->
   <div id="hourly-modal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70vw; max-width: 900px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
+    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90vw; max-width: 1400px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
         <input type="hidden" id="hourly-date-val">
         <input type="hidden" id="hourly-shift-val">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -650,8 +599,8 @@
         <div style="position:relative; flex: 1; min-height: 0; width:100%;">
             <canvas id="hourly-chart"></canvas>
         </div>
-        <div id="hourly-details" style="margin-top:10px; flex: 1; overflow-y: auto;">
-            <!-- Hourly input fields will be generated here -->
+        <div id="hourly-details-container" style="margin-top:10px; flex: 1; overflow-y: auto;">
+            <!-- Reporting table will be generated here -->
         </div>
         </div>
     </div>
@@ -2515,7 +2464,6 @@
                 cancelCounterEditBtn.style.display = 'none';
                 document.getElementById('counter-rate').value = '';
                 document.getElementById('counter-note').value = '';
-                document.getElementById('counter-target-reserved-sku').value = '';
                 setLocalDate(document.getElementById('counter-date'));
             });
         }
@@ -4333,14 +4281,19 @@
                     
                     if (entryIndex > -1) {
                         const entry = counters[entryIndex];
-                        if (!entry.hourlyActuals) entry.hourlyActuals = {};
-                        if (!entry.hourlyPallets) entry.hourlyPallets = {};
-                        
                         const h = now.getHours();
                         const label = `${h}:00 - ${h+1}:00`;
                         
-                        entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
-                        entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
+                        const areaType = document.getElementById('ec-area-type').value;
+                        if (areaType === 'Reserved') {
+                            if (!entry.hourlyReservedSKUs) entry.hourlyReservedSKUs = {};
+                            if (!entry.hourlyPallets) entry.hourlyPallets = {};
+                            entry.hourlyReservedSKUs[label] = (entry.hourlyReservedSKUs[label] || 0) + skus;
+                            entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
+                        } else { // Pick Bin
+                            if (!entry.hourlyActuals) entry.hourlyActuals = {}; // This now means Pick Bin Actuals
+                            entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
+                        }
                         
                         saveCountersData(counters);
                     }
