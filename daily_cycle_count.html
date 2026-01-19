@@ -334,8 +334,12 @@
               <input type="number" id="counter-rate" min="1" placeholder="Per Person" style="width:100%">
           </div>
           <div>
-              <label for="counter-target">Target Output</label>
-              <input type="number" id="counter-target" min="0" placeholder="Optional" style="width:100%">
+              <label for="counter-target-pallet">Tgt Pallets (Reserved)</label>
+              <input type="number" id="counter-target-pallet" min="0" placeholder="Reserved Bin" style="width:100%">
+          </div>
+          <div>
+              <label for="counter-target-pick">Tgt Pick Bins</label>
+              <input type="number" id="counter-target-pick" min="0" placeholder="Pick Bin" style="width:100%">
           </div>
           <div>
               <label for="counter-note">Note (Optional)</label>
@@ -830,7 +834,7 @@
             <input type="number" id="ec-pallets" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
         </div>
         <div style="margin-bottom:15px;">
-            <label style="font-weight:bold; display:block; margin-bottom:5px;">SKUs (Items) Counted:</label>
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">Pick Bins (SKUs) Counted:</label>
             <input type="number" id="ec-skus" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
         </div>
         <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
@@ -886,7 +890,8 @@
         const dateInput = document.getElementById('counter-date');
         const rateInput = document.getElementById('counter-rate');
         const reqInput = document.getElementById('counter-required');
-        const targetInput = document.getElementById('counter-target');
+        const targetPalletInput = document.getElementById('counter-target-pallet');
+        const targetPickInput = document.getElementById('counter-target-pick');
         const noteInput = document.getElementById('counter-note');
         
         const attendanceTableBody = document.querySelector('#attendance-table tbody');
@@ -1098,7 +1103,7 @@
         function autoCalcTarget() {
             const req = parseInt(reqInput.value) || 0;
             const rate = parseInt(rateInput.value) || 0;
-            if (req > 0 && rate > 0) targetInput.value = req * rate;
+            // if (req > 0 && rate > 0) targetInput.value = req * rate; // Deprecated auto-calc for generic target
         }
         if(rateInput) rateInput.addEventListener('input', autoCalcTarget);
         if(reqInput) reqInput.addEventListener('input', autoCalcTarget);
@@ -1247,7 +1252,9 @@
                         
                         // Calculate dynamic target based on active counters if rate exists
                         const rate = item.standardRate || 0;
-                        const activeTarget = rate > 0 ? (act * rate) : (item.targetOutput || 0);
+                        // const activeTarget = rate > 0 ? (act * rate) : (item.targetOutput || 0); // Legacy
+                        const tgtPallet = item.targetPallets || 0;
+                        const tgtPick = item.targetPickBins || 0;
                         
                         // Calculate actual output for this shift
                         let actualOutput = 0;
@@ -1257,7 +1264,7 @@
                             actualOutput = actualsMap[`${date}|${shift}`] || 0;
                         }
                         
-                        let effectiveTarget = activeTarget;
+                        let effectiveTarget = tgtPick; // Default to pick target for variance check if simple
                         let isCustomTarget = false;
                         if (item.hourlyTargets && Object.keys(item.hourlyTargets).length > 0) {
                             effectiveTarget = Object.values(item.hourlyTargets).reduce((a, b) => a + (Number(b)||0), 0);
@@ -1295,7 +1302,7 @@
                         <td style="padding:12px;border-bottom:1px solid #eee; vertical-align:top;">
                             <div class="shift-summary-content" onmouseenter="window.showSummaryPopup(this)" onmouseleave="window.hideSummaryPopup()">
                                 <div style="font-size:13px; margin-bottom:4px;">Req: <strong>${req}</strong> | Act: <strong>${act}</strong> ${shortIndicator} ${varianceHtml}</div>
-                                ${rate > 0 ? `<div style="font-size:12px; color:#2752a7; margin-bottom:4px;">Target (Act): <strong>${activeTarget}</strong> <span class="muted" style="font-size:11px">(@${rate}/p)</span></div>` : ''}
+                                <div style="font-size:12px; color:#2752a7; margin-bottom:4px;">Tgt Pallet: <strong>${tgtPallet}</strong> | Tgt Pick: <strong>${tgtPick}</strong></div>
                                 <div class="${pctClass}" style="margin-top:4px; margin-bottom:6px;">${pct}% Completed</div>
                                 ${item.note ? `<div style="font-size:11px; color:#555; margin-bottom:4px; font-style:italic; background:#f8f9fa; padding:2px 4px; border-radius:3px;">Note: ${item.note}</div>` : ''}
                                 ${areaStr ? `<div style="font-size:11px; color:#666; margin-bottom:2px;"><strong>Area:</strong> ${areaStr}</div>` : ''}
@@ -1411,7 +1418,8 @@
                         document.getElementById('counter-shift').value = item.shift;
                         document.getElementById('counter-required').value = item.required;
                         document.getElementById('counter-rate').value = item.standardRate || '';
-                        document.getElementById('counter-target').value = item.targetOutput || '';
+                        document.getElementById('counter-target-pallet').value = item.targetPallets || '';
+                        document.getElementById('counter-target-pick').value = item.targetPickBins || '';
                         document.getElementById('counter-note').value = item.note || '';
                         
                         saveCounterBtn.innerHTML = 'Update';
@@ -1493,8 +1501,8 @@
              
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
-             // Updated Header: Added Pallet Tgt, Renamed Target -> Item Tgt
-             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee; text-align: center;"><div style="text-align: left; padding-left: 5px;">Hour</div><div>Pallet Act</div><div>Pallet Tgt</div><div>Actual (Items)</div><div>Item Tgt</div><div>Variance</div><div style="text-align: left;">Notes</div></div>';
+             // Updated Header: Renamed Actual (Items) -> Pick Bin Act, Item Tgt -> Pick Bin Tgt
+             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee; text-align: center;"><div style="text-align: left; padding-left: 5px;">Hour</div><div>Pallet Act</div><div>Pallet Tgt</div><div>Pick Bin Act</div><div>Pick Bin Tgt</div><div>Variance</div><div style="text-align: left;">Notes</div></div>';
 
              const hourlyData = {};
              const hourlyTargets = {};
@@ -1504,8 +1512,11 @@
              const shiftAtt = attendance.filter(a => a.date === dateStr && a.shift === shift);
              const act = shiftAtt.length;
              const rate = (counterEntry && counterEntry.standardRate) || 0;
-             const activeTarget = rate > 0 ? (act * rate) : ((counterEntry && counterEntry.targetOutput) || 0);
-             const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
+             
+             const tgtPallet = (counterEntry && counterEntry.targetPallets) || 0;
+             const tgtPick = (counterEntry && counterEntry.targetPickBins) || 0;
+             const defaultHourlyPalletTarget = tgtPallet > 0 ? Math.round(tgtPallet / 8) : 0;
+             const defaultHourlyPickTarget = tgtPick > 0 ? Math.round(tgtPick / 8) : 0;
              
              const savedActuals = counterEntry && counterEntry.hourlyActuals ? counterEntry.hourlyActuals : null;
              let totalAct = 0;
@@ -1529,6 +1540,7 @@
                  
                  // Use saved hourly target or default
                  const savedTarget = counterEntry && counterEntry.hourlyTargets && counterEntry.hourlyTargets[label];
+                 const savedPalletTarget = counterEntry && counterEntry.hourlyPalletTargets && counterEntry.hourlyPalletTargets[label];
                  
                  // Dynamic Target Calculation based on attendance time
                  let activeCount = 0;
@@ -1549,8 +1561,15 @@
                      });
                      hourlyTargets[label] = activeCount * rate;
                  } else {
-                     hourlyTargets[label] = savedTarget !== undefined ? savedTarget : defaultHourlyTarget;
+                     hourlyTargets[label] = savedTarget !== undefined ? savedTarget : defaultHourlyPickTarget;
                  }
+                 
+                 // Pallet Target
+                 if (!counterEntry.hourlyPalletTargets) counterEntry.hourlyPalletTargets = {}; // Ensure obj exists
+                 // We don't save to counterEntry here, just display. 
+                 // But we need to populate the input value.
+                 // If savedPalletTarget is undefined, use default.
+                 // We will pass this value to the input generation loop below.
              }
  
              // Only calculate from cycleCounts if no manual actuals are saved
@@ -1571,9 +1590,13 @@
              // Build details table and populate targets
              Object.keys(hourlyData).forEach(label => {
                 const act = hourlyData[label] || 0;
-                const tgt = hourlyTargets[label] || 0;
+                // Pick Bin Target
+                const tgt = hourlyTargets[label] !== undefined ? hourlyTargets[label] : defaultHourlyPickTarget;
+                
                 const pallet = savedPallets[label] || 0;
-                const palletTgt = savedPalletTargets[label] || 0;
+                // Pallet Target
+                const palletTgt = savedPalletTargets[label] !== undefined ? savedPalletTargets[label] : defaultHourlyPalletTarget;
+                
                 const note = savedNotes[label] || '';
                 const variance = act - tgt;
                 const varColor = variance >= 0 ? '#2ecc71' : '#e74c3c';
@@ -1769,7 +1792,7 @@
         if (exportHourlyBtn) {
             exportHourlyBtn.addEventListener('click', () => {
                 const rows = [];
-                rows.push(['Hour', 'Pallet Actual', 'Pallet Target', 'Actual Items', 'Item Target', 'Variance', 'Notes']);
+                rows.push(['Hour', 'Pallet Actual', 'Pallet Target', 'Pick Bin Actual', 'Pick Bin Target', 'Variance', 'Notes']);
                 
                 // Data rows
                 const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
@@ -1812,7 +1835,7 @@
             const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
             const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
             
-            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Pallet | Item Act | Item Tgt | Var\n---|---|---|---|---\n`;
+            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Pallet | Pick Bin Act | Pick Bin Tgt | Var\n---|---|---|---|---\n`;
             
             document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
                 const row = input.closest('.hourly-row');
@@ -1959,7 +1982,7 @@
                     return a.shift.localeCompare(b.shift);
                 });
 
-                const headers = ['Date', 'Shift', 'Required', 'Active', 'Target', 'Completion %'];
+                const headers = ['Date', 'Shift', 'Required', 'Active', 'Tgt Pallet', 'Tgt Pick', 'Completion %'];
                 const rows = [headers.join(',')];
 
                 counters.forEach(item => {
@@ -1972,7 +1995,8 @@
                         `"${item.shift}"`,
                         req,
                         act,
-                        item.targetOutput || 0,
+                        item.targetPallets || 0,
+                        item.targetPickBins || 0,
                         `${pct}%`
                     ].join(','));
                 });
@@ -2336,7 +2360,8 @@
                     shift: document.getElementById('counter-shift').value,
                     required: Number(document.getElementById('counter-required').value),
                     standardRate: Number(document.getElementById('counter-rate').value) || 0,
-                    targetOutput: Number(document.getElementById('counter-target').value) || 0,
+                    targetPallets: Number(document.getElementById('counter-target-pallet').value) || 0,
+                    targetPickBins: Number(document.getElementById('counter-target-pick').value) || 0,
                     note: document.getElementById('counter-note').value.trim()
                     // active is now derived
                 };
