@@ -223,6 +223,33 @@
         opacity: 1;
         top: 50px;
     }
+    /* Excel-like Table Styles */
+    .excel-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        border: 1px solid #ccc;
+    }
+    .excel-table th, .excel-table td {
+        border: 1px solid #ccc;
+        padding: 6px 8px;
+        text-align: center;
+    }
+    .excel-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        color: #333;
+    }
+    .excel-table input {
+        width: 100%; border: none; background: transparent; text-align: center; font-family: inherit; font-size: inherit; padding: 4px;
+    }
+    .excel-table input:focus { background-color: #fff; outline: 2px solid #2752a7; border-radius: 2px; }
+    .excel-table tr:hover td { background-color: #f9f9f9; }
+    body.dark-mode .excel-table th { background-color: #333; color: #eee; border-color: #555; }
+    body.dark-mode .excel-table td { border-color: #555; color: #eee; }
+    body.dark-mode .excel-table input { color: #eee; }
+    body.dark-mode .excel-table input:focus { background-color: #444; }
+    body.dark-mode .excel-table tr:hover td { background-color: #333; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -1440,7 +1467,19 @@
              
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
-             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee; text-align: center;"><div style="text-align: left; padding-left: 5px;">Hour</div><div>Pallet Act</div><div>Actual (Items)</div><div>Target</div><div>Variance</div><div style="text-align: left;">Notes</div></div>';
+             let hourlyDetailsHtml = `
+             <table class="excel-table">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">Hour</th>
+                        <th>Pallet Act</th>
+                        <th>Actual (Items)</th>
+                        <th>Target</th>
+                        <th>Variance</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
              const hourlyData = {};
              const hourlyTargets = {};
@@ -1526,25 +1565,30 @@
                 totalTgt += tgt;
                 totalPallet += (Number(pallet) || 0);
 
-                hourlyDetailsHtml += `<div class="hourly-row" style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee; text-align: center;">
-                    <div style="text-align: left; padding-left: 5px;">${label}</div>
-                    <div><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}" style="width: 100%; padding: 4px; text-align: center;"></div>
-                    <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 100%; padding: 4px; text-align: center;"></div>
-                    <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 100%; padding: 4px; text-align: center;"></div>
-                    <div class="hourly-variance" style="font-weight:bold; color:${varColor}">${(variance > 0 ? '+' : '') + variance}</div>
-                    <div><input type="text" class="hourly-note-input" data-hour="${label}" value="${note}" style="width: 100%; padding: 4px;" placeholder="Notes"></div></div>`;
+                hourlyDetailsHtml += `<tr class="hourly-row" style="${rowBg}">
+                    <td style="text-align:left; font-weight:bold;">${label}</td>
+                    <td><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}"></td>
+                    <td><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}"></td>
+                    <td><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}"></td>
+                    <td class="hourly-variance" style="font-weight:bold; color:${varColor}">${(variance > 0 ? '+' : '') + variance}</td>
+                    <td><input type="text" class="hourly-note-input" data-hour="${label}" value="${note}" placeholder="Notes"></td>
+                </tr>`;
              });
              
              const totalVar = totalAct - totalTgt;
              const totalVarColor = totalVar >= 0 ? '#2ecc71' : '#e74c3c';
-             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0; text-align: center;">
-                <div style="text-align: left; padding-left: 5px;">Total</div>
-                <div id="hourly-total-pallet">${totalPallet}</div>
-                <div id="hourly-total-act">${totalAct}</div>
-                <div id="hourly-total-tgt">${totalTgt}</div>
-                <div id="hourly-total-var" style="color:${totalVarColor}">${(totalVar > 0 ? '+' : '') + totalVar}</div>
-                <div></div>
-             </div>`;
+             hourlyDetailsHtml += `</tbody>
+             <tfoot>
+                <tr style="background-color:#f0f0f0; font-weight:bold;">
+                    <td style="text-align:left;">Total</td>
+                    <td id="hourly-total-pallet">${totalPallet}</td>
+                    <td id="hourly-total-act">${totalAct}</td>
+                    <td id="hourly-total-tgt">${totalTgt}</td>
+                    <td id="hourly-total-var" style="color:${totalVarColor}">${(totalVar > 0 ? '+' : '') + totalVar}</td>
+                    <td></td>
+                </tr>
+             </tfoot>
+             </table>`;
              
              hourlyDetailsContainer.innerHTML = hourlyDetailsHtml;
 
@@ -1585,7 +1629,7 @@
         if (hourlyDetailsDiv) {
             hourlyDetailsDiv.addEventListener('input', (e) => {
                 if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input') || e.target.classList.contains('hourly-pallet-input')) {
-                    const row = e.target.closest('.hourly-row');
+                    const row = e.target.closest('tr');
                     const act = parseInt(row.querySelector('.hourly-actual-input').value) || 0;
                     const tgt = parseInt(row.querySelector('.hourly-target-input').value) || 0;
                     const variance = act - tgt;
@@ -1706,7 +1750,7 @@
                 // Data rows
                 const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
                 inputs.forEach(input => {
-                    const rowDiv = input.closest('.hourly-row');
+                    const rowDiv = input.closest('tr');
                     const hour = rowDiv.children[0].textContent.trim();
                     const pallet = rowDiv.querySelector('.hourly-pallet-input').value;
                     const act = input.value;
@@ -1745,7 +1789,7 @@
             let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Act | Tgt | Var\n---|---|---|---\n`;
             
             document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
-                const row = input.closest('.hourly-row');
+                const row = input.closest('tr');
                 const hour = row.children[0].textContent.trim();
                 const tgt = row.querySelector('.hourly-target-input').value;
                 const variance = row.querySelector('.hourly-variance').textContent;
@@ -4136,16 +4180,13 @@
                         const h = now.getHours();
                         const label = `${h}:00 - ${h+1}:00`;
                         
-                        const areaType = document.getElementById('ec-area-type').value;
-                        if (areaType === 'Reserved') {
-                            if (!entry.hourlyReservedSKUs) entry.hourlyReservedSKUs = {};
-                            if (!entry.hourlyPallets) entry.hourlyPallets = {};
-                            entry.hourlyReservedSKUs[label] = (entry.hourlyReservedSKUs[label] || 0) + skus;
-                            entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
-                        } else {
-                            if (!entry.hourlyActuals) entry.hourlyActuals = {};
-                            entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
-                        }
+                        // Initialize objects if missing
+                        if (!entry.hourlyActuals) entry.hourlyActuals = {};
+                        if (!entry.hourlyPallets) entry.hourlyPallets = {};
+                        
+                        // Always add SKUs to Actuals (Items) and Pallets to Pallets
+                        entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
+                        entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
                         
                         saveCountersData(counters);
                     }
