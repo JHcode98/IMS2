@@ -25,6 +25,28 @@
     }
     .flip-front { z-index: 2; transform: rotateY(0deg); position: relative; }
     .flip-back { transform: rotateY(180deg); position: absolute; height: 100%; top: 0; overflow-y: auto; }
+    
+    /* Reporting Table Style */
+    .reporting-table {
+        border-collapse: collapse;
+        width: 100%;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 12px;
+        color: #333;
+    }
+    .reporting-table th, .reporting-table td {
+        border: 1px solid #ccc;
+        padding: 4px 6px;
+        text-align: center;
+    }
+    .reporting-table th {
+        background-color: #f0f2f5;
+        font-weight: 600;
+    }
+    .reporting-table input {
+        border: none; background: transparent; width: 100%; text-align: center; font-family: inherit; font-size: inherit;
+    }
+    .reporting-table input:focus { background: #eef; outline: 2px solid #2752a7; }
   </style>
   <style>
     /* Card content expand/collapse */
@@ -563,7 +585,7 @@
   <!-- Hourly Monitor Modal -->
   <div id="hourly-modal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90vw; max-width: 1400px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
+    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70vw; max-width: 900px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
         <input type="hidden" id="hourly-date-val">
         <input type="hidden" id="hourly-shift-val">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -585,26 +607,16 @@
                 <button class="icon-btn close-modal">&times;</button>
             </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-            <div title="Shift Elapsed" style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:bold; color:#555;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px; height:16px;"><path d="M5 22h14"></path><path d="M5 2h14"></path><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path></svg>
-                <div id="shift-progress-container" style="background:#eee; height:8px; width:150px; border-radius:4px; overflow:hidden;">
-                    <div id="shift-progress-bar" style="height:100%; width:0%; background:#2752a7; transition:width 0.5s;"></div>
-                </div>
-                <span id="shift-progress-text">0%</span>
-            </div>
-        </div>
-        <div id="hourly-mini-charts" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-bottom:15px;">
-            <div style="position:relative; height:120px;"><canvas id="mini-chart-pallet"></canvas></div>
-            <div style="position:relative; height:120px;"><canvas id="mini-chart-reserved-sku"></canvas></div>
-            <div style="position:relative; height:120px;"><canvas id="mini-chart-pick-bin"></canvas></div>
+        <div id="shift-progress-container" style="margin-bottom:10px; background:#eee; height:20px; border-radius:10px; position:relative; overflow:hidden;">
+            <div id="shift-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, #3498db, #2ecc71); transition:width 0.5s;"></div>
+            <span id="shift-progress-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:11px; font-weight:bold; color:#333; text-shadow: 0 0 2px white;">0% Elapsed</span>
         </div>
         <div id="hourly-report-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
         <div style="position:relative; flex: 1; min-height: 0; width:100%;">
             <canvas id="hourly-chart"></canvas>
         </div>
-        <div id="hourly-details-container" style="margin-top:10px; flex: 1; overflow-y: auto;">
-            <!-- Reporting table will be generated here -->
+        <div id="hourly-details" style="margin-top:10px; flex: 1; overflow-y: auto;">
+            <!-- Hourly input fields will be generated here -->
         </div>
         </div>
     </div>
@@ -848,7 +860,7 @@
             <input type="number" id="ec-pallets" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
         </div>
         <div style="margin-bottom:15px;">
-            <label style="font-weight:bold; display:block; margin-bottom:5px;">Items / Pick Bins Counted:</label>
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">Pick Bins (SKUs) Counted:</label>
             <input type="number" id="ec-skus" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
         </div>
         <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
@@ -906,7 +918,6 @@
         const reqInput = document.getElementById('counter-required');
         const targetPalletInput = document.getElementById('counter-target-pallet');
         const targetPickInput = document.getElementById('counter-target-pick');
-        const targetReservedSkuInput = document.getElementById('counter-target-reserved-sku');
         const noteInput = document.getElementById('counter-note');
         
         const attendanceTableBody = document.querySelector('#attendance-table tbody');
@@ -1269,7 +1280,6 @@
                         const rate = item.standardRate || 0;
                         // const activeTarget = rate > 0 ? (act * rate) : (item.targetOutput || 0); // Legacy
                         const tgtPallet = item.targetPallets || 0;
-                        const tgtReservedSku = item.targetReservedSKUs || 0;
                         const tgtPick = item.targetPickBins || 0;
                         
                         // Calculate actual output for this shift
@@ -1761,35 +1771,28 @@
                     if (!counters[counterIndex].hourlyActuals) counters[counterIndex].hourlyActuals = {};
                     if (!counters[counterIndex].hourlyPallets) counters[counterIndex].hourlyPallets = {};
                     if (!counters[counterIndex].hourlyPalletTargets) counters[counterIndex].hourlyPalletTargets = {};
+                    if (!counters[counterIndex].hourlyReservedSKUs) counters[counterIndex].hourlyReservedSKUs = {};
+                    if (!counters[counterIndex].hourlyReservedSKUTargets) counters[counterIndex].hourlyReservedSKUTargets = {};
                     if (!counters[counterIndex].hourlyNotes) counters[counterIndex].hourlyNotes = {};
                     
-                    document.querySelectorAll('.hourly-target-input').forEach(input => {
-                        const hour = input.dataset.hour;
-                        const value = parseInt(input.value, 10);
-                        if (!isNaN(value) && value >= 0) {
-                            counters[counterIndex].hourlyTargets[hour] = value;
-                        }
-                    });
-                    document.querySelectorAll('.hourly-actual-input').forEach(input => {
-                        const hour = input.dataset.hour;
-                        const value = parseInt(input.value, 10);
-                        if (!isNaN(value) && value >= 0) {
-                            counters[counterIndex].hourlyActuals[hour] = value;
-                        }
-                    });
-                    document.querySelectorAll('.hourly-pallet-input').forEach(input => {
-                        const hour = input.dataset.hour;
-                        const value = parseInt(input.value, 10);
-                        if (!isNaN(value) && value >= 0) counters[counterIndex].hourlyPallets[hour] = value;
-                    });
-                    document.querySelectorAll('.hourly-pallet-target-input').forEach(input => {
-                        const hour = input.dataset.hour;
-                        const value = parseInt(input.value, 10);
-                        if (!isNaN(value) && value >= 0) counters[counterIndex].hourlyPalletTargets[hour] = value;
-                    });
-                    document.querySelectorAll('.hourly-note-input').forEach(input => {
-                        const hour = input.dataset.hour;
-                        counters[counterIndex].hourlyNotes[hour] = input.value;
+                    // Clear old data
+                    counters[counterIndex].hourlyTargets = {};
+                    counters[counterIndex].hourlyActuals = {};
+                    counters[counterIndex].hourlyPallets = {};
+                    counters[counterIndex].hourlyPalletTargets = {};
+                    counters[counterIndex].hourlyReservedSKUs = {};
+                    counters[counterIndex].hourlyReservedSKUTargets = {};
+                    counters[counterIndex].hourlyNotes = {};
+
+                    document.querySelectorAll('.hourly-row').forEach(row => {
+                        const hour = row.dataset.hour;
+                        counters[counterIndex].hourlyPallets[hour] = Number(row.querySelector('.hourly-input[data-type="pallet"][data-field="act"]').value) || 0;
+                        counters[counterIndex].hourlyPalletTargets[hour] = Number(row.querySelector('.hourly-input[data-type="pallet"][data-field="tgt"]').value) || 0;
+                        counters[counterIndex].hourlyReservedSKUs[hour] = Number(row.querySelector('.hourly-input[data-type="reservedSku"][data-field="act"]').value) || 0;
+                        counters[counterIndex].hourlyReservedSKUTargets[hour] = Number(row.querySelector('.hourly-input[data-type="reservedSku"][data-field="tgt"]').value) || 0;
+                        counters[counterIndex].hourlyActuals[hour] = Number(row.querySelector('.hourly-input[data-type="pickBin"][data-field="act"]').value) || 0;
+                        counters[counterIndex].hourlyTargets[hour] = Number(row.querySelector('.hourly-input[data-type="pickBin"][data-field="tgt"]').value) || 0;
+                        counters[counterIndex].hourlyNotes[hour] = row.querySelector('.hourly-note-input').value || '';
                     });
                     
                     saveCountersData(counters);
@@ -1809,29 +1812,30 @@
         if (exportHourlyBtn) {
             exportHourlyBtn.addEventListener('click', () => {
                 const rows = [];
-                rows.push(['Hour', 'Pallet Actual', 'Pallet Target', 'Pick Bin Actual', 'Pick Bin Target', 'Variance', 'Notes']);
+                rows.push(['Hour', 'Pallet Act', 'Pallet Tgt', 'Pallet Var', 'SKU Act', 'SKU Tgt', 'SKU Var', 'PickBin Act', 'PickBin Tgt', 'PickBin Var', 'Notes']);
                 
                 // Data rows
-                const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
-                inputs.forEach(input => {
-                    const rowDiv = input.closest('.hourly-row');
-                    const hour = rowDiv.children[0].textContent.trim();
-                    const pallet = rowDiv.querySelector('.hourly-pallet-input').value;
-                    const palletTgt = rowDiv.querySelector('.hourly-pallet-target-input').value;
-                    const act = input.value;
-                    const tgt = rowDiv.querySelector('.hourly-target-input').value;
-                    const variance = rowDiv.querySelector('.hourly-variance').textContent;
+                document.querySelectorAll('#hourly-details-body .hourly-row').forEach(rowDiv => {
+                    const hour = rowDiv.dataset.hour;
+                    const p_act = rowDiv.querySelector('[data-type="pallet"][data-field="act"]').value;
+                    const p_tgt = rowDiv.querySelector('[data-type="pallet"][data-field="tgt"]').value;
+                    const p_var = rowDiv.querySelector('.variance-cell[data-type="pallet"]').textContent;
+                    const s_act = rowDiv.querySelector('[data-type="reservedSku"][data-field="act"]').value;
+                    const s_tgt = rowDiv.querySelector('[data-type="reservedSku"][data-field="tgt"]').value;
+                    const s_var = rowDiv.querySelector('.variance-cell[data-type="reservedSku"]').textContent;
+                    const b_act = rowDiv.querySelector('[data-type="pickBin"][data-field="act"]').value;
+                    const b_tgt = rowDiv.querySelector('[data-type="pickBin"][data-field="tgt"]').value;
+                    const b_var = rowDiv.querySelector('.variance-cell[data-type="pickBin"]').textContent;
                     const note = rowDiv.querySelector('.hourly-note-input').value;
-                    rows.push([`"${hour}"`, pallet, palletTgt, act, tgt, variance, `"${note}"`]);
+                    rows.push([`"${hour}"`, p_act, p_tgt, p_var, s_act, s_tgt, s_var, b_act, b_tgt, b_var, `"${note}"`]);
                 });
                 
                 // Total row
-                const tAct = document.getElementById('hourly-total-act') ? document.getElementById('hourly-total-act').textContent : '0';
-                const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
-                const tPallet = document.getElementById('hourly-total-pallet') ? document.getElementById('hourly-total-pallet').textContent : '0';
-                const tPalletTgt = document.getElementById('hourly-total-pallet-tgt') ? document.getElementById('hourly-total-pallet-tgt').textContent : '0';
-                const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
-                rows.push(['Total', tPallet, tPalletTgt, tAct, tTgt, tVar, '']);
+                const foot = document.getElementById('hourly-details-foot');
+                if(foot && foot.rows.length > 0) {
+                   const totalRow = Array.from(foot.rows[0].cells).map(c => c.textContent);
+                   rows.push(totalRow);
+                }
                 
                 const csvContent = rows.map(e => e.join(',')).join('\n');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1852,16 +1856,21 @@
             const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
             const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
             
-            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Pallet | Pick Bin Act | Pick Bin Tgt | Var\n---|---|---|---|---\n`;
+            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\n`;
             
-            document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
-                const row = input.closest('.hourly-row');
-                const hour = row.children[0].textContent.trim();
-                const pallet = row.querySelector('.hourly-pallet-input').value;
-                const tgt = row.querySelector('.hourly-target-input').value;
-                const variance = row.querySelector('.hourly-variance').textContent;
-                text += `${hour} | ${pallet} | ${input.value} | ${tgt} | ${variance}\n`;
+            document.querySelectorAll('#hourly-details-body .hourly-row').forEach(row => {
+                const hour = row.dataset.hour;
+                const p_act = row.querySelector('[data-type="pallet"][data-field="act"]').value;
+                const s_act = row.querySelector('[data-type="reservedSku"][data-field="act"]').value;
+                const b_act = row.querySelector('[data-type="pickBin"][data-field="act"]').value;
+                text += `${hour}: Pallet=${p_act}, SKU=${s_act}, PickBin=${b_act}\n`;
             });
+            
+            const foot = document.getElementById('hourly-details-foot');
+            if(foot && foot.rows.length > 0) {
+               const totalRow = Array.from(foot.rows[0].cells).map(c => c.textContent);
+               text += `\nTotal: Pallet=${totalRow[1]}, SKU=${totalRow[4]}, PickBin=${totalRow[7]}`;
+            }
             return text;
         }
 
@@ -1877,7 +1886,7 @@
                 const originalHeight = details.style.height;
                 const originalFlex = details.style.flex;
                 
-                details.style.overflow = 'visible';
+                // details.style.overflow = 'visible'; // This might break layout if table is huge
                 details.style.height = 'auto';
                 details.style.flex = 'none';
                 
@@ -1975,7 +1984,7 @@
         if (clearHourlyBtn) {
             clearHourlyBtn.addEventListener('click', () => {
                 if(confirm('Are you sure you want to clear all actual values for this shift?')){
-                    document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
+                    document.querySelectorAll('.hourly-input[data-field="act"]').forEach(input => {
                         input.value = 0;
                         input.dispatchEvent(new Event('input', { bubbles: true }));
                     });
@@ -2469,6 +2478,7 @@
                 cancelCounterEditBtn.style.display = 'none';
                 document.getElementById('counter-rate').value = '';
                 document.getElementById('counter-note').value = '';
+                document.getElementById('counter-target-reserved-sku').value = '';
                 setLocalDate(document.getElementById('counter-date'));
             });
         }
@@ -4286,19 +4296,14 @@
                     
                     if (entryIndex > -1) {
                         const entry = counters[entryIndex];
+                        if (!entry.hourlyActuals) entry.hourlyActuals = {};
+                        if (!entry.hourlyPallets) entry.hourlyPallets = {};
+                        
                         const h = now.getHours();
                         const label = `${h}:00 - ${h+1}:00`;
                         
-                        const areaType = document.getElementById('ec-area-type').value;
-                        if (areaType === 'Reserved') {
-                            if (!entry.hourlyReservedSKUs) entry.hourlyReservedSKUs = {};
-                            if (!entry.hourlyPallets) entry.hourlyPallets = {};
-                            entry.hourlyReservedSKUs[label] = (entry.hourlyReservedSKUs[label] || 0) + skus;
-                            entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
-                        } else { // Pick Bin
-                            if (!entry.hourlyActuals) entry.hourlyActuals = {}; // This now means Pick Bin Actuals
-                            entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
-                        }
+                        entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
+                        entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
                         
                         saveCountersData(counters);
                     }
