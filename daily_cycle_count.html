@@ -577,6 +577,10 @@
                 <button class="icon-btn close-modal">&times;</button>
             </div>
         </div>
+        <div id="shift-progress-container" style="margin-bottom:10px; background:#eee; height:20px; border-radius:10px; position:relative; overflow:hidden;">
+            <div id="shift-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, #3498db, #2ecc71); transition:width 0.5s;"></div>
+            <span id="shift-progress-text" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:11px; font-weight:bold; color:#333; text-shadow: 0 0 2px white;">0% Elapsed</span>
+        </div>
         <div id="hourly-report-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
         <div style="position:relative; flex: 1; min-height: 0; width:100%;">
             <canvas id="hourly-chart"></canvas>
@@ -757,6 +761,7 @@
                         <input type="text" id="ts-filter-user" placeholder="Filter User" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                         <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-deleted"> Show Deleted</label>
                         <button id="ts-mass-delete-btn" class="icon-btn" title="Delete All Shown" style="padding: 2px 6px; font-size: 12px; color:#d9534f;">Delete All</button>
+                        <button id="ts-manual-log-btn" class="icon-btn" title="Add Missed Log" style="padding: 2px 6px; font-size: 12px; background:#6f42c1; color:white;">+ Manual</button>
                         <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
                     </div>
                 </div>
@@ -832,6 +837,37 @@
             <button id="ec-cancel-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
             <button id="ec-save-btn" class="icon-btn" style="background:#2752a7; color:white;">Submit</button>
         </div>
+    </div>
+  </div>
+
+  <!-- Manual Log Modal -->
+  <div id="manual-log-modal" class="modal hidden" style="z-index: 10020;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 350px; margin: 100px auto;">
+        <h3 style="margin-top:0">Add Missed Log</h3>
+        <form id="manual-log-form">
+            <div style="margin-bottom:10px;">
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">User ID</label>
+                <input type="text" id="ml-user-id" required style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">Action</label>
+                <select id="ml-action" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                    <option value="Start">Start Counting</option>
+                    <option value="End">End Counting</option>
+                    <option value="Start Break">Start Break</option>
+                    <option value="End Break">End Break</option>
+                </select>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                <div><label style="font-weight:bold; display:block; margin-bottom:5px;">Date</label><input type="date" id="ml-date" required style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></div>
+                <div><label style="font-weight:bold; display:block; margin-bottom:5px;">Time</label><input type="time" id="ml-time" required style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></div>
+            </div>
+            <div style="text-align:right; display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" id="ml-cancel-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
+                <button type="submit" class="icon-btn" style="background:#2752a7; color:white;">Save Log</button>
+            </div>
+        </form>
     </div>
   </div>
 
@@ -923,6 +959,13 @@
         const ecPalletGroup = document.getElementById('ec-pallet-group');
         const ecSaveBtn = document.getElementById('ec-save-btn');
         const ecCancelBtn = document.getElementById('ec-cancel-btn');
+
+        // Manual Log Elements
+        const manualLogModal = document.getElementById('manual-log-modal');
+        const manualLogForm = document.getElementById('manual-log-form');
+        const mlCancelBtn = document.getElementById('ml-cancel-btn');
+        const mlUserId = document.getElementById('ml-user-id');
+        const mlDate = document.getElementById('ml-date');
 
         // Timestamp Flip Logic
         const tsFlipContainer = document.getElementById('ts-flip-container');
@@ -1433,6 +1476,16 @@
                  start.setHours(22,0,0,0); 
                  end.setDate(end.getDate() + 1); end.setHours(6,0,0,0);
              }
+
+             // Calculate Shift Progress
+             const now = new Date();
+             let progress = 0;
+             if (now >= end) progress = 100;
+             else if (now > start) {
+                 progress = Math.round(((now - start) / (end - start)) * 100);
+             }
+             document.getElementById('shift-progress-bar').style.width = `${progress}%`;
+             document.getElementById('shift-progress-text').textContent = `${progress}% Elapsed`;
  
              // Fetch and filter data
              let cycleCounts = [];
@@ -1440,7 +1493,8 @@
              
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
-             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee; text-align: center;"><div style="text-align: left; padding-left: 5px;">Hour</div><div>Pallet Act</div><div>Actual (Items)</div><div>Target</div><div>Variance</div><div style="text-align: left;">Notes</div></div>';
+             // Updated Header: Added Pallet Tgt, Renamed Target -> Item Tgt
+             let hourlyDetailsHtml = '<div style="display:grid; grid-template-columns: 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; font-size: 13px; font-weight: bold; padding-bottom: 5px; border-bottom: 1px solid #eee; text-align: center;"><div style="text-align: left; padding-left: 5px;">Hour</div><div>Pallet Act</div><div>Pallet Tgt</div><div>Actual (Items)</div><div>Item Tgt</div><div>Variance</div><div style="text-align: left;">Notes</div></div>';
 
              const hourlyData = {};
              const hourlyTargets = {};
@@ -1457,7 +1511,9 @@
              let totalAct = 0;
              let totalTgt = 0;
              let totalPallet = 0;
+             let totalPalletTgt = 0;
              const savedPallets = counterEntry && counterEntry.hourlyPallets ? counterEntry.hourlyPallets : {};
+             const savedPalletTargets = counterEntry && counterEntry.hourlyPalletTargets ? counterEntry.hourlyPalletTargets : {};
              const savedNotes = counterEntry && counterEntry.hourlyNotes ? counterEntry.hourlyNotes : {};
 
              // Initialize hours
@@ -1517,6 +1573,7 @@
                 const act = hourlyData[label] || 0;
                 const tgt = hourlyTargets[label] || 0;
                 const pallet = savedPallets[label] || 0;
+                const palletTgt = savedPalletTargets[label] || 0;
                 const note = savedNotes[label] || '';
                 const variance = act - tgt;
                 const varColor = variance >= 0 ? '#2ecc71' : '#e74c3c';
@@ -1525,10 +1582,12 @@
                 totalAct += act;
                 totalTgt += tgt;
                 totalPallet += (Number(pallet) || 0);
+                totalPalletTgt += (Number(palletTgt) || 0);
 
-                hourlyDetailsHtml += `<div class="hourly-row" style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee; text-align: center;">
+                hourlyDetailsHtml += `<div class="hourly-row" style="display:grid; grid-template-columns: 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 5px 0; ${rowBg} border-bottom: 1px solid #eee; text-align: center;">
                     <div style="text-align: left; padding-left: 5px;">${label}</div>
                     <div><input type="number" class="hourly-pallet-input" data-hour="${label}" value="${pallet}" style="width: 100%; padding: 4px; text-align: center;"></div>
+                    <div><input type="number" class="hourly-pallet-target-input" data-hour="${label}" value="${palletTgt}" style="width: 100%; padding: 4px; text-align: center;"></div>
                     <div><input type="number" class="hourly-actual-input" data-hour="${label}" value="${act}" style="width: 100%; padding: 4px; text-align: center;"></div>
                     <div><input type="number" class="hourly-target-input" data-hour="${label}" value="${tgt}" style="width: 100%; padding: 4px; text-align: center;"></div>
                     <div class="hourly-variance" style="font-weight:bold; color:${varColor}">${(variance > 0 ? '+' : '') + variance}</div>
@@ -1537,9 +1596,10 @@
              
              const totalVar = totalAct - totalTgt;
              const totalVarColor = totalVar >= 0 ? '#2ecc71' : '#e74c3c';
-             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 1fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0; text-align: center;">
+             hourlyDetailsHtml += `<div style="display:grid; grid-template-columns: 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr 1.5fr; gap: 10px; align-items: center; padding: 10px 0; font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #ddd; position: sticky; bottom: 0; text-align: center;">
                 <div style="text-align: left; padding-left: 5px;">Total</div>
                 <div id="hourly-total-pallet">${totalPallet}</div>
+                <div id="hourly-total-pallet-tgt">${totalPalletTgt}</div>
                 <div id="hourly-total-act">${totalAct}</div>
                 <div id="hourly-total-tgt">${totalTgt}</div>
                 <div id="hourly-total-var" style="color:${totalVarColor}">${(totalVar > 0 ? '+' : '') + totalVar}</div>
@@ -1584,7 +1644,7 @@
         const hourlyDetailsDiv = document.getElementById('hourly-details');
         if (hourlyDetailsDiv) {
             hourlyDetailsDiv.addEventListener('input', (e) => {
-                if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input') || e.target.classList.contains('hourly-pallet-input')) {
+                if (e.target.classList.contains('hourly-actual-input') || e.target.classList.contains('hourly-target-input') || e.target.classList.contains('hourly-pallet-input') || e.target.classList.contains('hourly-pallet-target-input')) {
                     const row = e.target.closest('.hourly-row');
                     const act = parseInt(row.querySelector('.hourly-actual-input').value) || 0;
                     const tgt = parseInt(row.querySelector('.hourly-target-input').value) || 0;
@@ -1597,16 +1657,19 @@
                     row.style.backgroundColor = variance < 0 ? '#fff5f5' : '';
                     
                     // Update totals
-                    let tAct = 0, tTgt = 0, tPallet = 0;
+                    let tAct = 0, tTgt = 0, tPallet = 0, tPalletTgt = 0;
                     hourlyDetailsDiv.querySelectorAll('.hourly-actual-input').forEach(i => tAct += (parseInt(i.value)||0));
                     hourlyDetailsDiv.querySelectorAll('.hourly-target-input').forEach(i => tTgt += (parseInt(i.value)||0));
                     hourlyDetailsDiv.querySelectorAll('.hourly-pallet-input').forEach(i => tPallet += (parseInt(i.value)||0));
+                    hourlyDetailsDiv.querySelectorAll('.hourly-pallet-target-input').forEach(i => tPalletTgt += (parseInt(i.value)||0));
                     const tVar = tAct - tTgt;
                     
                     document.getElementById('hourly-total-act').textContent = tAct;
                     document.getElementById('hourly-total-tgt').textContent = tTgt;
                     const tPalletDiv = document.getElementById('hourly-total-pallet');
                     if(tPalletDiv) tPalletDiv.textContent = tPallet;
+                    const tPalletTgtDiv = document.getElementById('hourly-total-pallet-tgt');
+                    if(tPalletTgtDiv) tPalletTgtDiv.textContent = tPalletTgt;
                     const tVarDiv = document.getElementById('hourly-total-var');
                     if(tVarDiv) {
                         tVarDiv.textContent = (tVar > 0 ? '+' : '') + tVar;
@@ -1657,6 +1720,7 @@
                     if (!counters[counterIndex].hourlyTargets) counters[counterIndex].hourlyTargets = {};
                     if (!counters[counterIndex].hourlyActuals) counters[counterIndex].hourlyActuals = {};
                     if (!counters[counterIndex].hourlyPallets) counters[counterIndex].hourlyPallets = {};
+                    if (!counters[counterIndex].hourlyPalletTargets) counters[counterIndex].hourlyPalletTargets = {};
                     if (!counters[counterIndex].hourlyNotes) counters[counterIndex].hourlyNotes = {};
                     
                     document.querySelectorAll('.hourly-target-input').forEach(input => {
@@ -1677,6 +1741,11 @@
                         const hour = input.dataset.hour;
                         const value = parseInt(input.value, 10);
                         if (!isNaN(value) && value >= 0) counters[counterIndex].hourlyPallets[hour] = value;
+                    });
+                    document.querySelectorAll('.hourly-pallet-target-input').forEach(input => {
+                        const hour = input.dataset.hour;
+                        const value = parseInt(input.value, 10);
+                        if (!isNaN(value) && value >= 0) counters[counterIndex].hourlyPalletTargets[hour] = value;
                     });
                     document.querySelectorAll('.hourly-note-input').forEach(input => {
                         const hour = input.dataset.hour;
@@ -1700,8 +1769,7 @@
         if (exportHourlyBtn) {
             exportHourlyBtn.addEventListener('click', () => {
                 const rows = [];
-                rows.push(['Hour', 'Actual', 'Target', 'Variance']);
-                rows.push(['Hour', 'Pallet Actual', 'Actual Items', 'Target', 'Variance', 'Notes']);
+                rows.push(['Hour', 'Pallet Actual', 'Pallet Target', 'Actual Items', 'Item Target', 'Variance', 'Notes']);
                 
                 // Data rows
                 const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
@@ -1709,19 +1777,21 @@
                     const rowDiv = input.closest('.hourly-row');
                     const hour = rowDiv.children[0].textContent.trim();
                     const pallet = rowDiv.querySelector('.hourly-pallet-input').value;
+                    const palletTgt = rowDiv.querySelector('.hourly-pallet-target-input').value;
                     const act = input.value;
                     const tgt = rowDiv.querySelector('.hourly-target-input').value;
                     const variance = rowDiv.querySelector('.hourly-variance').textContent;
-                    rows.push([`"${hour}"`, act, tgt, variance]);
                     const note = rowDiv.querySelector('.hourly-note-input').value;
-                    rows.push([`"${hour}"`, pallet, act, tgt, variance, `"${note}"`]);
+                    rows.push([`"${hour}"`, pallet, palletTgt, act, tgt, variance, `"${note}"`]);
                 });
                 
                 // Total row
                 const tAct = document.getElementById('hourly-total-act') ? document.getElementById('hourly-total-act').textContent : '0';
                 const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
+                const tPallet = document.getElementById('hourly-total-pallet') ? document.getElementById('hourly-total-pallet').textContent : '0';
+                const tPalletTgt = document.getElementById('hourly-total-pallet-tgt') ? document.getElementById('hourly-total-pallet-tgt').textContent : '0';
                 const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
-                rows.push(['Total', tAct, tTgt, tVar]);
+                rows.push(['Total', tPallet, tPalletTgt, tAct, tTgt, tVar, '']);
                 
                 const csvContent = rows.map(e => e.join(',')).join('\n');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1742,14 +1812,15 @@
             const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
             const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
             
-            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Act | Tgt | Var\n---|---|---|---\n`;
+            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Pallet | Item Act | Item Tgt | Var\n---|---|---|---|---\n`;
             
             document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
                 const row = input.closest('.hourly-row');
                 const hour = row.children[0].textContent.trim();
+                const pallet = row.querySelector('.hourly-pallet-input').value;
                 const tgt = row.querySelector('.hourly-target-input').value;
                 const variance = row.querySelector('.hourly-variance').textContent;
-                text += `${hour} | ${input.value} | ${tgt} | ${variance}\n`;
+                text += `${hour} | ${pallet} | ${input.value} | ${tgt} | ${variance}\n`;
             });
             return text;
         }
@@ -4085,6 +4156,45 @@
             showToast(`${action} recorded for ${userId}`);
             tsUserIdInput.value = '';
             tsUserIdInput.focus();
+        }
+
+        // Manual Log Logic
+        const tsManualLogBtn = document.getElementById('ts-manual-log-btn');
+        if(tsManualLogBtn) {
+            tsManualLogBtn.addEventListener('click', () => {
+                manualLogForm.reset();
+                mlUserId.value = tsUserIdInput.value;
+                mlDate.valueAsDate = new Date();
+                const now = new Date();
+                document.getElementById('ml-time').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                manualLogModal.classList.remove('hidden');
+            });
+        }
+        if(mlCancelBtn) mlCancelBtn.addEventListener('click', () => manualLogModal.classList.add('hidden'));
+        
+        if(manualLogForm) {
+            manualLogForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const uid = mlUserId.value.trim();
+                const act = document.getElementById('ml-action').value;
+                const d = mlDate.value;
+                const t = document.getElementById('ml-time').value;
+                
+                if(!uid || !d || !t) return;
+                const ts = new Date(`${d}T${t}`).toISOString();
+                
+                const data = getTimestamps();
+                data.push({
+                    id: Date.now().toString(),
+                    userId: uid,
+                    action: act,
+                    timestamp: ts
+                });
+                saveTimestamps(data);
+                renderTimestamps();
+                showToast('Manual log added');
+                manualLogModal.classList.add('hidden');
+            });
         }
 
         // End Count Modal Logic
