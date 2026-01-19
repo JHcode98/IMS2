@@ -509,7 +509,12 @@
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-time-in">Time In</label>
-                    <input type="time" id="att-time-in" style="width:100%">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-time-in" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-time-in" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label for="att-status">Status</label>
@@ -522,11 +527,21 @@
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-break-out">Break Out</label>
-                    <input type="time" id="att-break-out" style="width:100%">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-break-out" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-break-out" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label for="att-break-in">Break In</label>
-                    <input type="time" id="att-break-in" style="width:100%">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-break-in" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-break-in" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div style="text-align:right; margin-top:10px; border-top: 1px solid #eee; padding-top: 15px;">
@@ -2340,6 +2355,22 @@
                 if (modal) modal.classList.add('hidden');
             });
         });
+
+    if (attModal) {
+        attModal.addEventListener('click', (e) => {
+            const btn = e.target.closest('.set-current-time');
+            if (btn) {
+                const targetId = btn.dataset.target;
+                const targetInput = document.getElementById(targetId);
+                if (targetInput) {
+                    const now = new Date();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    targetInput.value = `${hours}:${minutes}`;
+                }
+            }
+        });
+    }
 
         if (attForm) {
             attForm.addEventListener('submit', (e) => {
