@@ -25,28 +25,6 @@
     }
     .flip-front { z-index: 2; transform: rotateY(0deg); position: relative; }
     .flip-back { transform: rotateY(180deg); position: absolute; height: 100%; top: 0; overflow-y: auto; }
-    
-    /* Reporting Table Style */
-    .reporting-table {
-        border-collapse: collapse;
-        width: 100%;
-        font-family: 'Segoe UI', sans-serif;
-        font-size: 12px;
-        color: #333;
-    }
-    .reporting-table th, .reporting-table td {
-        border: 1px solid #ccc;
-        padding: 4px 6px;
-        text-align: center;
-    }
-    .reporting-table th {
-        background-color: #f0f2f5;
-        font-weight: 600;
-    }
-    .reporting-table input {
-        border: none; background: transparent; width: 100%; text-align: center; font-family: inherit; font-size: inherit;
-    }
-    .reporting-table input:focus { background: #eef; outline: 2px solid #2752a7; }
   </style>
   <style>
     /* Card content expand/collapse */
@@ -585,7 +563,7 @@
   <!-- Hourly Monitor Modal -->
   <div id="hourly-modal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70vw; max-width: 900px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
+    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90vw; max-width: 1400px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
         <input type="hidden" id="hourly-date-val">
         <input type="hidden" id="hourly-shift-val">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -616,12 +594,17 @@
                 <span id="shift-progress-text">0%</span>
             </div>
         </div>
+        <div id="hourly-mini-charts" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-bottom:15px;">
+            <div style="position:relative; height:120px;"><canvas id="mini-chart-pallet"></canvas></div>
+            <div style="position:relative; height:120px;"><canvas id="mini-chart-reserved-sku"></canvas></div>
+            <div style="position:relative; height:120px;"><canvas id="mini-chart-pick-bin"></canvas></div>
+        </div>
         <div id="hourly-report-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
         <div style="position:relative; flex: 1; min-height: 0; width:100%;">
             <canvas id="hourly-chart"></canvas>
         </div>
-        <div id="hourly-details" style="margin-top:10px; flex: 1; overflow-y: auto;">
-            <!-- Hourly input fields will be generated here -->
+        <div id="hourly-details-container" style="margin-top:10px; flex: 1; overflow-y: auto;">
+            <!-- Reporting table will be generated here -->
         </div>
         </div>
     </div>
@@ -1452,6 +1435,7 @@
                         document.getElementById('counter-required').value = item.required;
                         document.getElementById('counter-rate').value = item.standardRate || '';
                         document.getElementById('counter-target-pallet').value = item.targetPallets || '';
+                        document.getElementById('counter-target-reserved-sku').value = item.targetReservedSKUs || '';
                         document.getElementById('counter-target-pick').value = item.targetPickBins || '';
                         document.getElementById('counter-note').value = item.note || '';
                         
@@ -2394,6 +2378,7 @@
                     required: Number(document.getElementById('counter-required').value),
                     standardRate: Number(document.getElementById('counter-rate').value) || 0,
                     targetPallets: Number(document.getElementById('counter-target-pallet').value) || 0,
+                    targetReservedSKUs: Number(document.getElementById('counter-target-reserved-sku').value) || 0,
                     targetPickBins: Number(document.getElementById('counter-target-pick').value) || 0,
                     note: document.getElementById('counter-note').value.trim()
                     // active is now derived
@@ -4301,14 +4286,19 @@
                     
                     if (entryIndex > -1) {
                         const entry = counters[entryIndex];
-                        if (!entry.hourlyActuals) entry.hourlyActuals = {};
-                        if (!entry.hourlyPallets) entry.hourlyPallets = {};
-                        
                         const h = now.getHours();
                         const label = `${h}:00 - ${h+1}:00`;
                         
-                        entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
-                        entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
+                        const areaType = document.getElementById('ec-area-type').value;
+                        if (areaType === 'Reserved') {
+                            if (!entry.hourlyReservedSKUs) entry.hourlyReservedSKUs = {};
+                            if (!entry.hourlyPallets) entry.hourlyPallets = {};
+                            entry.hourlyReservedSKUs[label] = (entry.hourlyReservedSKUs[label] || 0) + skus;
+                            entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
+                        } else { // Pick Bin
+                            if (!entry.hourlyActuals) entry.hourlyActuals = {}; // This now means Pick Bin Actuals
+                            entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
+                        }
                         
                         saveCountersData(counters);
                     }
