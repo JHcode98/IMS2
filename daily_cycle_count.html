@@ -808,6 +808,33 @@
     </div>
   </div>
 
+  <!-- End Count Details Modal -->
+  <div id="end-count-modal" class="modal hidden" style="z-index: 10010;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 300px; margin: 150px auto;">
+        <h3 style="margin-top:0">End Count Details</h3>
+        <div style="margin-bottom:10px;">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">Area Type:</label>
+            <select id="ec-area-type" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <option value="Reserved">Reserved</option>
+                <option value="Pick Bin">Pick Bin</option>
+            </select>
+        </div>
+        <div id="ec-pallet-group" style="margin-bottom:10px;">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">Pallets Completed:</label>
+            <input type="number" id="ec-pallets" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">SKUs (Items) Counted:</label>
+            <input type="number" id="ec-skus" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
+        </div>
+        <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
+            <button id="ec-cancel-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
+            <button id="ec-save-btn" class="icon-btn" style="background:#2752a7; color:white;">Submit</button>
+        </div>
+    </div>
+  </div>
+
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
   <script>
@@ -890,6 +917,13 @@
         const tsAnalyticsDate = document.getElementById('ts-analytics-date');
         const tsAnalyticsFilterBtn = document.getElementById('ts-analytics-filter-btn');
         
+        // End Count Modal Elements
+        const endCountModal = document.getElementById('end-count-modal');
+        const ecAreaType = document.getElementById('ec-area-type');
+        const ecPalletGroup = document.getElementById('ec-pallet-group');
+        const ecSaveBtn = document.getElementById('ec-save-btn');
+        const ecCancelBtn = document.getElementById('ec-cancel-btn');
+
         // Timestamp Flip Logic
         const tsFlipContainer = document.getElementById('ts-flip-container');
         document.getElementById('ts-flip-to-chart').addEventListener('click', () => tsFlipContainer.classList.add('flipped'));
@@ -4007,14 +4041,37 @@
             const data = getTimestamps();
             const now = new Date();
             
+            // Validation: No Start if already active
+            if (action === 'Start') {
+                const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const lastLog = userLogs[userLogs.length - 1];
+                if (lastLog && lastLog.action !== 'End') {
+                    alert(`User ${userId} already has an active session. Please end it first.`);
+                    return;
+                }
+            }
+
             // Validation: Cannot End without Start
             if (action === 'End' || action === 'Start Break' || action === 'End Break') {
                 const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 const lastLog = userLogs[userLogs.length - 1];
                 if (!lastLog || (lastLog.action === 'End')) {
-                    alert(`Cannot End: No active 'Start' found for User ID ${userId}.`);
+                    const actName = action === 'End' ? 'End Counting' : action;
+                    alert(`Cannot ${actName}: No active 'Start' found for User ID ${userId}.`);
                     return;
                 }
+            }
+
+            // Intercept End for Details
+            if (action === 'End') {
+                // Open Modal
+                document.getElementById('ec-pallets').value = '0';
+                document.getElementById('ec-skus').value = '0';
+                document.getElementById('ec-area-type').value = 'Reserved';
+                ecPalletGroup.style.display = 'block'; // Default show
+                endCountModal.dataset.userId = userId;
+                endCountModal.classList.remove('hidden');
+                return;
             }
 
             data.push({
@@ -4028,6 +4085,72 @@
             showToast(`${action} recorded for ${userId}`);
             tsUserIdInput.value = '';
             tsUserIdInput.focus();
+        }
+
+        // End Count Modal Logic
+        if (ecAreaType) {
+            ecAreaType.addEventListener('change', () => {
+                if (ecAreaType.value === 'Pick Bin') {
+                    ecPalletGroup.style.display = 'none';
+                    document.getElementById('ec-pallets').value = 0;
+                } else {
+                    ecPalletGroup.style.display = 'block';
+                }
+            });
+        }
+
+        if (ecCancelBtn) {
+            ecCancelBtn.addEventListener('click', () => {
+                endCountModal.classList.add('hidden');
+            });
+        }
+
+        if (ecSaveBtn) {
+            ecSaveBtn.addEventListener('click', () => {
+                const userId = endCountModal.dataset.userId;
+                const pallets = parseInt(document.getElementById('ec-pallets').value) || 0;
+                const skus = parseInt(document.getElementById('ec-skus').value) || 0;
+                const now = new Date();
+
+                // 1. Log Timestamp
+                const data = getTimestamps();
+                data.push({
+                    id: Date.now().toString(),
+                    userId: userId,
+                    action: 'End',
+                    timestamp: now.toISOString()
+                });
+                saveTimestamps(data);
+                renderTimestamps();
+
+                // 2. Dump to Hourly Monitoring
+                const shiftInfo = getShiftFromTimestamp(now);
+                if (shiftInfo.date && shiftInfo.shift) {
+                    const counters = getCountersData();
+                    // Find or create entry? Usually we expect an entry to exist for the shift plan.
+                    // If not, we can try to find one or just skip. Let's try to find.
+                    const entryIndex = counters.findIndex(c => c.date === shiftInfo.date && c.shift === shiftInfo.shift);
+                    
+                    if (entryIndex > -1) {
+                        const entry = counters[entryIndex];
+                        if (!entry.hourlyActuals) entry.hourlyActuals = {};
+                        if (!entry.hourlyPallets) entry.hourlyPallets = {};
+                        
+                        const h = now.getHours();
+                        const label = `${h}:00 - ${h+1}:00`;
+                        
+                        entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
+                        entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
+                        
+                        saveCountersData(counters);
+                    }
+                }
+
+                showToast(`End Count recorded for ${userId}. Data saved.`);
+                endCountModal.classList.add('hidden');
+                tsUserIdInput.value = '';
+                tsUserIdInput.focus();
+            });
         }
 
         window.deleteSession = function(ids) {
