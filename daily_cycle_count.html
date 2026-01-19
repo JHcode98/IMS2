@@ -4133,14 +4133,19 @@
                     
                     if (entryIndex > -1) {
                         const entry = counters[entryIndex];
-                        if (!entry.hourlyActuals) entry.hourlyActuals = {};
-                        if (!entry.hourlyPallets) entry.hourlyPallets = {};
-                        
                         const h = now.getHours();
                         const label = `${h}:00 - ${h+1}:00`;
                         
-                        entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
-                        entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
+                        const areaType = document.getElementById('ec-area-type').value;
+                        if (areaType === 'Reserved') {
+                            if (!entry.hourlyReservedSKUs) entry.hourlyReservedSKUs = {};
+                            if (!entry.hourlyPallets) entry.hourlyPallets = {};
+                            entry.hourlyReservedSKUs[label] = (entry.hourlyReservedSKUs[label] || 0) + skus;
+                            entry.hourlyPallets[label] = (entry.hourlyPallets[label] || 0) + pallets;
+                        } else {
+                            if (!entry.hourlyActuals) entry.hourlyActuals = {};
+                            entry.hourlyActuals[label] = (entry.hourlyActuals[label] || 0) + skus;
+                        }
                         
                         saveCountersData(counters);
                     }
