@@ -322,6 +322,7 @@
             <button id="clear-counters-filters-btn" class="icon-btn" title="Clear Filters">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
             </button>
+            <button id="counters-flip-to-summary" class="icon-btn" title="View Summary" style="background:#6f42c1; color:white;">📊 Summary</button>
             <button id="export-counters-btn" class="icon-btn" title="Export CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </button>
@@ -330,82 +331,95 @@
             </button>
         </div>
       </div>
-      <div class="card-content">
+      <div class="flip-container" id="counters-flip-container" style="height: 100%;">
+        <div class="flip-inner" style="height: 100%;">
+            <div class="flip-front" style="background:transparent;">
+                <div class="card-content">
+                  <!-- Form -->
+                  <form id="daily-counters-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eef2f6;">
+                      <input type="hidden" id="counter-edit-id">
+                      <div>
+                          <label for="counter-date">Date</label>
+                          <input type="date" id="counter-date" required style="width:100%">
+                      </div>
+                      <div>
+                          <label for="counter-shift">Shift</label>
+                          <select id="counter-shift" required style="width:100%">
+                              <option value="1st Shift-(6am-2pm)">1st Shift-(6am-2pm)</option>
+                              <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
+                              <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
+                          </select>
+                      </div>
+                      <div>
+                          <label for="counter-required">Required Counters</label>
+                          <input type="number" id="counter-required" required min="1" style="width:100%">
+                      </div>
+                      <div>
+                          <label for="counter-rate">Standard Rate</label>
+                          <input type="number" id="counter-rate" min="1" placeholder="Per Person" style="width:100%">
+                      </div>
+                      <div>
+                          <label for="counter-target-pallet">Tgt Pallets (Reserved)</label>
+                          <input type="number" id="counter-target-pallet" min="0" placeholder="Reserved Bin" style="width:100%">
+                      </div>
+                      <div>
+                          <label for="counter-target-reserved-sku">Tgt Items (Reserved)</label>
+                          <input type="number" id="counter-target-reserved-sku" min="0" placeholder="Items on Pallets" style="width:100%">
+                      </div>
+                      <div>
+                          <label for="counter-target-pick">Tgt Pick Bins</label>
+                          <input type="number" id="counter-target-pick" min="0" placeholder="Pick Bin" style="width:100%">
+                      </div>
+                      <div>
+                          <label for="counter-note">Note (Optional)</label>
+                          <input type="text" id="counter-note" placeholder="Shift notes..." style="width:100%">
+                      </div>
+                      <div style="display:flex; gap:5px;">
+                          <button type="submit" id="save-counter-btn" class="icon-btn" title="Save" style="background: #2752a7; color: white; height: 38px; width: 100%; justify-content: center;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save
+                          </button>
+                          <button type="button" id="cancel-counter-edit-btn" class="icon-btn" title="Cancel Edit" style="background: #6c757d; color: white; height: 38px; display:none;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          </button>
+                      </div>
+                  </form>
 
-      <!-- Form -->
-      <form id="daily-counters-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eef2f6;">
-          <input type="hidden" id="counter-edit-id">
-          <div>
-              <label for="counter-date">Date</label>
-              <input type="date" id="counter-date" required style="width:100%">
-          </div>
-          <div>
-              <label for="counter-shift">Shift</label>
-              <select id="counter-shift" required style="width:100%">
-                  <option value="1st Shift-(6am-2pm)">1st Shift-(6am-2pm)</option>
-                  <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
-                  <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
-              </select>
-          </div>
-          <div>
-              <label for="counter-required">Required Counters</label>
-              <input type="number" id="counter-required" required min="1" style="width:100%">
-          </div>
-          <div>
-              <label for="counter-rate">Standard Rate</label>
-              <input type="number" id="counter-rate" min="1" placeholder="Per Person" style="width:100%">
-          </div>
-          <div>
-              <label for="counter-target-pallet">Tgt Pallets (Reserved)</label>
-              <input type="number" id="counter-target-pallet" min="0" placeholder="Reserved Bin" style="width:100%">
-          </div>
-          <div>
-              <label for="counter-target-reserved-sku">Tgt Items (Reserved)</label>
-              <input type="number" id="counter-target-reserved-sku" min="0" placeholder="Items on Pallets" style="width:100%">
-          </div>
-          <div>
-              <label for="counter-target-pick">Tgt Pick Bins</label>
-              <input type="number" id="counter-target-pick" min="0" placeholder="Pick Bin" style="width:100%">
-          </div>
-          <div>
-              <label for="counter-note">Note (Optional)</label>
-              <input type="text" id="counter-note" placeholder="Shift notes..." style="width:100%">
-          </div>
-          <div style="display:flex; gap:5px;">
-              <button type="submit" id="save-counter-btn" class="icon-btn" title="Save" style="background: #2752a7; color: white; height: 38px; width: 100%; justify-content: center;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save
-              </button>
-              <button type="button" id="cancel-counter-edit-btn" class="icon-btn" title="Cancel Edit" style="background: #6c757d; color: white; height: 38px; display:none;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-          </div>
-      </form>
-
-      <!-- Table -->
-      <div style="overflow-x: auto;">
-          <table id="daily-counters-table" style="width:100%; border-collapse: collapse;">
-              <thead>
-                  <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
-                      <th style="padding: 12px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-counters" title="Select All"></th>
-                      <th style="padding: 12px; text-align: left;">Date</th>
-                      <th style="padding: 12px; text-align: left;">1st Shift (6am-2pm)</th>
-                      <th style="padding: 12px; text-align: left;">2nd Shift (2pm-10pm)</th>
-                      <th style="padding: 12px; text-align: left;">3rd Shift (10pm-6am)</th>
-                      <th style="padding: 12px; text-align: left;">Actions</th>
-                  </tr>
-              </thead>
-              <tbody></tbody>
-          </table>
-      </div>
-      <div id="counters-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-top: 1px solid #eee;">
-        <div style="display:flex; align-items:center; gap:8px;">
-            <label for="counters-rows-per-page" style="font-size:13px; color:var(--muted);">Rows:</label>
-            <select id="counters-rows-per-page" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #d6dbe6;"><option value="3">3</option><option value="7" selected>7</option><option value="14">14</option></select>
-        </div>
-        <span id="counters-page-info" style="font-size: 13px; font-weight: 600; color: var(--muted);"></span>
-        <div style="display:flex; gap:8px;">
-            <button id="counters-prev-page" class="icon-btn" title="Previous">‹</button>
-            <button id="counters-next-page" class="icon-btn" title="Next">›</button>
+                  <!-- Table -->
+                  <div style="overflow-x: auto;">
+                      <table id="daily-counters-table" style="width:100%; border-collapse: collapse;">
+                          <thead>
+                              <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
+                                  <th style="padding: 12px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-counters" title="Select All"></th>
+                                  <th style="padding: 12px; text-align: left;">Date</th>
+                                  <th style="padding: 12px; text-align: left;">1st Shift (6am-2pm)</th>
+                                  <th style="padding: 12px; text-align: left;">2nd Shift (2pm-10pm)</th>
+                                  <th style="padding: 12px; text-align: left;">3rd Shift (10pm-6am)</th>
+                                  <th style="padding: 12px; text-align: left;">Actions</th>
+                              </tr>
+                          </thead>
+                          <tbody></tbody>
+                      </table>
+                  </div>
+                  <div id="counters-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-top: 1px solid #eee;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label for="counters-rows-per-page" style="font-size:13px; color:var(--muted);">Rows:</label>
+                        <select id="counters-rows-per-page" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #d6dbe6;"><option value="3">3</option><option value="7" selected>7</option><option value="14">14</option></select>
+                    </div>
+                    <span id="counters-page-info" style="font-size: 13px; font-weight: 600; color: var(--muted);"></span>
+                    <div style="display:flex; gap:8px;">
+                        <button id="counters-prev-page" class="icon-btn" title="Previous">‹</button>
+                        <button id="counters-next-page" class="icon-btn" title="Next">›</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <div class="flip-back" style="background:#fff; padding:20px; border:1px solid #eee; border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0">Daily Summary</h3>
+                    <button id="counters-flip-to-table" class="icon-btn" title="Back to Table">↩ Back</button>
+                </div>
+                <div id="counters-summary-content"></div>
+            </div>
         </div>
       </div>
     </div>
