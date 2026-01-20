@@ -250,6 +250,11 @@
     body.dark-mode .excel-table input { color: #eee; }
     body.dark-mode .excel-table input:focus { background-color: #444; }
     body.dark-mode .excel-table tr:hover td { background-color: #333; }
+    
+    /* Column Resizer */
+    .excel-table th { position: relative; }
+    .resizer { position: absolute; top: 0; right: 0; width: 5px; cursor: col-resize; user-select: none; height: 100%; z-index: 1; }
+    .resizer:hover, .resizing { background-color: #2752a7; opacity: 0.5; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -783,6 +788,7 @@
                         <input type="date" id="ts-date-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 110px;">
                         <button id="ts-clear-date-btn" class="icon-btn" title="Clear Date (Show All)" style="padding: 2px 6px; font-size: 12px;">&times;</button>
                         <input type="text" id="ts-filter-user" placeholder="Universal Search..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 120px;">
+                        <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-active"> Active Only</label>
                         <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-deleted"> Show Deleted</label>
                         <button id="ts-mass-delete-btn" class="icon-btn" title="Delete All Shown" style="padding: 2px 6px; font-size: 12px; color:#d9534f;">Delete All</button>
                         <button id="ts-purge-all-btn" class="icon-btn" title="Permanently Delete All Shown" style="padding: 2px 6px; font-size: 12px; background:#c0392b; color:white; border-color:#c0392b;">Purge All</button>
@@ -946,6 +952,7 @@
         const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
         const tsClearDateBtn = document.getElementById('ts-clear-date-btn');
         const tsAnalyticsDate = document.getElementById('ts-analytics-date');
+        const tsShowActive = document.getElementById('ts-show-active');
         const tsAnalyticsFilterBtn = document.getElementById('ts-analytics-filter-btn');
         
         // End Count Modal Elements
@@ -1472,7 +1479,7 @@
              const hourlyDetailsContainer = document.getElementById('hourly-details');
              hourlyDetailsContainer.innerHTML = '';
              let hourlyDetailsHtml = `
-             <table class="excel-table">
+             <table class="excel-table" id="hourly-table">
                 <thead>
                     <tr>
                         <th style="text-align:left;">Hour</th>
@@ -1595,6 +1602,7 @@
              </table>`;
              
              hourlyDetailsContainer.innerHTML = hourlyDetailsHtml;
+             makeTableResizable(document.getElementById('hourly-table'));
 
              // Calculate cumulative data
              const hourlyValues = Object.values(hourlyData);
@@ -1626,6 +1634,78 @@
                  }
              });
              }
+        }
+
+        // Table Column Resizing Logic
+        function makeTableResizable(table) {
+            if(!table) return;
+            const cols = table.querySelectorAll('th');
+            cols.forEach(col => {
+                const resizer = document.createElement('div');
+                resizer.classList.add('resizer');
+                col.appendChild(resizer);
+                createResizableColumn(col, resizer);
+            });
+        }
+
+        function createResizableColumn(col, resizer) {
+            let x = 0;
+            let w = 0;
+            const mouseDownHandler = function(e) {
+                x = e.clientX;
+                const styles = window.getComputedStyle(col);
+                w = parseInt(styles.width, 10);
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+                resizer.classList.add('resizing');
+            };
+            const mouseMoveHandler = function(e) {
+                const dx = e.clientX - x;
+                col.style.width = `${w + dx}px`;
+            };
+            const mouseUpHandler = function() {
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+                resizer.classList.remove('resizing');
+            };
+            resizer.addEventListener('mousedown', mouseDownHandler);
+        }
+
+        // Make Hourly Modal Draggable
+        const hourlyModalContent = document.querySelector('#hourly-modal .modal-content');
+        const hourlyModalHeader = document.querySelector('#hourly-modal-title').parentElement; // The header div
+        if(hourlyModalContent && hourlyModalHeader) {
+            hourlyModalHeader.style.cursor = 'move';
+            hourlyModalHeader.addEventListener('mousedown', function(e) {
+                // Only drag if clicking the header background or title, not buttons
+                if(e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                
+                e.preventDefault();
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const rect = hourlyModalContent.getBoundingClientRect();
+                
+                // Remove transform centering to allow absolute positioning
+                hourlyModalContent.style.transform = 'none';
+                hourlyModalContent.style.left = rect.left + 'px';
+                hourlyModalContent.style.top = rect.top + 'px';
+                hourlyModalContent.style.margin = '0';
+                
+                const onMouseMove = (e) => {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    hourlyModalContent.style.left = (rect.left + dx) + 'px';
+                    hourlyModalContent.style.top = (rect.top + dy) + 'px';
+                };
+                
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
         }
 
         // Dynamic Variance Calculation
@@ -3692,6 +3772,7 @@
             if(tsAnalyticsDate) tsAnalyticsDate.value = filterDate;
             const showDeleted = tsShowDeleted ? tsShowDeleted.checked : false;
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
+            const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
             
             // Filter for selected date
             let todaysLogs = data.filter(d => {
@@ -3757,6 +3838,10 @@
                     const searchStr = (s.userId + ' ' + name + ' ' + shiftInfo.shift).toLowerCase();
                     return terms.every(term => searchStr.includes(term));
                 });
+            }
+
+            if (showActiveOnly) {
+                filteredSessions = filteredSessions.filter(s => !s.endLog);
             }
 
             // Sort descending (newest first)
@@ -4428,6 +4513,7 @@
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
         if(tsShowDeleted) tsShowDeleted.addEventListener('change', renderTimestamps);
         if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
+        if(tsShowActive) tsShowActive.addEventListener('change', renderTimestamps);
         if(tsDateFilter) tsDateFilter.addEventListener('change', renderTimestamps);
         
         if(tsAnalyticsFilterBtn) {
