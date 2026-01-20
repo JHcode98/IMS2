@@ -780,10 +780,12 @@
                 <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <h4 style="margin:0;">Today's Logs</h4>
                     <div style="display:flex; gap:5px; align-items:center;">
-                        <input type="date" id="ts-date-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
-                        <input type="text" id="ts-filter-user" placeholder="Filter User" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
+                        <input type="date" id="ts-date-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 110px;">
+                        <button id="ts-clear-date-btn" class="icon-btn" title="Clear Date (Show All)" style="padding: 2px 6px; font-size: 12px;">&times;</button>
+                        <input type="text" id="ts-filter-user" placeholder="Universal Search..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 120px;">
                         <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-deleted"> Show Deleted</label>
                         <button id="ts-mass-delete-btn" class="icon-btn" title="Delete All Shown" style="padding: 2px 6px; font-size: 12px; color:#d9534f;">Delete All</button>
+                        <button id="ts-purge-all-btn" class="icon-btn" title="Permanently Delete All Shown" style="padding: 2px 6px; font-size: 12px; background:#c0392b; color:white; border-color:#c0392b;">Purge All</button>
                         <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
                     </div>
                 </div>
@@ -941,6 +943,8 @@
         const tsFilterUser = document.getElementById('ts-filter-user');
         const tsDateFilter = document.getElementById('ts-date-filter');
         const tsMassDeleteBtn = document.getElementById('ts-mass-delete-btn');
+        const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
+        const tsClearDateBtn = document.getElementById('ts-clear-date-btn');
         const tsAnalyticsDate = document.getElementById('ts-analytics-date');
         const tsAnalyticsFilterBtn = document.getElementById('ts-analytics-filter-btn');
         
@@ -1744,8 +1748,7 @@
         if (exportHourlyBtn) {
             exportHourlyBtn.addEventListener('click', () => {
                 const rows = [];
-                rows.push(['Hour', 'Actual', 'Target', 'Variance']);
-                rows.push(['Hour', 'Pallet Actual', 'Actual Items', 'Target', 'Variance', 'Notes']);
+                rows.push(['Hour', 'Pallet Act', 'Actual (Items)', 'Target', 'Variance', 'Notes']);
                 
                 // Data rows
                 const inputs = document.querySelectorAll('#hourly-details .hourly-actual-input');
@@ -1756,7 +1759,6 @@
                     const act = input.value;
                     const tgt = rowDiv.querySelector('.hourly-target-input').value;
                     const variance = rowDiv.querySelector('.hourly-variance').textContent;
-                    rows.push([`"${hour}"`, act, tgt, variance]);
                     const note = rowDiv.querySelector('.hourly-note-input').value;
                     rows.push([`"${hour}"`, pallet, act, tgt, variance, `"${note}"`]);
                 });
@@ -1765,7 +1767,8 @@
                 const tAct = document.getElementById('hourly-total-act') ? document.getElementById('hourly-total-act').textContent : '0';
                 const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
                 const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
-                rows.push(['Total', tAct, tTgt, tVar]);
+                const tPallet = document.getElementById('hourly-total-pallet') ? document.getElementById('hourly-total-pallet').textContent : '0';
+                rows.push(['Total', tPallet, tAct, tTgt, tVar, '']);
                 
                 const csvContent = rows.map(e => e.join(',')).join('\n');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1785,15 +1788,18 @@
             const tAct = document.getElementById('hourly-total-act') ? document.getElementById('hourly-total-act').textContent : '0';
             const tTgt = document.getElementById('hourly-total-tgt') ? document.getElementById('hourly-total-tgt').textContent : '0';
             const tVar = document.getElementById('hourly-total-var') ? document.getElementById('hourly-total-var').textContent : '0';
+            const tPallet = document.getElementById('hourly-total-pallet') ? document.getElementById('hourly-total-pallet').textContent : '0';
             
-            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Act | Tgt | Var\n---|---|---|---\n`;
+            let text = `Hourly Output Report\nDate: ${dateStr}\nShift: ${shift}\n\nTotal Pallets: ${tPallet}\nTotal Actual: ${tAct}\nTotal Target: ${tTgt}\nVariance: ${tVar}\n\nDetails:\nHour | Pallet | Act | Tgt | Var | Notes\n---|---|---|---|---|---\n`;
             
             document.querySelectorAll('#hourly-details .hourly-actual-input').forEach(input => {
                 const row = input.closest('tr');
                 const hour = row.children[0].textContent.trim();
+                const pallet = row.querySelector('.hourly-pallet-input').value;
                 const tgt = row.querySelector('.hourly-target-input').value;
                 const variance = row.querySelector('.hourly-variance').textContent;
-                text += `${hour} | ${input.value} | ${tgt} | ${variance}\n`;
+                const note = row.querySelector('.hourly-note-input').value;
+                text += `${hour} | ${pallet} | ${input.value} | ${tgt} | ${variance} | ${note}\n`;
             });
             return text;
         }
@@ -3618,7 +3624,11 @@
             const d = new Date(ts);
             if (isNaN(d.getTime())) return { date: '', shift: '' };
             const h = d.getHours();
-            let dateStr = d.toISOString().split('T')[0];
+            // Use local date components
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            let dateStr = `${year}-${month}-${day}`;
             let shift = '';
             
             if (h >= 6 && h < 14) {
@@ -3630,7 +3640,10 @@
                 if (h < 6) {
                     const prev = new Date(d);
                     prev.setDate(d.getDate() - 1);
-                    dateStr = prev.toISOString().split('T')[0];
+                    const pYear = prev.getFullYear();
+                    const pMonth = String(prev.getMonth() + 1).padStart(2, '0');
+                    const pDay = String(prev.getDate()).padStart(2, '0');
+                    dateStr = `${pYear}-${pMonth}-${pDay}`;
                 }
             }
             return { date: dateStr, shift };
@@ -3675,13 +3688,21 @@
         function renderTimestamps() {
             const data = getTimestamps();
             const attendance = getAttendanceData();
-            const filterDate = tsDateFilter ? tsDateFilter.value : new Date().toISOString().split('T')[0];
+            const filterDate = tsDateFilter ? tsDateFilter.value : '';
             if(tsAnalyticsDate) tsAnalyticsDate.value = filterDate;
             const showDeleted = tsShowDeleted ? tsShowDeleted.checked : false;
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             
             // Filter for selected date
-            let todaysLogs = data.filter(d => d.timestamp.startsWith(filterDate));
+            let todaysLogs = data.filter(d => {
+                if (!filterDate) return true;
+                const logDate = new Date(d.timestamp);
+                const year = logDate.getFullYear();
+                const month = String(logDate.getMonth() + 1).padStart(2, '0');
+                const day = String(logDate.getDate()).padStart(2, '0');
+                const logDateStr = `${year}-${month}-${day}`;
+                return logDateStr === filterDate;
+            });
             
             // Sort ascending to calculate sessions
             todaysLogs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -3752,10 +3773,23 @@
                 filteredSessions.forEach(session => {
                     const userId = session.userId;
                     // Lookup Name
-                    const attRecord = attendance.find(a => a.userId === userId && a.date === filterDate);
+                    let sessionDate = filterDate;
+                    if (!sessionDate) {
+                        const ts = session.startLog ? session.startLog.timestamp : (session.endLog ? session.endLog.timestamp : null);
+                        if (ts) {
+                             const d = new Date(ts);
+                             const year = d.getFullYear();
+                             const month = String(d.getMonth() + 1).padStart(2, '0');
+                             const day = String(d.getDate()).padStart(2, '0');
+                             sessionDate = `${year}-${month}-${day}`;
+                        }
+                    }
+                    let attRecord = attendance.find(a => a.userId === userId && a.date === sessionDate);
+                    if (!attRecord) attRecord = attendance.find(a => a.userId === userId);
                     const name = attRecord ? attRecord.name : '-';
 
-                    const startStr = session.startLog ? new Date(session.startLog.timestamp).toLocaleTimeString() : '-';
+                    const datePrefix = (!filterDate && session.startLog) ? new Date(session.startLog.timestamp).toLocaleDateString() + ' ' : '';
+                    const startStr = session.startLog ? datePrefix + new Date(session.startLog.timestamp).toLocaleTimeString() : '-';
                     const endStr = session.endLog ? new Date(session.endLog.timestamp).toLocaleTimeString() : '-';
                     
                     // Determine Shift
@@ -4241,11 +4275,120 @@
             });
         }
 
+        if(tsPurgeAllBtn) {
+            tsPurgeAllBtn.addEventListener('click', () => {
+                if(!confirm('PERMANENTLY delete all currently shown logs? This cannot be undone.')) return;
+                
+                // Re-calculate filtered logs to ensure we delete exactly what is shown
+                const allLogs = getTimestamps();
+                const filterDate = tsDateFilter ? tsDateFilter.value : '';
+                const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
+                const attendance = getAttendanceData();
+
+                // 1. Filter by date
+                let todaysLogs = allLogs.filter(d => {
+                    if (!filterDate) return true;
+                    const logDate = new Date(d.timestamp);
+                    const year = logDate.getFullYear();
+                    const month = String(logDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(logDate.getDate()).padStart(2, '0');
+                    const logDateStr = `${year}-${month}-${day}`;
+                    return logDateStr === filterDate;
+                });
+                todaysLogs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                // 2. Group into sessions to apply user/shift filters correctly
+                const sessions = [];
+                const openSessions = {};
+                todaysLogs.forEach(log => {
+                    if (log.action === 'Start') {
+                        if (openSessions[log.userId]) sessions.push(openSessions[log.userId]);
+                        openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null, breaks: [], currentBreakStart: null };
+                    } else if (log.action === 'Start Break') {
+                        if (openSessions[log.userId]) openSessions[log.userId].currentBreakStart = log;
+                    } else if (log.action === 'End Break') {
+                        if (openSessions[log.userId] && openSessions[log.userId].currentBreakStart) {
+                            openSessions[log.userId].breaks.push({ start: openSessions[log.userId].currentBreakStart, end: log });
+                            openSessions[log.userId].currentBreakStart = null;
+                        }
+                    } else if (log.action === 'End') {
+                        if (openSessions[log.userId]) {
+                            const session = openSessions[log.userId];
+                            session.endLog = log;
+                            sessions.push(session);
+                            delete openSessions[log.userId];
+                        } else {
+                            sessions.push({ userId: log.userId, startLog: null, endLog: log, breaks: [] });
+                        }
+                    }
+                });
+                Object.values(openSessions).forEach(s => sessions.push(s));
+                
+                let filteredSessions = sessions;
+                if (filterUser) {
+                    const terms = filterUser.split(' ').filter(t => t);
+                    filteredSessions = sessions.filter(s => {
+                    let sessionDate = filterDate;
+                    if (!sessionDate) {
+                        const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
+                        if (ts) {
+                             const d = new Date(ts);
+                             const year = d.getFullYear();
+                             const month = String(d.getMonth() + 1).padStart(2, '0');
+                             const day = String(d.getDate()).padStart(2, '0');
+                             sessionDate = `${year}-${month}-${day}`;
+                        }
+                    }
+                    let attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
+                    if (!attRecord) attRecord = attendance.find(a => a.userId === s.userId);
+                    const name = attRecord ? attRecord.name : '';
+                        const shiftInfo = s.startLog ? getShiftFromTimestamp(s.startLog.timestamp) : { shift: '' };
+                        const searchStr = (s.userId + ' ' + name + ' ' + shiftInfo.shift).toLowerCase();
+                        return terms.every(term => searchStr.includes(term));
+                    });
+                }
+                
+                // Collect IDs to remove
+                const idsToRemove = new Set();
+                filteredSessions.forEach(s => {
+                    if(s.startLog) idsToRemove.add(s.startLog.id);
+                    if(s.endLog) idsToRemove.add(s.endLog.id);
+                    if(s.breaks) s.breaks.forEach(b => {
+                        if(b.start) idsToRemove.add(b.start.id);
+                        if(b.end) idsToRemove.add(b.end.id);
+                    });
+                });
+                
+                // Filter out the IDs
+                const newData = allLogs.filter(d => !idsToRemove.has(d.id));
+                saveTimestamps(newData);
+                renderTimestamps();
+                showToast('Permanently deleted shown logs');
+            });
+        }
+
+        if(tsClearDateBtn) {
+            tsClearDateBtn.addEventListener('click', () => {
+                if(tsDateFilter) {
+                    tsDateFilter.value = '';
+                    renderTimestamps();
+                }
+            });
+        }
+
         if(tsExportBtn) {
             tsExportBtn.addEventListener('click', () => {
                 const data = getTimestamps();
                 const filterDate = tsDateFilter ? tsDateFilter.value : new Date().toISOString().split('T')[0];
-                const logs = data.filter(d => d.timestamp.startsWith(filterDate)).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const logs = data.filter(d => {
+                    if (!filterDate) return true;
+                    const logDate = new Date(d.timestamp);
+                    const year = logDate.getFullYear();
+                    const month = String(logDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(logDate.getDate()).padStart(2, '0');
+                    const logDateStr = `${year}-${month}-${day}`;
+                    return logDateStr === filterDate;
+                }).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 
                 if(logs.length === 0) { alert('No logs to export.'); return; }
                 
