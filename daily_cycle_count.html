@@ -863,6 +863,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                     <h4 style="margin:0;">Break Log</h4>
                     <div style="display:flex; gap:5px;">
+                         <input type="text" id="break-user-id" placeholder="User ID" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:80px;">
                          <input type="datetime-local" id="manual-break-time" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:130px;" title="Manual Break Time">
                          <button id="btn-break-start" class="icon-btn" style="background:#f1c40f; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">Start Break</button>
                          <button id="btn-break-end" class="icon-btn" style="background:#f39c12; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">End Break</button>
@@ -4247,7 +4248,7 @@
                 if (log.userId && !log.deleted) {
                     if (log.action === 'Start Break') openBreaks[log.userId] = log;
                     else if (log.action === 'End Break' && openBreaks[log.userId]) {
-                        breaks.push({ userId: log.userId, start: openBreaks[log.userId].timestamp, end: log.timestamp });
+                        breaks.push({ userId: log.userId, start: openBreaks[log.userId].timestamp, end: log.timestamp, startId: openBreaks[log.userId].id, endId: log.id });
                         delete openBreaks[log.userId];
                     }
                 }
@@ -4255,7 +4256,7 @@
             
             // Add open breaks
             Object.keys(openBreaks).forEach(uid => {
-                 breaks.push({ userId: uid, start: openBreaks[uid].timestamp, end: null });
+                 breaks.push({ userId: uid, start: openBreaks[uid].timestamp, end: null, startId: openBreaks[uid].id, endId: null });
             });
 
             breaks.sort((a,b) => new Date(b.start) - new Date(a.start));
@@ -4288,9 +4289,12 @@
                     }
                 }
                 
+                const startStr = `<span class="editable-time" data-log-id="${b.startId}">${start.toLocaleTimeString()}</span>`;
+                const endStr = b.end ? `<span class="editable-time" data-log-id="${b.endId}">${new Date(b.end).toLocaleTimeString()}</span>` : '-';
+
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${start.toLocaleTimeString()}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.end ? new Date(b.end).toLocaleTimeString() : '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td>`;
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -4483,8 +4487,10 @@
                 }
             });
         }
-        function logTimestamp(action, areaType) {
-            const userId = tsUserIdInput.value.trim();
+        function logTimestamp(action, areaType, customUserId) {
+            let userId = customUserId;
+            if (!userId) userId = tsUserIdInput.value.trim();
+            
             if(!userId) { alert('Please enter User ID.'); return; }
             const data = getTimestamps();
             
@@ -4586,9 +4592,15 @@
 
             renderTimestamps();
             showToast(`${action} recorded for ${userId}`);
-            tsUserIdInput.value = '';
+            
+            if (customUserId) {
+                const breakInput = document.getElementById('break-user-id');
+                if(breakInput) { breakInput.value = ''; breakInput.focus(); }
+            } else {
+                tsUserIdInput.value = '';
+                tsUserIdInput.focus();
+            }
             if(manualBreakInput) manualBreakInput.value = ''; // Clear manual input
-            tsUserIdInput.focus();
         }
 
         // End Count Modal Logic
@@ -4853,8 +4865,16 @@
             });
         }
         if(btnStartCount) btnStartCount.addEventListener('click', () => logTimestamp('Start'));
-        if(btnBreakStart) btnBreakStart.addEventListener('click', () => logTimestamp('Start Break'));
-        if(btnBreakEnd) btnBreakEnd.addEventListener('click', () => logTimestamp('End Break'));
+        if(btnBreakStart) btnBreakStart.addEventListener('click', () => {
+            const breakInput = document.getElementById('break-user-id');
+            const uid = breakInput ? breakInput.value.trim() : '';
+            logTimestamp('Start Break', null, uid);
+        });
+        if(btnBreakEnd) btnBreakEnd.addEventListener('click', () => {
+            const breakInput = document.getElementById('break-user-id');
+            const uid = breakInput ? breakInput.value.trim() : '';
+            logTimestamp('End Break', null, uid);
+        });
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
         if(tsShowDeleted) tsShowDeleted.addEventListener('change', renderTimestamps);
         if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
@@ -4866,6 +4886,16 @@
                 if(tsAnalyticsDate && tsDateFilter) {
                     tsDateFilter.value = tsAnalyticsDate.value;
                     renderTimestamps();
+                }
+            });
+        }
+        
+        const breakLogTable = document.getElementById('break-log-table');
+        if (breakLogTable) {
+            breakLogTable.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('editable-time')) {
+                    openEditTimeModal(target.dataset.logId);
                 }
             });
         }
