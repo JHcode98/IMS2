@@ -255,6 +255,7 @@
     .excel-table th { position: relative; }
     .resizer { position: absolute; top: 0; right: 0; width: 5px; cursor: col-resize; user-select: none; height: 100%; z-index: 1; }
     .resizer:hover, .resizing { background-color: #2752a7; opacity: 0.5; }
+    .area-card:hover { border-color: #2752a7 !important; background-color: #f0f4f8; transform: translateY(-2px); }
   </style>
 </head>
 <body class="inventory-mode">
@@ -843,6 +844,25 @@
     </div>
   </div>
 
+  <!-- Start Count Area Selection Modal -->
+  <div id="start-area-modal" class="modal hidden" style="z-index: 10015;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 150px auto; text-align: center;">
+        <h3 style="margin-top:0">Select Area</h3>
+        <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
+            <div class="card area-card" data-area="Reserved" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
+                <div style="font-size:30px;">📦</div>
+                <div style="font-weight:bold; margin-top:10px;">Reserved Bin</div>
+            </div>
+            <div class="card area-card" data-area="Pick Bin" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
+                <div style="font-size:30px;">🛒</div>
+                <div style="font-weight:bold; margin-top:10px;">Pick Bin</div>
+            </div>
+        </div>
+        <button id="cancel-start-area-btn" class="icon-btn" style="margin-top:20px; border:1px solid #ccc;">Cancel</button>
+    </div>
+  </div>
+
   <!-- End Count Details Modal -->
   <div id="end-count-modal" class="modal hidden" style="z-index: 10010;">
     <div class="modal-overlay"></div>
@@ -961,6 +981,20 @@
         const ecPalletGroup = document.getElementById('ec-pallet-group');
         const ecSaveBtn = document.getElementById('ec-save-btn');
         const ecCancelBtn = document.getElementById('ec-cancel-btn');
+
+        // Start Area Modal Logic
+        const startAreaModal = document.getElementById('start-area-modal');
+        const cancelStartAreaBtn = document.getElementById('cancel-start-area-btn');
+        
+        document.querySelectorAll('.area-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const area = card.dataset.area;
+                startAreaModal.classList.add('hidden');
+                logTimestamp('Start', area);
+            });
+        });
+        
+        if(cancelStartAreaBtn) cancelStartAreaBtn.addEventListener('click', () => startAreaModal.classList.add('hidden'));
 
         // Timestamp Flip Logic
         const tsFlipContainer = document.getElementById('ts-flip-container');
@@ -4198,7 +4232,7 @@
                 }
             });
         }
-        function logTimestamp(action) {
+        function logTimestamp(action, areaType) {
             const userId = tsUserIdInput.value.trim();
             if(!userId) { alert('Please enter User ID.'); return; }
             const data = getTimestamps();
@@ -4210,6 +4244,12 @@
                 const lastLog = userLogs[userLogs.length - 1];
                 if (lastLog && lastLog.action !== 'End') {
                     alert(`User ${userId} already has an active session. Please end it first.`);
+                    return;
+                }
+                
+                // Show Area Selection Modal if not provided
+                if (!areaType) {
+                    document.getElementById('start-area-modal').classList.remove('hidden');
                     return;
                 }
             }
@@ -4227,22 +4267,47 @@
 
             // Intercept End for Details
             if (action === 'End') {
+                // Find the start log to get areaType
+                const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                let startLog = null;
+                for (let i = userLogs.length - 1; i >= 0; i--) {
+                    if (userLogs[i].action === 'Start') {
+                        startLog = userLogs[i];
+                        break;
+                    }
+                    if (userLogs[i].action === 'End') break;
+                }
+                const area = startLog ? (startLog.areaType || 'Reserved') : 'Reserved';
+
                 // Open Modal
                 document.getElementById('ec-pallets').value = '0';
                 document.getElementById('ec-skus').value = '0';
-                document.getElementById('ec-area-type').value = 'Reserved';
-                ecPalletGroup.style.display = 'block'; // Default show
+                
+                const areaSelect = document.getElementById('ec-area-type');
+                areaSelect.value = area;
+                areaSelect.disabled = true;
+                
+                if (area === 'Pick Bin') {
+                    ecPalletGroup.style.display = 'none';
+                    document.getElementById('ec-pallets').value = 0;
+                } else {
+                    ecPalletGroup.style.display = 'block';
+                }
+                
                 endCountModal.dataset.userId = userId;
                 endCountModal.classList.remove('hidden');
                 return;
             }
 
-            data.push({
+            const newLog = {
                 id: Date.now().toString(),
                 userId: userId,
                 action: action,
                 timestamp: now.toISOString()
-            });
+            };
+            if (areaType) newLog.areaType = areaType;
+            
+            data.push(newLog);
             saveTimestamps(data);
             renderTimestamps();
             showToast(`${action} recorded for ${userId}`);
@@ -4277,11 +4342,15 @@
 
                 // 1. Log Timestamp
                 const data = getTimestamps();
+                const areaType = document.getElementById('ec-area-type').value;
                 data.push({
                     id: Date.now().toString(),
                     userId: userId,
                     action: 'End',
-                    timestamp: now.toISOString()
+                    timestamp: now.toISOString(),
+                    areaType: areaType,
+                    pallets: pallets,
+                    skus: skus
                 });
                 saveTimestamps(data);
                 renderTimestamps();
