@@ -2675,15 +2675,14 @@
                 };
                 if(!newEntry.name) return;
 
-                // Duplicate check
+                // Duplicate check: User ID must be unique per date (across all shifts)
                 const existing = getAttendanceData().find(a => 
                     a.date === newEntry.date && 
-                    a.shift === newEntry.shift && 
-                    a.name.toLowerCase() === newEntry.name.toLowerCase() &&
+                    a.userId === newEntry.userId &&
                     a.id !== newEntry.id
                 );
                 if (existing) {
-                    alert('Duplicate entry: This person is already listed for this shift.');
+                    alert(`User ID ${newEntry.userId} is already assigned to ${existing.shift} on ${newEntry.date}.`);
                     return;
                 }
 
@@ -3894,24 +3893,28 @@
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
             
-            // Filter for selected date
-            let todaysLogs = data.filter(d => {
-                if (!filterDate) return true;
-                const logDate = new Date(d.timestamp);
-                const year = logDate.getFullYear();
-                const month = String(logDate.getMonth() + 1).padStart(2, '0');
-                const day = String(logDate.getDate()).padStart(2, '0');
-                const logDateStr = `${year}-${month}-${day}`;
-                return logDateStr === filterDate;
-            });
+            // Filter logs
+            // If showing active only, load all logs to find open sessions from any date.
+            // Otherwise, filter by date if provided.
+            let logsToProcess = data;
+            if (!showActiveOnly && filterDate) {
+                logsToProcess = data.filter(d => {
+                    const logDate = new Date(d.timestamp);
+                    const year = logDate.getFullYear();
+                    const month = String(logDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(logDate.getDate()).padStart(2, '0');
+                    const logDateStr = `${year}-${month}-${day}`;
+                    return logDateStr === filterDate;
+                });
+            }
             
             // Sort ascending to calculate sessions
-            todaysLogs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+            logsToProcess.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
             
             const sessions = [];
             const openSessions = {};
             
-            todaysLogs.forEach(log => {
+            logsToProcess.forEach(log => {
                 if (log.deleted && !showDeleted) return;
                 
                 if (log.action === 'Start') {
@@ -4412,7 +4415,8 @@
                 const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 const lastLog = userLogs[userLogs.length - 1];
                 if (lastLog && lastLog.action !== 'End') {
-                    alert(`User ${userId} already has an active session. Please end it first.`);
+                    const dateStr = new Date(lastLog.timestamp).toLocaleString();
+                    alert(`User ${userId} already has an active session started at ${dateStr}. Please end it first.`);
                     return;
                 }
                 
