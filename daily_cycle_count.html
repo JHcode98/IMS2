@@ -867,11 +867,11 @@
                     <table id="break-log-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                         <thead>
                             <tr style="background:#f9f9f9;">
-                                <th style="padding:5px;">User</th>
-                                <th style="padding:5px;">Name</th>
-                                <th style="padding:5px;">Shift</th>
-                                <th style="padding:5px;">Break Out</th>
-                                <th style="padding:5px;">Break In</th>
+                                <th style="padding:5px; text-align:left;">User</th>
+                                <th style="padding:5px; text-align:left;">Name</th>
+                                <th style="padding:5px; text-align:left;">Shift</th>
+                                <th style="padding:5px; text-align:left;">Break Out</th>
+                                <th style="padding:5px; text-align:left;">Break In</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -884,9 +884,9 @@
                     <table id="inactive-users-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                         <thead>
                             <tr style="background:#f9f9f9;">
-                                <th style="padding:5px;">User</th>
-                                <th style="padding:5px;">Name</th>
-                                <th style="padding:5px;">Last End Count</th>
+                                <th style="padding:5px; text-align:left;">User</th>
+                                <th style="padding:5px; text-align:left;">Name</th>
+                                <th style="padding:5px; text-align:left;">Last End Count</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -4246,7 +4246,7 @@
                 const shift = att.shift ? att.shift.split('-')[0] : '-';
                 
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee;">${new Date(b.start).toLocaleTimeString()}</td><td style="padding:5px; border-bottom:1px solid #eee;">${b.end ? new Date(b.end).toLocaleTimeString() : '<span style="color:orange">On Break</span>'}</td>`;
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${new Date(b.start).toLocaleTimeString()}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.end ? new Date(b.end).toLocaleTimeString() : '<span style="color:orange">On Break</span>'}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -4256,29 +4256,62 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             
-            const userSessions = {};
-            sessions.forEach(s => {
-                if(!userSessions[s.userId]) userSessions[s.userId] = [];
-                userSessions[s.userId].push(s);
-            });
+            const filterDateInput = document.getElementById('ts-date-filter');
+            const filterDate = filterDateInput ? filterDateInput.value : new Date().toISOString().split('T')[0];
             
-            const inactiveUsers = [];
-            Object.keys(userSessions).forEach(userId => {
-                const userSess = userSessions[userId];
-                const isActive = userSess.some(s => !s.endLog);
-                if(!isActive) {
-                    userSess.sort((a,b) => (b.endLog ? new Date(b.endLog.timestamp) : 0) - (a.endLog ? new Date(a.endLog.timestamp) : 0));
-                    const lastSession = userSess[0];
-                    if(lastSession && lastSession.endLog) inactiveUsers.push({ userId: userId, lastEnd: lastSession.endLog.timestamp });
+            // Get all Full Counters for the date
+            const fullCounters = attendanceData.filter(a => a.date === filterDate && a.status === 'Full counter');
+            
+            // Map of userId -> last end timestamp (from sessions)
+            const userLastEnd = {};
+            const activeUserIds = new Set();
+            
+            sessions.forEach(s => {
+                if (!s.endLog) {
+                    activeUserIds.add(s.userId);
+                } else {
+                    const t = new Date(s.endLog.timestamp).getTime();
+                    if (!userLastEnd[s.userId] || t > userLastEnd[s.userId]) {
+                        userLastEnd[s.userId] = t;
+                    }
                 }
             });
             
-            if(inactiveUsers.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="padding:10px; text-align:center; color:#999;">No inactive users found.</td></tr>'; return; }
-            inactiveUsers.sort((a,b) => new Date(b.lastEnd) - new Date(a.lastEnd));
-            inactiveUsers.forEach(u => {
-                const att = attendanceData.find(a => a.userId === u.userId) || {};
+            const inactiveList = [];
+            
+            fullCounters.forEach(att => {
+                if (!activeUserIds.has(att.userId)) {
+                    // Not currently active
+                    let lastEnd = '-';
+                    let status = 'Not Started';
+                    
+                    if (userLastEnd[att.userId]) {
+                        lastEnd = new Date(userLastEnd[att.userId]).toLocaleTimeString();
+                        status = 'Inactive';
+                    }
+                    
+                    inactiveList.push({
+                        userId: att.userId,
+                        name: att.name,
+                        lastEnd: lastEnd,
+                        status: status
+                    });
+                }
+            });
+            
+            if(inactiveList.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="padding:10px; text-align:center; color:#999;">No inactive users found.</td></tr>'; return; }
+            
+            // Sort: Not Started first
+            inactiveList.sort((a,b) => {
+                if (a.status === 'Not Started' && b.status !== 'Not Started') return -1;
+                if (a.status !== 'Not Started' && b.status === 'Not Started') return 1;
+                return 0;
+            });
+            
+            inactiveList.forEach(u => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee;">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee;">${att.name || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee;">${new Date(u.lastEnd).toLocaleTimeString()}</td>`;
+                const color = u.status === 'Not Started' ? '#e74c3c' : '#333';
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.lastEnd}</td>`;
                 tbody.appendChild(tr);
             });
         }
