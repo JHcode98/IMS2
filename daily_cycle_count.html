@@ -256,6 +256,8 @@
     .resizer { position: absolute; top: 0; right: 0; width: 5px; cursor: col-resize; user-select: none; height: 100%; z-index: 1; }
     .resizer:hover, .resizing { background-color: #2752a7; opacity: 0.5; }
     .area-card:hover { border-color: #2752a7 !important; background-color: #f0f4f8; transform: translateY(-2px); }
+    .editable-time { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+    .editable-time:hover { color: #2752a7; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -659,6 +661,23 @@
     </div>
   </div>
 
+  <!-- Edit Timestamp Modal -->
+  <div id="edit-time-modal" class="modal hidden" style="z-index: 10015;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 150px auto;">
+        <h3 style="margin-top:0">Edit Timestamp</h3>
+        <input type="hidden" id="edit-time-log-id">
+        <div style="margin-bottom:15px;">
+            <label for="edit-time-input" style="font-weight:bold;">New Date & Time:</label>
+            <input type="datetime-local" id="edit-time-input" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+        <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
+            <button id="cancel-edit-time-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
+            <button id="save-edit-time-btn" class="icon-btn" style="background:#2752a7; color:white;">Save</button>
+        </div>
+    </div>
+  </div>
+
   <!-- Hover Summary Popup -->
   <div id="summary-hover-popup" class="card" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.3); z-index: 10002; display: none; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); min-width: 350px; max-width: 500px; background: #fff; border: 1px solid #ccc; pointer-events: none;">
     <h3 style="margin-top:0; color:var(--accent); border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">Shift Summary</h3>
@@ -766,7 +785,7 @@
   <!-- Counter Timestamp Modal -->
   <div id="timestamp-modal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content card" style="max-width: 95vw; margin: 50px auto;">
+    <div class="modal-content card" style="width: 95vw; max-width: 1600px; margin: 50px auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">Counter Timestamp</h3>
             <button class="icon-btn close-modal">&times;</button>
@@ -838,6 +857,40 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <div>
+                <h4 style="margin-top:0;">Break Log</h4>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #eee;">
+                    <table id="break-log-table" style="width:100%; font-size:12px; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f9f9f9;">
+                                <th style="padding:5px;">User</th>
+                                <th style="padding:5px;">Name</th>
+                                <th style="padding:5px;">Shift</th>
+                                <th style="padding:5px;">Break Out</th>
+                                <th style="padding:5px;">Break In</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
+                <h4 style="margin-top:0;">Inactive Users</h4>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #eee;">
+                    <table id="inactive-users-table" style="width:100%; font-size:12px; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f9f9f9;">
+                                <th style="padding:5px;">User</th>
+                                <th style="padding:5px;">Name</th>
+                                <th style="padding:5px;">Last End Count</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -982,6 +1035,39 @@
         const ecSaveBtn = document.getElementById('ec-save-btn');
         const ecCancelBtn = document.getElementById('ec-cancel-btn');
 
+        const editTimeModal = document.getElementById('edit-time-modal');
+        const cancelEditTimeBtn = document.getElementById('cancel-edit-time-btn');
+        const saveEditTimeBtn = document.getElementById('save-edit-time-btn');
+
+        if (cancelEditTimeBtn) cancelEditTimeBtn.addEventListener('click', () => editTimeModal.classList.add('hidden'));
+
+        if (saveEditTimeBtn) {
+            saveEditTimeBtn.addEventListener('click', () => {
+                const logId = document.getElementById('edit-time-log-id').value;
+                const newTimeValue = document.getElementById('edit-time-input').value;
+                if (!logId || !newTimeValue) return;
+
+                const newTimestamp = new Date(newTimeValue).toISOString();
+                const data = getTimestamps();
+                const logIndex = data.findIndex(d => d.id === logId);
+                if (logIndex > -1) {
+                    data[logIndex].timestamp = newTimestamp;
+                    saveTimestamps(data);
+                    renderTimestamps();
+                    showToast('Timestamp updated successfully!');
+                    editTimeModal.classList.add('hidden');
+                }
+            });
+        }
+
+        if (timestampTableBody) {
+            timestampTableBody.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('editable-time')) {
+                    openEditTimeModal(target.dataset.logId);
+                }
+            });
+        }
         // Start Area Modal Logic
         const startAreaModal = document.getElementById('start-area-modal');
         const cancelStartAreaBtn = document.getElementById('cancel-start-area-btn');
@@ -3908,8 +3994,8 @@
                     const name = attRecord ? attRecord.name : '-';
 
                     const datePrefix = (!filterDate && session.startLog) ? new Date(session.startLog.timestamp).toLocaleDateString() + ' ' : '';
-                    const startStr = session.startLog ? datePrefix + new Date(session.startLog.timestamp).toLocaleTimeString() : '-';
-                    const endStr = session.endLog ? new Date(session.endLog.timestamp).toLocaleTimeString() : '-';
+                    const startStr = session.startLog ? `<span class="editable-time" data-log-id="${session.startLog.id}">${datePrefix + new Date(session.startLog.timestamp).toLocaleTimeString()}</span>` : '-';
+                    const endStr = session.endLog ? `<span class="editable-time" data-log-id="${session.endLog.id}">${new Date(session.endLog.timestamp).toLocaleTimeString()}</span>` : '-';
                     
                     // Determine Shift
                     const shiftInfo = session.startLog ? getShiftFromTimestamp(session.startLog.timestamp) : { shift: '-' };
