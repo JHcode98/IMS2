@@ -4066,6 +4066,8 @@
             }));
             renderTimestampChart(chartSessions);
             renderTsAnalytics(sessions, filterDate);
+            renderBreakLogTable(sessions, attendance);
+            renderInactiveUsersTable(sessions, attendance);
         }
 
         function renderTsAnalytics(sessions, date) {
@@ -4197,6 +4199,87 @@
             container.innerHTML = html;
         }
         
+        function openEditTimeModal(logId) {
+            const data = getTimestamps();
+            const log = data.find(d => d.id === logId);
+            if (log) {
+                const editTimeModal = document.getElementById('edit-time-modal');
+                document.getElementById('edit-time-log-id').value = logId;
+                // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+                const d = new Date(log.timestamp);
+                const localISO = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                document.getElementById('edit-time-input').value = localISO;
+                editTimeModal.classList.remove('hidden');
+            }
+        }
+
+        function renderBreakLogTable(sessions, attendanceData) {
+            const tbody = document.querySelector('#break-log-table tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            const breaks = [];
+            sessions.forEach(s => {
+                if(s.breaks) {
+                    s.breaks.forEach(b => {
+                        breaks.push({ userId: s.userId, start: b.start.timestamp, end: b.end.timestamp });
+                    });
+                }
+                if(s.currentBreakStart) {
+                     breaks.push({ userId: s.userId, start: s.currentBreakStart.timestamp, end: null });
+                }
+            });
+            
+            breaks.sort((a,b) => new Date(b.start) - new Date(a.start));
+            
+            if(breaks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:10px; text-align:center; color:#999;">No breaks recorded.</td></tr>';
+                return;
+            }
+
+            breaks.forEach(b => {
+                const att = attendanceData.find(a => a.userId === b.userId) || {};
+                const name = att.name || '-';
+                const shift = att.shift ? att.shift.split('-')[0] : '-';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee;">${new Date(b.start).toLocaleTimeString()}</td><td style="padding:5px; border-bottom:1px solid #eee;">${b.end ? new Date(b.end).toLocaleTimeString() : '<span style="color:orange">On Break</span>'}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderInactiveUsersTable(sessions, attendanceData) {
+            const tbody = document.querySelector('#inactive-users-table tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            const userSessions = {};
+            sessions.forEach(s => {
+                if(!userSessions[s.userId]) userSessions[s.userId] = [];
+                userSessions[s.userId].push(s);
+            });
+            
+            const inactiveUsers = [];
+            Object.keys(userSessions).forEach(userId => {
+                const userSess = userSessions[userId];
+                const isActive = userSess.some(s => !s.endLog);
+                if(!isActive) {
+                    userSess.sort((a,b) => (b.endLog ? new Date(b.endLog.timestamp) : 0) - (a.endLog ? new Date(a.endLog.timestamp) : 0));
+                    const lastSession = userSess[0];
+                    if(lastSession && lastSession.endLog) inactiveUsers.push({ userId: userId, lastEnd: lastSession.endLog.timestamp });
+                }
+            });
+            
+            if(inactiveUsers.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="padding:10px; text-align:center; color:#999;">No inactive users found.</td></tr>'; return; }
+            inactiveUsers.sort((a,b) => new Date(b.lastEnd) - new Date(a.lastEnd));
+            inactiveUsers.forEach(u => {
+                const att = attendanceData.find(a => a.userId === u.userId) || {};
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee;">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee;">${att.name || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee;">${new Date(u.lastEnd).toLocaleTimeString()}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
         function renderCountersSummary() {
             const container = document.getElementById('counters-summary-content');
             if(!container) return;
