@@ -3955,8 +3955,20 @@
             // Shift Filter
             if (filterShift) {
                 filteredSessions = filteredSessions.filter(s => {
-                    const shiftInfo = s.startLog ? getShiftFromTimestamp(s.startLog.timestamp) : { shift: '' };
-                    return shiftInfo.shift.includes(filterShift);
+                    let shiftToCheck = '';
+                    let sessionDate = '';
+                    if (s.startLog) {
+                        const info = getShiftFromTimestamp(s.startLog.timestamp);
+                        sessionDate = info.date;
+                        shiftToCheck = info.shift;
+                    } else if (s.endLog) {
+                        const info = getShiftFromTimestamp(s.endLog.timestamp);
+                        sessionDate = info.date;
+                        shiftToCheck = info.shift;
+                    }
+                    const attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
+                    if (attRecord && attRecord.shift) shiftToCheck = attRecord.shift;
+                    return shiftToCheck.includes(filterShift);
                 });
             }
 
