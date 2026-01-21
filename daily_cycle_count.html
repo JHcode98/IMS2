@@ -803,7 +803,6 @@
                     <div style="display:flex; gap:5px; margin-bottom:10px;">
                         <button id="btn-start-count" class="icon-btn" style="flex:1; background:#2ecc71; color:white; padding:10px; font-weight:bold; justify-content:center;">Start Counting</button>
                         <button id="btn-end-count" class="icon-btn" style="flex:1; background:#e74c3c; color:white; padding:10px; font-weight:bold; justify-content:center;">End Counting</button>
-                        <button id="btn-view-hourly" class="icon-btn" title="View Current Shift's Hourly Output" style="flex:1; background:#6f42c1; color:white; padding:10px; font-weight:bold; justify-content:center;">View Hourly</button>
                     </div>
                 </div>
 
@@ -4085,7 +4084,6 @@
                 end: s.endLog.timestamp
             }));
             renderTimestampChart(chartSessions);
-            renderTsAnalytics(sessions);
             renderTsAnalytics(sessions, analyticsDate);
             renderBreakLogTable(logsToProcess, attendance);
             renderInactiveUsersTable(sessions, attendance);
@@ -4171,15 +4169,18 @@
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;">
                         <div class="card" style="padding:15px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
                             <div style="font-size:12px; color:#2e7d32; margin-bottom:5px;">1st Shift</div>
-                            <div style="font-weight:bold; color:#2ecc71; font-size:28px;">${shiftData['1st Shift-(6am-2pm)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['1st Shift-(6am-2pm)'].full}</span></div>
+                            <div style="font-weight:bold; color:#2ecc71; font-size:28px; margin-bottom:5px;">${shiftData['1st Shift-(6am-2pm)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['1st Shift-(6am-2pm)'].full}</span></div>
+                            <button class="icon-btn hourly-shortcut-btn" data-date="${date}" data-shift="1st Shift-(6am-2pm)" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
                         </div>
                         <div class="card" style="padding:15px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
                             <div style="font-size:12px; color:#2e7d32; margin-bottom:5px;">2nd Shift</div>
-                            <div style="font-weight:bold; color:#2ecc71; font-size:28px;">${shiftData['2nd Shift-(2pm-10pm)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['2nd Shift-(2pm-10pm)'].full}</span></div>
+                            <div style="font-weight:bold; color:#2ecc71; font-size:28px; margin-bottom:5px;">${shiftData['2nd Shift-(2pm-10pm)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['2nd Shift-(2pm-10pm)'].full}</span></div>
+                            <button class="icon-btn hourly-shortcut-btn" data-date="${date}" data-shift="2nd Shift-(2pm-10pm)" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
                         </div>
                         <div class="card" style="padding:15px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
                             <div style="font-size:12px; color:#2e7d32; margin-bottom:5px;">3rd Shift</div>
-                            <div style="font-weight:bold; color:#2ecc71; font-size:28px;">${shiftData['3rd Shift-(10pm-6am)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['3rd Shift-(10pm-6am)'].full}</span></div>
+                            <div style="font-weight:bold; color:#2ecc71; font-size:28px; margin-bottom:5px;">${shiftData['3rd Shift-(10pm-6am)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['3rd Shift-(10pm-6am)'].full}</span></div>
+                            <button class="icon-btn hourly-shortcut-btn" data-date="${date}" data-shift="3rd Shift-(10pm-6am)" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
                         </div>
                     </div>
                 </div>
@@ -4914,18 +4915,17 @@
                 }
             });
         }
-        const btnViewHourly = document.getElementById('btn-view-hourly');
-        if(btnViewHourly) {
-            btnViewHourly.disabled = false;
-            btnViewHourly.addEventListener('click', () => {
-                const now = new Date();
-                const shiftInfo = getShiftFromTimestamp(now.toISOString());
-                if (shiftInfo.date && shiftInfo.shift) {
+        
+        const analyticsContent = document.getElementById('ts-analytics-content');
+        if(analyticsContent) {
+            analyticsContent.addEventListener('click', (e) => {
+                const btn = e.target.closest('.hourly-shortcut-btn');
+                if(btn) {
+                    const d = btn.dataset.date;
+                    const s = btn.dataset.shift;
                     const tsModal = document.getElementById('timestamp-modal');
-                    if(tsModal) tsModal.classList.add('hidden'); // Close timestamp modal
-                    openHourlyModal(shiftInfo.date, shiftInfo.shift);
-                } else {
-                    alert('Could not determine current shift.');
+                    if(tsModal) tsModal.classList.add('hidden');
+                    openHourlyModal(d, s);
                 }
             });
         }
