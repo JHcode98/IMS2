@@ -2414,6 +2414,7 @@
                     saveAttendanceData(data);
                     renderAttendanceTable();
                     renderCountersTable();
+                    renderTimestamps(); // Refresh analytics
                     updateAttendanceActionButtons();
                     showToast(`${selectedIds.length} attendance records deleted`);
                 });
@@ -2696,6 +2697,10 @@
                 attModal.classList.add('hidden');
                 renderAttendanceTable();
                 renderCountersTable(); // Update counts
+
+                // Update analytics date to match entry and refresh
+                if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.value = newEntry.date;
+                renderTimestamps();
             });
         }
 
@@ -2735,6 +2740,7 @@
                         saveAttendanceData(data);
                         renderAttendanceTable();
                         renderCountersTable(); // Update counts
+                        renderTimestamps(); // Refresh analytics
                         showToast('Attendance entry deleted');
                     }
                 } else if (btn.classList.contains('edit-att-btn')) {
