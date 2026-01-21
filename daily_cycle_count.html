@@ -3994,8 +3994,15 @@
                     const endStr = session.endLog ? `<span class="editable-time" data-log-id="${session.endLog.id}">${new Date(session.endLog.timestamp).toLocaleTimeString()}</span>` : '-';
                     
                     // Determine Shift
-                    const shiftInfo = session.startLog ? getShiftFromTimestamp(session.startLog.timestamp) : { shift: '-' };
-                    const shiftDisplay = shiftInfo.shift.split('-')[0] || '-';
+                    let shiftDisplay = '-';
+                    if (attRecord && attRecord.shift) {
+                        shiftDisplay = attRecord.shift.split('-')[0];
+                        session.shift = attRecord.shift;
+                    } else {
+                        const shiftInfo = session.startLog ? getShiftFromTimestamp(session.startLog.timestamp) : { shift: '-' };
+                        shiftDisplay = shiftInfo.shift.split('-')[0] || '-';
+                        session.shift = shiftInfo.shift;
+                    }
 
                     let duration = '-';
                     let isHigh = false;
@@ -4021,7 +4028,6 @@
 
                     // Add duration to session object for chart
                     session.duration = durationMins;
-                    session.shift = shiftInfo.shift;
                     
                     const tr = document.createElement('tr');
                     if ((session.startLog && session.startLog.deleted) || (session.endLog && session.endLog.deleted)) {
@@ -4897,7 +4903,8 @@
                 const now = new Date();
                 const shiftInfo = getShiftFromTimestamp(now.toISOString());
                 if (shiftInfo.date && shiftInfo.shift) {
-                    timestampModal.classList.add('hidden'); // Close timestamp modal
+                    const tsModal = document.getElementById('timestamp-modal');
+                    if(tsModal) tsModal.classList.add('hidden'); // Close timestamp modal
                     openHourlyModal(shiftInfo.date, shiftInfo.shift);
                 } else {
                     alert('Could not determine current shift.');
