@@ -869,6 +869,7 @@
                          <input type="datetime-local" id="manual-break-time" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:130px;" title="Manual Break Time">
                          <button id="btn-break-start" class="icon-btn" style="background:#f1c40f; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">Start Break</button>
                          <button id="btn-break-end" class="icon-btn" style="background:#f39c12; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">End Break</button>
+                         <button id="btn-break-delete-all" class="icon-btn" title="Delete All Breaks" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; margin-left:5px;">🗑 All</button>
                     </div>
                 </div>
                 <div style="max-height: 200px; overflow-y: auto; border: 1px solid #eee;">
@@ -881,6 +882,7 @@
                                 <th style="padding:5px; text-align:left;">Break Out</th>
                                 <th style="padding:5px; text-align:left;">Break In</th>
                                 <th style="padding:5px; text-align:left;">Duration</th>
+                                <th style="padding:5px; text-align:left;">Action</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -2636,9 +2638,11 @@
                 else if (h >= 14 && h < 22) shiftVal = '2nd Shift-(2pm-10pm)';
                 document.getElementById('att-shift').value = shiftVal;
 
-                // Random 2-digit User ID
-                const randId = String(Math.floor(Math.random() * 100)).padStart(2, '0');
-                document.getElementById('att-user-id').value = randId;
+                // Random 3-char User ID (1 Letter + 2 Digits)
+                const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                const letter = letters.charAt(Math.floor(Math.random() * letters.length));
+                const num = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+                document.getElementById('att-user-id').value = letter + num;
 
                 attModal.classList.remove('hidden');
             });
@@ -2676,7 +2680,7 @@
                     date: document.getElementById('att-date').value,
                     shift: document.getElementById('att-shift').value,
                     userId: document.getElementById('att-user-id').value.trim(),
-                    name: document.getElementById('att-name').value.trim(),
+                    name: document.getElementById('att-name').value.trim().toUpperCase(),
                     role: document.getElementById('att-role').value,
                     area: document.getElementById('att-area').value,
                     timeIn: document.getElementById('att-time-in').value,
@@ -4269,7 +4273,7 @@
             breaks.sort((a,b) => new Date(b.start) - new Date(a.start));
             
             if(breaks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="padding:10px; text-align:center; color:#999;">No breaks recorded.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="padding:10px; text-align:center; color:#999;">No breaks recorded.</td></tr>';
                 return;
             }
 
@@ -4299,9 +4303,11 @@
                 const startStr = `<span class="editable-time" data-log-id="${b.startId}">${start.toLocaleTimeString()}</span>`;
                 const endStr = b.end ? `<span class="editable-time" data-log-id="${b.endId}">${new Date(b.end).toLocaleTimeString()}</span>` : '-';
 
+                const deleteBtn = `<button class="icon-btn" onclick="deleteBreak('${b.startId}', '${b.endId}')" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px;">&times;</button>`;
+
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td>`;
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${deleteBtn}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -4714,6 +4720,37 @@
             renderTimestamps();
             showToast('Session permanently deleted');
         };
+
+        window.deleteBreak = function(startId, endId) {
+            if(!confirm('Delete this break entry?')) return;
+            const data = getTimestamps();
+            const ids = [startId, endId].filter(x => x && x !== 'null' && x !== 'undefined');
+            data.forEach(d => {
+                if(ids.includes(d.id)) d.deleted = true;
+            });
+            saveTimestamps(data);
+            renderTimestamps();
+            showToast('Break deleted');
+        };
+
+        if(document.getElementById('btn-break-delete-all')) {
+            document.getElementById('btn-break-delete-all').addEventListener('click', () => {
+                if(!confirm('Delete ALL displayed break logs?')) return;
+                const data = getTimestamps();
+                const filterDate = document.getElementById('ts-date-filter').value;
+                const filterUser = document.getElementById('ts-filter-user').value.toLowerCase();
+                data.forEach(d => {
+                    if (d.deleted) return;
+                    if (d.action !== 'Start Break' && d.action !== 'End Break') return;
+                    if (filterDate && !d.timestamp.startsWith(filterDate)) return;
+                    if (filterUser && !d.userId.toLowerCase().includes(filterUser)) return;
+                    d.deleted = true;
+                });
+                saveTimestamps(data);
+                renderTimestamps();
+                showToast('All displayed breaks deleted');
+            });
+        }
 
         if(tsMassDeleteBtn) {
             tsMassDeleteBtn.addEventListener('click', () => {
