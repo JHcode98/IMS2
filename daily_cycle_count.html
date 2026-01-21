@@ -3968,6 +3968,19 @@
                 });
             }
 
+            // Date Filter (Linked to Analytics Date)
+            if (analyticsDate) {
+                filteredSessions = filteredSessions.filter(s => {
+                    const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
+                    if (!ts) return false;
+                    const d = new Date(ts);
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}` === analyticsDate;
+                });
+            }
+
             if (showActiveOnly) {
                 filteredSessions = filteredSessions.filter(s => !s.endLog);
             }
@@ -4085,7 +4098,7 @@
                 end: s.endLog.timestamp
             }));
             renderTimestampChart(chartSessions);
-            renderTsAnalytics(sessions, analyticsDate);
+            renderTsAnalytics(filteredSessions, analyticsDate);
             renderBreakLogTable(logsToProcess, attendance);
             renderInactiveUsersTable(sessions, attendance);
         }
@@ -4916,7 +4929,7 @@
         const btnViewHourly = document.getElementById('btn-view-hourly');
         if(btnViewHourly) {
             btnViewHourly.disabled = false;
-            btnViewHourly.addEventListener('click', () => {
+            btnViewHourly.onclick = () => {
                 const now = new Date();
                 const shiftInfo = getShiftFromTimestamp(now.toISOString());
                 if (shiftInfo.date && shiftInfo.shift) {
@@ -4926,7 +4939,7 @@
                 } else {
                     alert('Could not determine current shift.');
                 }
-            });
+            };
         }
         
         const breakLogTable = document.getElementById('break-log-table');
