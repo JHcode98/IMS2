@@ -4098,6 +4098,7 @@
                 end: s.endLog.timestamp
             }));
             renderTimestampChart(chartSessions);
+            renderTsAnalytics(sessions, analyticsDate);
             renderTsAnalytics(filteredSessions, analyticsDate);
             renderBreakLogTable(logsToProcess, attendance);
             renderInactiveUsersTable(sessions, attendance);
@@ -4929,6 +4930,7 @@
         const btnViewHourly = document.getElementById('btn-view-hourly');
         if(btnViewHourly) {
             btnViewHourly.disabled = false;
+            btnViewHourly.addEventListener('click', () => {
             btnViewHourly.onclick = () => {
                 const now = new Date();
                 const shiftInfo = getShiftFromTimestamp(now.toISOString());
@@ -4939,22 +4941,7 @@
                 } else {
                     alert('Could not determine current shift.');
                 }
-            };
-        }
-        
-        const breakLogTable = document.getElementById('break-log-table');
-        if (breakLogTable) {
-            breakLogTable.addEventListener('click', (e) => {
-                const target = e.target;
-                if (target.classList.contains('editable-time')) {
-                    openEditTimeModal(target.dataset.logId);
-                }
             });
-        }
-    });
-  </script>
-</body>
-</html>     });
             };
         }
         
