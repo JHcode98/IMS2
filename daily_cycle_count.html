@@ -4064,7 +4064,7 @@
                 end: s.endLog.timestamp
             }));
             renderTimestampChart(chartSessions);
-            renderTsAnalytics(sessions, filterDate);
+            renderTsAnalytics(sessions);
             renderBreakLogTable(logsToProcess, attendance);
             renderInactiveUsersTable(sessions, attendance);
         }
@@ -4700,14 +4700,12 @@
 
         window.deleteBreak = function(startId, endId) {
             if(!confirm('Delete this break entry?')) return;
-            const data = getTimestamps();
+            let data = getTimestamps();
             const ids = [startId, endId].filter(x => x && x !== 'null' && x !== 'undefined');
-            data.forEach(d => {
-                if(ids.includes(d.id)) d.deleted = true;
-            });
+            data = data.filter(d => !ids.includes(d.id));
             saveTimestamps(data);
             renderTimestamps();
-            showToast('Break deleted');
+            showToast('Break permanently deleted');
         };
 
         if(document.getElementById('btn-break-delete-all')) {
@@ -4715,10 +4713,22 @@
                 if(!confirm('Permanently delete ALL displayed break logs?')) return;
                 let data = getTimestamps();
                 const filterUser = document.getElementById('ts-filter-user').value.toLowerCase();
+                const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
+
                 // Filter out breaks that match criteria
                 data = data.filter(d => {
                     if (d.action !== 'Start Break' && d.action !== 'End Break') return true; // Keep non-breaks
-                    if (filterUser && !d.userId.toLowerCase().includes(filterUser)) return true; // Keep if user doesn't match filter
+                    
+                    let matchesUser = true;
+                    if (filterUser && !d.userId.toLowerCase().includes(filterUser)) matchesUser = false;
+                    
+                    let matchesShift = true;
+                    if (filterShift) {
+                        const info = getShiftFromTimestamp(d.timestamp);
+                        if (!info.shift.includes(filterShift)) matchesShift = false;
+                    }
+                    
+                    if (matchesUser && matchesShift) return false; // Delete
                     return false; // Delete (filter out)
                 });
                 saveTimestamps(data);
@@ -4735,6 +4745,7 @@
                 const allLogs = getTimestamps();
                 const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
                 const attendance = getAttendanceData();
+                const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
 
                 // 1. Filter by date
                 let todaysLogs = allLogs; // Assuming all logs or filtered by shift logic below
@@ -4780,6 +4791,14 @@
                     });
                 }
                 
+                // Filter by Shift
+                if (filterShift) {
+                    filteredSessions = filteredSessions.filter(s => {
+                        const shiftInfo = s.startLog ? getShiftFromTimestamp(s.startLog.timestamp) : { shift: '' };
+                        return shiftInfo.shift.includes(filterShift);
+                    });
+                }
+
                 // Collect IDs to remove
                 const idsToRemove = new Set();
                 filteredSessions.forEach(s => {
@@ -4801,7 +4820,21 @@
 
         if(tsExportBtn) {
             tsExportBtn.addEventListener('click', () => {
-                const data = getTimestamps();
+                let data = getTimestamps();
+                const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
+                const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
+
+                // Apply filters to export
+                if (filterUser) {
+                    data = data.filter(d => d.userId.toLowerCase().includes(filterUser));
+                }
+                if (filterShift) {
+                    data = data.filter(d => {
+                        const info = getShiftFromTimestamp(d.timestamp);
+                        return info.shift.includes(filterShift);
+                    });
+                }
+
                 const logs = data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 
                 if(logs.length === 0) { alert('No logs to export.'); return; }
