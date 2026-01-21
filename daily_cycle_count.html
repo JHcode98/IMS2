@@ -820,6 +820,7 @@
                             <tr style="background:#f9f9f9; border-bottom:1px solid #eee;">
                                 <th style="padding:8px; text-align:left;">User ID</th>
                                 <th style="padding:8px; text-align:left;">Name</th>
+                                <th style="padding:8px; text-align:left;">Area Type</th>
                                 <th style="padding:8px; text-align:left;">Shift</th>
                                 <th style="padding:8px; text-align:left;">Start Time</th>
                                 <th style="padding:8px; text-align:left;">End Time</th>
@@ -3993,6 +3994,7 @@
                     const userId = session.userId;
                     // Lookup Name
                     let sessionDate = filterDate;
+                    let areaTypeDisplay = '-';
                     if (!sessionDate) {
                         const ts = session.startLog ? session.startLog.timestamp : (session.endLog ? session.endLog.timestamp : null);
                         if (ts) {
@@ -4006,6 +4008,9 @@
                     let attRecord = attendance.find(a => a.userId === userId && a.date === sessionDate);
                     if (!attRecord) attRecord = attendance.find(a => a.userId === userId);
                     const name = attRecord ? attRecord.name : '-';
+                    if (session.startLog && session.startLog.areaType) {
+                        areaTypeDisplay = session.startLog.areaType;
+                    }
 
                     const datePrefix = (!filterDate && session.startLog) ? new Date(session.startLog.timestamp).toLocaleDateString() + ' ' : '';
                     const startStr = session.startLog ? `<span class="editable-time" data-log-id="${session.startLog.id}">${datePrefix + new Date(session.startLog.timestamp).toLocaleTimeString()}</span>` : '-';
@@ -4056,6 +4061,7 @@
                     tr.innerHTML = `
                         <td style="padding:8px; border-bottom:1px solid #eee;">${userId}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${name}</td>
+                        <td style="padding:8px; border-bottom:1px solid #eee;">${areaTypeDisplay}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${shiftDisplay}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee; color:#2ecc71; font-weight:bold;">${startStr}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee; color:#e74c3c; font-weight:bold;">${endStr}</td>
@@ -4597,6 +4603,7 @@
             }
 
             renderTimestamps();
+            showToast(`${action} recorded for ${userId}`);
             let toastMessage = `${action} recorded for ${userId}`;
             if (action === 'Start' && areaType) {
                 toastMessage += ` in ${areaType}`;
