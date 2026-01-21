@@ -1564,6 +1564,9 @@
         }
 
         function openHourlyModal(dateStr, shift) {
+             const tsModal = document.getElementById('timestamp-modal');
+             if(tsModal) tsModal.classList.add('hidden');
+
              document.getElementById('hourly-modal-title').textContent = `Hourly Output: ${dateStr} (${shift.split('-')[0]})`;
              hourlyModal.classList.remove('hidden');
              document.getElementById('hourly-date-val').value = dateStr;
@@ -1749,6 +1752,7 @@
              });
              }
         }
+        window.openHourlyModal = openHourlyModal;
 
         // Table Column Resizing Logic
         function makeTableResizable(table) {
@@ -4170,17 +4174,17 @@
                         <div class="card" style="padding:15px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
                             <div style="font-size:12px; color:#2e7d32; margin-bottom:5px;">1st Shift</div>
                             <div style="font-weight:bold; color:#2ecc71; font-size:28px; margin-bottom:5px;">${shiftData['1st Shift-(6am-2pm)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['1st Shift-(6am-2pm)'].full}</span></div>
-                            <button class="icon-btn hourly-shortcut-btn" data-date="${date}" data-shift="1st Shift-(6am-2pm)" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
+                            <button class="icon-btn hourly-shortcut-btn" onclick="window.openHourlyModal('${date}', '1st Shift-(6am-2pm)')" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
                         </div>
                         <div class="card" style="padding:15px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
                             <div style="font-size:12px; color:#2e7d32; margin-bottom:5px;">2nd Shift</div>
                             <div style="font-weight:bold; color:#2ecc71; font-size:28px; margin-bottom:5px;">${shiftData['2nd Shift-(2pm-10pm)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['2nd Shift-(2pm-10pm)'].full}</span></div>
-                            <button class="icon-btn hourly-shortcut-btn" data-date="${date}" data-shift="2nd Shift-(2pm-10pm)" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
+                            <button class="icon-btn hourly-shortcut-btn" onclick="window.openHourlyModal('${date}', '2nd Shift-(2pm-10pm)')" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
                         </div>
                         <div class="card" style="padding:15px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
                             <div style="font-size:12px; color:#2e7d32; margin-bottom:5px;">3rd Shift</div>
                             <div style="font-weight:bold; color:#2ecc71; font-size:28px; margin-bottom:5px;">${shiftData['3rd Shift-(10pm-6am)'].fullActive} <span style="color:#2e7d32; font-size:16px;">/ ${shiftData['3rd Shift-(10pm-6am)'].full}</span></div>
-                            <button class="icon-btn hourly-shortcut-btn" data-date="${date}" data-shift="3rd Shift-(10pm-6am)" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
+                            <button class="icon-btn hourly-shortcut-btn" onclick="window.openHourlyModal('${date}', '3rd Shift-(10pm-6am)')" style="font-size:11px; padding:4px 8px; background:#fff; border:1px solid #c8e6c9; color:#2e7d32; border-radius:4px; cursor:pointer; width:100%;">Hourly View</button>
                         </div>
                     </div>
                 </div>
@@ -4912,22 +4916,6 @@
                 if(tsAnalyticsDate && tsDateFilter) {
                     tsDateFilter.value = tsAnalyticsDate.value;
                     renderTimestamps();
-                }
-            });
-        }
-        
-        const analyticsContent = document.getElementById('ts-analytics-content');
-        if(analyticsContent) {
-            analyticsContent.addEventListener('click', (e) => {
-                const btn = e.target.closest('.hourly-shortcut-btn');
-                if(btn) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const d = btn.dataset.date;
-                    const s = btn.dataset.shift;
-                    const tsModal = document.getElementById('timestamp-modal');
-                    if(tsModal) tsModal.classList.add('hidden');
-                    setTimeout(() => openHourlyModal(d, s), 50);
                 }
             });
         }
