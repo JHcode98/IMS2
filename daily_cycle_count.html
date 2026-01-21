@@ -896,6 +896,7 @@
             <div style="flex: 1; display:flex; flex-direction:column; border-left:1px solid #eee; padding-left:20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h4 style="margin:0;">Analytics Overview</h4>
+                    <input type="date" id="ts-analytics-date-filter" style="padding:2px 5px; border:1px solid #ccc; border-radius:4px; font-size:12px; color:#333;" title="Filter Analytics Date">
                 </div>
                 <div id="ts-analytics-content" style="flex: 1; overflow-y: auto;"></div>
             </div>
@@ -1028,6 +1029,7 @@
         const tsShiftFilter = document.getElementById('ts-shift-filter');
         const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
         const tsShowActive = document.getElementById('ts-show-active');
+        const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
         
         // End Count Modal Elements
         const endCountModal = document.getElementById('end-count-modal');
@@ -3886,6 +3888,13 @@
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
             
+            // Analytics Date
+            let analyticsDate = tsAnalyticsDateFilter ? tsAnalyticsDateFilter.value : '';
+            if (!analyticsDate) {
+                analyticsDate = new Date().toISOString().split('T')[0];
+                if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.value = analyticsDate;
+            }
+
             // Filter logs
             let logsToProcess = data;
             
@@ -4888,6 +4897,7 @@
         if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
         if(tsShowActive) tsShowActive.addEventListener('change', renderTimestamps);
         if(tsDateFilter) tsDateFilter.addEventListener('change', renderTimestamps);
+        if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', renderTimestamps);
         
         if(tsAnalyticsFilterBtn) {
             tsAnalyticsFilterBtn.addEventListener('click', () => {
@@ -4899,6 +4909,7 @@
         }
         const btnViewHourly = document.getElementById('btn-view-hourly');
         if(btnViewHourly) {
+            btnViewHourly.disabled = false;
             btnViewHourly.addEventListener('click', () => {
                 const now = new Date();
                 const shiftInfo = getShiftFromTimestamp(now.toISOString());
