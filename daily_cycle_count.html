@@ -808,8 +808,6 @@
                         <button id="ts-clear-date-btn" class="icon-btn" title="Clear Date (Show All)" style="padding: 2px 6px; font-size: 12px;">&times;</button>
                         <input type="text" id="ts-filter-user" placeholder="Universal Search..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 120px;">
                         <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-active"> Active Only</label>
-                        <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-deleted"> Show Deleted</label>
-                        <button id="ts-mass-delete-btn" class="icon-btn" title="Delete All Shown" style="padding: 2px 6px; font-size: 12px; color:#d9534f;">Delete All</button>
                         <button id="ts-purge-all-btn" class="icon-btn" title="Permanently Delete All Shown" style="padding: 2px 6px; font-size: 12px; background:#c0392b; color:white; border-color:#c0392b;">Purge All</button>
                         <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
                     </div>
@@ -865,7 +863,6 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                     <h4 style="margin:0;">Break Log</h4>
                     <div style="display:flex; gap:5px;">
-                         <input type="text" id="break-user-id" placeholder="User ID" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:80px;">
                          <input type="datetime-local" id="manual-break-time" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:130px;" title="Manual Break Time">
                          <button id="btn-break-start" class="icon-btn" style="background:#f1c40f; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">Start Break</button>
                          <button id="btn-break-end" class="icon-btn" style="background:#f39c12; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">End Break</button>
@@ -1030,11 +1027,9 @@
         const btnBreakEnd = document.getElementById('btn-break-end');
         const btnEndCount = document.getElementById('btn-end-count');
         const timestampTableBody = document.querySelector('#timestamp-table tbody');
-        const tsShowDeleted = document.getElementById('ts-show-deleted');
         const tsExportBtn = document.getElementById('ts-export-btn');
         const tsFilterUser = document.getElementById('ts-filter-user');
         const tsDateFilter = document.getElementById('ts-date-filter');
-        const tsMassDeleteBtn = document.getElementById('ts-mass-delete-btn');
         const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
         const tsClearDateBtn = document.getElementById('ts-clear-date-btn');
         const tsAnalyticsDate = document.getElementById('ts-analytics-date');
@@ -3904,7 +3899,6 @@
             const attendance = getAttendanceData();
             const filterDate = tsDateFilter ? tsDateFilter.value : '';
             if(tsAnalyticsDate) tsAnalyticsDate.value = filterDate;
-            const showDeleted = tsShowDeleted ? tsShowDeleted.checked : false;
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
             
@@ -3930,7 +3924,7 @@
             const openSessions = {};
             
             logsToProcess.forEach(log => {
-                if (log.deleted && !showDeleted) return;
+                if (log.deleted) return;
                 
                 if (log.action === 'Start') {
                     if (openSessions[log.userId]) {
@@ -4057,10 +4051,7 @@
                     }
                     
                     const idsToDelete = [session.startLog?.id, session.endLog?.id, ...(session.breaks || []).flatMap(b => [b.start.id, b.end.id])].filter(x=>x).join(',');
-                    const isDeleted = (session.startLog && session.startLog.deleted);
-                    const deleteAction = isDeleted 
-                        ? `<button class="icon-btn" onclick="purgeSession('${idsToDelete}')" title="Permanently Delete" style="color:#c0392b;">🗑</button>`
-                        : `<button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Delete Session" style="color:#d9534f;">&times;</button>`;
+                    const deleteAction = `<button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Permanently Delete Session" style="color:#d9534f;">&times;</button>`;
 
                     tr.innerHTML = `
                         <td style="padding:8px; border-bottom:1px solid #eee;">${userId}</td>
@@ -4518,7 +4509,15 @@
             
             // --- VALIDATIONS ---
             if (action === 'Start') {
-                if (lastLog && lastLog.action !== 'End') {
+                // Check if user is in attendance list
+                const attData = getAttendanceData();
+                const userExists = attData.some(a => a.userId === userId);
+                if (!userExists) {
+                    alert(`User ID ${userId} not found in attendance list.`);
+                    return;
+                }
+
+                if (lastLog && lastLog.action !== 'End' && lastLog.action !== 'End Break') {
                     if (lastLog.action === 'Start Break') {
                         alert(`User ${userId} is currently on break. Please end the break first.`);
                         return;
@@ -4530,6 +4529,10 @@
             } else if (action === 'Start Break') {
                 if (lastLog && lastLog.action === 'Start Break') {
                     alert(`User ${userId} is already on break. Please end the break first.`);
+                    return;
+                }
+                if (lastLog && lastLog.action === 'Start') {
+                    alert(`User ${userId} has an active counting session. Please End Counting before starting a break.`);
                     return;
                 }
             } else if (action === 'End') {
@@ -4617,8 +4620,6 @@
             showToast(toastMessage);
             
             if (customUserId) {
-                const breakInput = document.getElementById('break-user-id');
-                if(breakInput) { breakInput.value = ''; breakInput.focus(); }
             } else {
                 tsUserIdInput.value = '';
                 tsUserIdInput.focus();
@@ -4699,16 +4700,14 @@
         }
 
         window.deleteSession = function(ids) {
-            if(!confirm('Delete this session?')) return;
+            if(!confirm('Permanently delete this session?')) return;
             const idArray = ids.split(',');
-            const data = getTimestamps();
-            idArray.forEach(id => {
-                const item = data.find(d => d.id === id);
-                if(item) item.deleted = true;
-            });
+            let data = getTimestamps();
+            // Permanent delete
+            data = data.filter(d => !idArray.includes(d.id));
             saveTimestamps(data);
             renderTimestamps();
-            showToast('Session deleted');
+            showToast('Session permanently deleted');
         };
         
         window.purgeSession = function(ids) {
@@ -4749,25 +4748,6 @@
                 saveTimestamps(data);
                 renderTimestamps();
                 showToast('All displayed breaks deleted');
-            });
-        }
-
-        if(tsMassDeleteBtn) {
-            tsMassDeleteBtn.addEventListener('click', () => {
-                if(!confirm('Delete all currently shown logs? This cannot be undone.')) return;
-                const filterDate = tsDateFilter ? tsDateFilter.value : new Date().toISOString().split('T')[0];
-                const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
-                
-                let data = getTimestamps();
-                // Filter logic matching render
-                data.forEach(d => {
-                    if(d.timestamp.startsWith(filterDate) && (!filterUser || d.userId.toLowerCase().includes(filterUser))) {
-                        d.deleted = true;
-                    }
-                });
-                saveTimestamps(data);
-                renderTimestamps();
-                showToast('Mass delete successful');
             });
         }
 
@@ -4920,17 +4900,14 @@
         }
         if(btnStartCount) btnStartCount.addEventListener('click', () => logTimestamp('Start'));
         if(btnBreakStart) btnBreakStart.addEventListener('click', () => {
-            const breakInput = document.getElementById('break-user-id');
-            const uid = breakInput ? breakInput.value.trim() : '';
+            const uid = tsUserIdInput.value.trim();
             logTimestamp('Start Break', null, uid);
         });
         if(btnBreakEnd) btnBreakEnd.addEventListener('click', () => {
-            const breakInput = document.getElementById('break-user-id');
-            const uid = breakInput ? breakInput.value.trim() : '';
+            const uid = tsUserIdInput.value.trim();
             logTimestamp('End Break', null, uid);
         });
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
-        if(tsShowDeleted) tsShowDeleted.addEventListener('change', renderTimestamps);
         if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
         if(tsShowActive) tsShowActive.addEventListener('change', renderTimestamps);
         if(tsDateFilter) tsDateFilter.addEventListener('change', renderTimestamps);
