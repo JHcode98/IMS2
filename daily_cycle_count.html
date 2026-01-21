@@ -4954,4 +4954,20 @@
     });
   </script>
 </body>
+</html>     });
+            };
+        }
+        
+        const breakLogTable = document.getElementById('break-log-table');
+        if (breakLogTable) {
+            breakLogTable.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('editable-time')) {
+                    openEditTimeModal(target.dataset.logId);
+                }
+            });
+        }
+    });
+  </script>
+</body>
 </html> 
