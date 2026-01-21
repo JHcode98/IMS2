@@ -799,6 +799,7 @@
                 <div style="display:flex; gap:5px; margin-bottom:10px;">
                     <button id="btn-start-count" class="icon-btn" style="flex:1; background:#2ecc71; color:white; padding:12px; font-weight:bold; justify-content:center;">Start Counting</button>
                     <button id="btn-end-count" class="icon-btn" style="flex:1; background:#e74c3c; color:white; padding:12px; font-weight:bold; justify-content:center;">End Counting</button>
+                    <button id="btn-view-hourly" class="icon-btn" title="View Current Shift's Hourly Output" style="flex:1; background:#6f42c1; color:white; padding:12px; font-weight:bold; justify-content:center;">View Hourly</button>
                 </div>
                 <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <h4 style="margin:0;">Today's Logs</h4>
@@ -4493,6 +4494,8 @@
             
             if(!userId) { alert('Please enter User ID.'); return; }
             const data = getTimestamps();
+            const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+            const lastLog = userLogs[userLogs.length - 1];
             
             let now = new Date();
             // Check for manual break time
@@ -4501,32 +4504,35 @@
                 now = new Date(manualBreakInput.value);
             }
             
-            // Validation: No Start if already active
+            // --- VALIDATIONS ---
             if (action === 'Start') {
-                const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
-                const lastLog = userLogs[userLogs.length - 1];
                 if (lastLog && lastLog.action !== 'End') {
+                    if (lastLog.action === 'Start Break') {
+                        alert(`User ${userId} is currently on break. Please end the break first.`);
+                        return;
+                    }
                     const dateStr = new Date(lastLog.timestamp).toLocaleString();
                     alert(`User ${userId} already has an active session started at ${dateStr}. Please end it first.`);
                     return;
                 }
-                
-                // Show Area Selection Modal if not provided
-                if (!areaType) {
-                    document.getElementById('start-area-modal').classList.remove('hidden');
+            } else if (action === 'Start Break') {
+                if (lastLog && lastLog.action === 'Start Break') {
+                    alert(`User ${userId} is already on break. Please end the break first.`);
                     return;
                 }
-            }
-
-            // Validation: Cannot End without Start
-            if (action === 'End') {
-                const userLogs = data.filter(d => d.userId === userId && !d.deleted).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
-                const lastLog = userLogs[userLogs.length - 1];
+            } else if (action === 'End') {
                 if (!lastLog || (lastLog.action === 'End')) {
                     const actName = action === 'End' ? 'End Counting' : action;
                     alert(`Cannot ${actName}: No active 'Start' found for User ID ${userId}.`);
                     return;
                 }
+            }
+            // --- END VALIDATIONS ---
+
+            // Show Area Selection Modal if not provided
+            if (action === 'Start' && !areaType) {
+                document.getElementById('start-area-modal').classList.remove('hidden');
+                return;
             }
 
             // Intercept End for Details
@@ -4886,6 +4892,18 @@
                 if(tsAnalyticsDate && tsDateFilter) {
                     tsDateFilter.value = tsAnalyticsDate.value;
                     renderTimestamps();
+                }
+            });
+        }
+        const btnViewHourly = document.getElementById('btn-view-hourly');
+        if(btnViewHourly) {
+            btnViewHourly.addEventListener('click', () => {
+                const now = new Date();
+                const shiftInfo = getShiftFromTimestamp(now.toISOString());
+                if (shiftInfo.date && shiftInfo.shift) {
+                    openHourlyModal(shiftInfo.date, shiftInfo.shift);
+                } else {
+                    alert('Could not determine current shift.');
                 }
             });
         }
