@@ -4921,11 +4921,13 @@
             analyticsContent.addEventListener('click', (e) => {
                 const btn = e.target.closest('.hourly-shortcut-btn');
                 if(btn) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const d = btn.dataset.date;
                     const s = btn.dataset.shift;
                     const tsModal = document.getElementById('timestamp-modal');
                     if(tsModal) tsModal.classList.add('hidden');
-                    openHourlyModal(d, s);
+                    setTimeout(() => openHourlyModal(d, s), 50);
                 }
             });
         }
