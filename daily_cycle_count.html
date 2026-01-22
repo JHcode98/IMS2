@@ -1119,13 +1119,38 @@
         const STORAGE_KEY_CC = 'ims_cycle_count_v1';
         const STORAGE_KEY_TIMESTAMPS = 'ims_counter_timestamps_v1';
         
-        let showArchiveOnly = false;
-        let attCurrentPage = 1;
+        // State Persistence: Load saved state or defaults
+        const UI_STATE_KEY = 'ims_daily_counters_ui_state_v1';
+        let uiState = {};
+        try { uiState = JSON.parse(sessionStorage.getItem(UI_STATE_KEY) || '{}'); } catch(e) {}
+
+        let showArchiveOnly = uiState.showArchiveOnly || false;
+        let attCurrentPage = uiState.attCurrentPage || 1;
         let attItemsPerPage = 20;
-        let countersCurrentPage = 1;
+        let countersCurrentPage = uiState.countersCurrentPage || 1;
         let countersItemsPerPage = 7;
         let attSortField = 'date';
         let attSortDirection = 'desc';
+
+        // Restore Filters & Button State
+        if(uiState.globalStartDate && globalStartDate) globalStartDate.value = uiState.globalStartDate;
+        if(uiState.globalEndDate && globalEndDate) globalEndDate.value = uiState.globalEndDate;
+        if(showArchiveOnly && archiveBtn) {
+            archiveBtn.classList.add('active-filter');
+            archiveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg> Back to Active`;
+        }
+
+        // Save State on Unload/Refresh
+        window.addEventListener('beforeunload', () => {
+            const state = {
+                showArchiveOnly,
+                attCurrentPage,
+                countersCurrentPage,
+                globalStartDate: globalStartDate ? globalStartDate.value : '',
+                globalEndDate: globalEndDate ? globalEndDate.value : ''
+            };
+            sessionStorage.setItem(UI_STATE_KEY, JSON.stringify(state));
+        });
         
         let globalSubAreas = []; // Selected sub areas for filtering
         const subAreaOptions = ['DCI', 'DCJ', 'DCK', 'DCL', 'DCM', 'DCN', 'DCO'];
