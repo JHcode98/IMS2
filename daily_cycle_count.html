@@ -5315,7 +5315,7 @@
                     if(uid) {
                         const attData = getAttendanceData();
                         const userRecord = attData.find(a => a.userId === uid);
-                        nameDisplay.value = userRecord ? userRecord.name : '';
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
                     } else {
                         nameDisplay.value = '';
                     }
