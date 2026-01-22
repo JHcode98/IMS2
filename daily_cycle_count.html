@@ -468,6 +468,7 @@
                       <th style="padding: 12px; text-align: left;">Time In</th>
                       <th style="padding: 12px; text-align: left;">Break Out</th>
                       <th style="padding: 12px; text-align: left;">Break In</th>
+                      <th style="padding: 12px; text-align: left;">Time Out</th>
                       <th class="sortable" data-sort="duration" style="padding: 12px; text-align: left;">Duration <span class="sort-icon"></span></th>
                       <th style="padding: 12px; text-align: left;">Status</th>
                       <th style="padding: 12px; text-align: left;">Action</th>
@@ -547,6 +548,15 @@
                     <div style="display:flex; align-items:center; gap:5px;">
                         <input type="time" id="att-time-in" style="width:100%">
                         <button type="button" class="icon-btn set-current-time" data-target="att-time-in" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="att-time-out">Time Out</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-time-out" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-time-out" title="Set Current Time">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         </button>
                     </div>
@@ -803,6 +813,7 @@
                     <div style="display:flex; gap:5px; margin-bottom:10px;">
                         <button id="btn-start-count" class="icon-btn" style="flex:1; background:#2ecc71; color:white; padding:10px; font-weight:bold; justify-content:center;">Start Counting</button>
                         <button id="btn-end-count" class="icon-btn" style="flex:1; background:#e74c3c; color:white; padding:10px; font-weight:bold; justify-content:center;">End Counting</button>
+                        <button id="btn-time-out" class="icon-btn" style="flex:1; background:#34495e; color:white; padding:10px; font-weight:bold; justify-content:center;">Time Out</button>
                     </div>
                 </div>
 
@@ -1024,6 +1035,7 @@
         const btnStartCount = document.getElementById('btn-start-count');
         const btnBreakStart = document.getElementById('btn-break-start');
         const btnBreakEnd = document.getElementById('btn-break-end');
+        const btnTimeOut = document.getElementById('btn-time-out');
         const btnEndCount = document.getElementById('btn-end-count');
         const timestampTableBody = document.querySelector('#timestamp-table tbody');
         const tsExportBtn = document.getElementById('ts-export-btn');
@@ -2348,6 +2360,7 @@
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.timeIn || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.breakOut || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.breakIn || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.timeOut || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee; font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">${item.status || '-'}</td>
                     <td style="padding:12px;border-bottom:1px solid #eee">
@@ -2375,7 +2388,7 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Duration', 'Status', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
@@ -2395,6 +2408,7 @@
                     printWindow.document.write(`<td>${item.timeIn || ''}</td>`);
                     printWindow.document.write(`<td>${item.breakOut || ''}</td>`);
                     printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
+                    printWindow.document.write(`<td>${item.timeOut || ''}</td>`);
                     printWindow.document.write(`<td>${getDuration(item.breakOut, item.breakIn)}</td>`);
                     printWindow.document.write(`<td>${item.status || ''}</td>`);
                     printWindow.document.write('<td class="sig"></td>'); // Empty signature cell
@@ -2701,6 +2715,7 @@
                     timeIn: document.getElementById('att-time-in').value,
                     breakIn: document.getElementById('att-break-in').value,
                     breakOut: document.getElementById('att-break-out').value,
+                    timeOut: document.getElementById('att-time-out').value,
                     status: document.getElementById('att-status').value
                 };
                 if(!newEntry.name) return;
@@ -2740,13 +2755,13 @@
             exportAttBtn.addEventListener('click', () => {
                 const data = getAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Duration', 'Status'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
                     const dur = getDuration(item.breakOut, item.breakIn);
                     const row = [
-                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', dur, `"${item.status||''}"`
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
                     ];
                     rows.push(row.join(','));
                 });
@@ -2790,6 +2805,7 @@
                         document.getElementById('att-time-in').value = item.timeIn || '';
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
+                        document.getElementById('att-time-out').value = item.timeOut || '';
                         document.getElementById('att-status').value = item.status || 'Full counter';
                         attModal.classList.remove('hidden');
                     }
@@ -4381,6 +4397,7 @@
             
             fullCounters.forEach(att => {
                 if (filterShift && !att.shift.includes(filterShift)) return;
+                if (att.timeOut) return; // Skip if already timed out
                 if (!activeUserIds.has(att.userId)) {
                     // Not currently active
                     let lastEnd = '-';
@@ -4550,7 +4567,7 @@
             const lastLog = userLogs[userLogs.length - 1];
             
             let now = new Date();
-            // Check for manual break time
+            // Check for manual break time (also used for Time Out if needed, though label says break)
             const manualBreakInput = document.getElementById('manual-break-time');
             if (manualBreakInput && manualBreakInput.value && (action === 'Start Break' || action === 'End Break')) {
                 now = new Date(manualBreakInput.value);
@@ -4588,6 +4605,12 @@
                 if (!lastLog || (lastLog.action === 'End')) {
                     const actName = action === 'End' ? 'End Counting' : action;
                     alert(`Cannot ${actName}: No active 'Start' found for User ID ${userId}.`);
+                    return;
+                }
+            } else if (action === 'Time Out') {
+                // Allow Time Out even if active session? Probably should end session first.
+                if (lastLog && lastLog.action === 'Start') {
+                    alert(`User ${userId} has an active counting session. Please End Counting before Time Out.`);
                     return;
                 }
             }
@@ -4644,8 +4667,8 @@
             data.push(newLog);
             saveTimestamps(data);
 
-            // Auto-dump break to attendance
-            if (action === 'Start Break' || action === 'End Break') {
+            // Auto-dump break/timeout to attendance
+            if (action === 'Start Break' || action === 'End Break' || action === 'Time Out') {
                 const attData = getAttendanceData();
                 const todayStr = now.toISOString().split('T')[0];
                 // Find record for today
@@ -4654,7 +4677,8 @@
                 if (attIdx > -1) {
                     const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
                     if (action === 'Start Break') attData[attIdx].breakOut = timeStr;
-                    else attData[attIdx].breakIn = timeStr;
+                    else if (action === 'End Break') attData[attIdx].breakIn = timeStr;
+                    else if (action === 'Time Out') attData[attIdx].timeOut = timeStr;
                     saveAttendanceData(attData);
                     renderAttendanceTable();
                 }
@@ -5113,6 +5137,7 @@
             logTimestamp('End Break', null, uid);
         });
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
+        if(btnTimeOut) btnTimeOut.addEventListener('click', () => logTimestamp('Time Out'));
         if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
         if(tsShiftFilter) tsShiftFilter.addEventListener('change', renderTimestamps);
         if(tsShowActive) tsShowActive.addEventListener('change', renderTimestamps);
