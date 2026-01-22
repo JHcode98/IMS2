@@ -893,6 +893,21 @@
                             <tbody></tbody>
                         </table>
                     </div>
+                    <div id="ts-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding-top:5px; margin-top:5px; border-top: 1px solid #eee;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <label for="ts-rows-per-page" style="font-size:11px; color:#666;">Rows:</label>
+                            <select id="ts-rows-per-page" style="padding: 2px 4px; font-size:11px; border-radius: 4px; border: 1px solid #ccc;">
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <span id="ts-page-info" style="font-size: 11px; font-weight: 600; color: #666;"></span>
+                        <div style="display:flex; gap:5px;">
+                            <button id="ts-prev-page" class="icon-btn" title="Previous" style="padding:2px 6px; font-size:12px;">‹</button>
+                            <button id="ts-next-page" class="icon-btn" title="Next" style="padding:2px 6px; font-size:12px;">›</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Table 2: Break Log -->
@@ -1014,6 +1029,8 @@
     if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
 
     document.addEventListener('DOMContentLoaded', () => {
+        let tsCurrentPage = 1;
+        let tsItemsPerPage = 20;
         const countersForm = document.getElementById('daily-counters-form');
         const countersTableBody = document.querySelector('#daily-counters-table tbody');
         const cancelCounterEditBtn = document.getElementById('cancel-counter-edit-btn');
@@ -4225,6 +4242,22 @@
                 const tB = b.startLog ? b.startLog.timestamp : (b.endLog ? b.endLog.timestamp : '');
                 return new Date(tB) - new Date(tA);
             });
+
+            // Pagination Logic
+            const totalItems = filteredSessions.length;
+            const totalPages = Math.ceil(totalItems / tsItemsPerPage) || 1;
+            if (tsCurrentPage > totalPages) tsCurrentPage = totalPages;
+            if (tsCurrentPage < 1) tsCurrentPage = 1;
+            
+            const paginatedSessions = filteredSessions.slice((tsCurrentPage - 1) * tsItemsPerPage, tsCurrentPage * tsItemsPerPage);
+            
+            // Update Controls
+            const tsPageInfo = document.getElementById('ts-page-info');
+            if(tsPageInfo) {
+                tsPageInfo.textContent = `Page ${tsCurrentPage} of ${totalPages} (${totalItems})`;
+                document.getElementById('ts-prev-page').disabled = tsCurrentPage <= 1;
+                document.getElementById('ts-next-page').disabled = tsCurrentPage >= totalPages;
+            }
             
             timestampTableBody.innerHTML = '';
             if(filteredSessions.length === 0) {
@@ -4232,7 +4265,7 @@
                 if(tsSelectAll) tsSelectAll.checked = false;
             } else {
                 const now = new Date();
-                filteredSessions.forEach(session => {
+                paginatedSessions.forEach(session => {
                     const userId = session.userId;
                     // Lookup Name
                     let sessionDate = '';
@@ -5462,10 +5495,29 @@
         });
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
         if(btnTimeOut) btnTimeOut.addEventListener('click', () => logTimestamp('Time Out'));
-        if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
-        if(tsShiftFilter) tsShiftFilter.addEventListener('change', renderTimestamps);
-        if(tsShowActive) tsShowActive.addEventListener('change', renderTimestamps);
-        if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', renderTimestamps);
+        if(tsFilterUser) tsFilterUser.addEventListener('input', () => { tsCurrentPage = 1; renderTimestamps(); });
+        if(tsShiftFilter) tsShiftFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
+        if(tsShowActive) tsShowActive.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
+        if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
+        
+        // Pagination Listeners for Timestamp Table
+        const tsPaginationControls = document.getElementById('ts-pagination-controls');
+        if (tsPaginationControls) {
+            tsPaginationControls.addEventListener('click', (e) => {
+                if (e.target.closest('#ts-prev-page') && !e.target.closest('#ts-prev-page').disabled) {
+                    tsCurrentPage--;
+                    renderTimestamps();
+                } else if (e.target.closest('#ts-next-page') && !e.target.closest('#ts-next-page').disabled) {
+                    tsCurrentPage++;
+                    renderTimestamps();
+                }
+            });
+            document.getElementById('ts-rows-per-page').addEventListener('change', (e) => {
+                tsItemsPerPage = parseInt(e.target.value);
+                tsCurrentPage = 1;
+                renderTimestamps();
+            });
+        }
         
         const breakLogTable = document.getElementById('break-log-table');
         if (breakLogTable) {
