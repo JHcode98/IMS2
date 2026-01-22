@@ -338,6 +338,9 @@
             <button id="export-counters-btn" class="icon-btn" title="Export CSV">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </button>
+            <button id="daily-output-btn" class="icon-btn" title="Daily Output Report">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            </button>
             <button id="archive-btn" class="icon-btn" title="Toggle Archive View" style="min-width: 100px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
             </button>
@@ -633,6 +636,36 @@
         <div id="hourly-details" style="margin-top:10px; flex: 1; overflow-y: auto;">
             <!-- Hourly input fields will be generated here -->
         </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Daily Output Modal -->
+  <div id="daily-output-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70vw; max-width: 900px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Total Output per Day</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+            <div style="flex:1; min-height:0; position:relative;">
+                <canvas id="daily-output-chart"></canvas>
+            </div>
+            <div style="flex:1; overflow-y:auto; margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+                <table class="excel-table" id="daily-output-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Date</th>
+                            <th>Total Output</th>
+                            <th>Target</th>
+                            <th>Variance</th>
+                            <th>Completion %</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
   </div>
@@ -1040,6 +1073,7 @@
         const monitorExportBtn = document.getElementById('monitor-export-btn');
         const monitorSnapshotBtn = document.getElementById('monitor-snapshot-btn');
         
+        const dailyOutputBtn = document.getElementById('daily-output-btn');
         const hourlyPrevBtn = document.getElementById('hourly-prev-shift-btn');
         const hourlyNextBtn = document.getElementById('hourly-next-shift-btn');
 
@@ -1818,6 +1852,110 @@
              }
         }
         window.openHourlyModal = openHourlyModal;
+
+        // Daily Output Modal Logic
+        const dailyOutputModal = document.getElementById('daily-output-modal');
+        let dailyOutputChart = null;
+
+        if (dailyOutputBtn) {
+            dailyOutputBtn.addEventListener('click', () => {
+                dailyOutputModal.classList.remove('hidden');
+                renderDailyOutput();
+            });
+        }
+
+        function renderDailyOutput() {
+            const counters = getCountersData();
+            const attendance = getAttendanceData();
+            
+            // Load actuals map for fallback
+            let cycleCounts = [];
+            try { cycleCounts = JSON.parse(localStorage.getItem(STORAGE_KEY_CC) || '[]'); } catch(e){}
+            const actualsMap = {};
+            cycleCounts.forEach(c => {
+                const ts = c.createdDate || c.date;
+                if(ts) {
+                    const info = getShiftFromTimestamp(ts);
+                    if (!info.date || !info.shift) return;
+                    const key = `${info.date}|${info.shift}`;
+                    actualsMap[key] = (actualsMap[key] || 0) + 1;
+                }
+            });
+
+            // Aggregate by Date
+            const dailyData = {};
+
+            counters.forEach(item => {
+                const date = item.date;
+                if (!dailyData[date]) dailyData[date] = { output: 0, target: 0 };
+
+                // Calculate Actual
+                let act = 0;
+                if (item.hourlyActuals) {
+                    act = Object.values(item.hourlyActuals).reduce((a, b) => a + (Number(b)||0), 0);
+                } else {
+                    act = actualsMap[`${date}|${item.shift}`] || 0;
+                }
+                dailyData[date].output += act;
+
+                // Calculate Target
+                let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift);
+                if (typeof globalSubAreas !== 'undefined' && globalSubAreas.length > 0) {
+                    shiftAtt = shiftAtt.filter(a => globalSubAreas.includes(a.area));
+                }
+                shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
+                const headcount = shiftAtt.length;
+                
+                const rate = Number(item.standardRate) || 0;
+                let target = 0;
+                
+                if (item.hourlyTargets && Object.keys(item.hourlyTargets).length > 0) {
+                    target = Object.values(item.hourlyTargets).reduce((a, b) => a + (Number(b)||0), 0);
+                } else {
+                    target = rate > 0 ? (headcount * rate) : (Number(item.targetOutput) || 0);
+                }
+                
+                dailyData[date].target += target;
+            });
+
+            const sortedDates = Object.keys(dailyData).sort();
+            const labels = [];
+            const outputs = [];
+            const targets = [];
+
+            const tbody = document.querySelector('#daily-output-table tbody');
+            tbody.innerHTML = '';
+
+            sortedDates.forEach(date => {
+                const d = dailyData[date];
+                labels.push(date);
+                outputs.push(d.output);
+                targets.push(d.target);
+
+                const variance = d.output - d.target;
+                const varColor = variance >= 0 ? '#2ecc71' : '#e74c3c';
+                const pct = d.target > 0 ? Math.round((d.output / d.target) * 100) : (d.output > 0 ? 100 : 0);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="text-align:left;">${date}</td><td>${d.output}</td><td>${d.target}</td><td style="color:${varColor}; font-weight:bold;">${(variance > 0 ? '+' : '') + variance}</td><td>${pct}%</td>`;
+                tbody.appendChild(tr);
+            });
+
+            const ctx = document.getElementById('daily-output-chart');
+            if (dailyOutputChart) dailyOutputChart.destroy();
+            
+            dailyOutputChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Total Output', data: outputs, backgroundColor: '#3498db', order: 2 },
+                        { label: 'Target', data: targets, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.1, order: 1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
 
         // Hourly Navigation Logic
         const shiftOrder = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
