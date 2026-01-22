@@ -261,14 +261,56 @@
     
     /* Sand Timer Animation */
     .sand-timer {
-        width: 0; height: 0;
-        border-left: 25px solid transparent; border-right: 25px solid transparent;
-        border-top: 25px solid #f1c40f; border-bottom: 25px solid #e67e22;
-        animation: sand-timer-spin 3s infinite ease-in-out;
+        width: 40px; height: 70px;
+        position: relative;
         margin: 0 auto;
-        filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
+        animation: hourglass-rotate 4s ease-in-out infinite;
     }
-    @keyframes sand-timer-spin { 0% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
+    .sand-timer-top, .sand-timer-bottom {
+        width: 40px; height: 35px;
+        position: absolute; left: 0;
+        overflow: hidden;
+        border: 3px solid #7f8c8d; /* Glass Frame */
+        background: rgba(236, 240, 241, 0.3); /* Glass tint */
+        box-sizing: border-box;
+    }
+    .sand-timer-top { top: 0; border-radius: 5px 5px 20px 20px; border-bottom: none; }
+    .sand-timer-bottom { bottom: 0; border-radius: 20px 20px 5px 5px; border-top: none; }
+    .sand-timer-sand-top {
+        position: absolute; left: 50%; transform: translateX(-50%); bottom: 0;
+        width: 30px; height: 30px; background: #f39c12; border-radius: 50%;
+        animation: sand-drain-top 4s ease-in-out infinite;
+    }
+    .sand-timer-sand-bottom {
+        position: absolute; left: 50%; transform: translateX(-50%); bottom: 0;
+        width: 30px; height: 0; background: #f39c12; border-radius: 50% 50% 0 0;
+        animation: sand-fill-bottom 4s ease-in-out infinite;
+    }
+    .sand-timer-stream {
+        position: absolute; left: 50%; transform: translateX(-50%); top: 34px;
+        width: 2px; height: 0; background: #f39c12;
+        animation: sand-stream 4s ease-in-out infinite; z-index: 1;
+    }
+    @keyframes hourglass-rotate {
+        0% { transform: rotate(0deg); } 40% { transform: rotate(0deg); }
+        50% { transform: rotate(180deg); } 90% { transform: rotate(180deg); }
+        100% { transform: rotate(360deg); }
+    }
+    @keyframes sand-drain-top {
+        0% { height: 30px; width: 30px; } 40% { height: 0; width: 0; }
+        50% { height: 0; width: 0; } 50.1% { height: 30px; width: 30px; }
+        90% { height: 0; width: 0; } 100% { height: 0; width: 0; }
+    }
+    @keyframes sand-fill-bottom {
+        0% { height: 0; width: 0; } 40% { height: 30px; width: 30px; }
+        50% { height: 30px; width: 30px; } 50.1% { height: 0; width: 0; }
+        90% { height: 30px; width: 30px; } 100% { height: 30px; width: 30px; }
+    }
+    @keyframes sand-stream {
+        0% { height: 0; } 5% { height: 35px; } 40% { height: 35px; }
+        45% { height: 0; } 50% { height: 0; } 55% { height: 35px; }
+        90% { height: 35px; } 95% { height: 0; } 100% { height: 0; }
+    }
   </style>
 </head>
 <body class="inventory-mode">
@@ -4547,7 +4589,11 @@
                     </ul>
                 </div>
                 <div style="text-align:center; margin-top:20px; opacity:0.7;">
-                    <div class="sand-timer" title="Processing..."></div>
+                    <div class="sand-timer" title="Processing...">
+                        <div class="sand-timer-top"><div class="sand-timer-sand-top"></div></div>
+                        <div class="sand-timer-bottom"><div class="sand-timer-sand-bottom"></div></div>
+                        <div class="sand-timer-stream"></div>
+                    </div>
                 </div>
             `;
             container.innerHTML = html;
