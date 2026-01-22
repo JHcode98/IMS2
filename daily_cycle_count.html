@@ -1392,6 +1392,9 @@
                             shiftAtt = shiftAtt.filter(a => globalSubAreas.includes(a.area));
                         }
                         
+                        // Exclude 'Temporary slide to Other task' from Actual count
+                        shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
+                        
                         const act = shiftAtt.length;
                         const pct = Math.round((act / req) * 100);
                         
@@ -4494,6 +4497,10 @@
                 if (typeof globalSubAreas !== 'undefined' && globalSubAreas.length > 0) {
                     shiftAtt = shiftAtt.filter(a => globalSubAreas.includes(a.area));
                 }
+
+                // Exclude 'Temporary slide to Other task' from Actual count
+                shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
+
                 const actCounters = shiftAtt.length;
 
                 if (shiftOutput[item.shift] !== undefined) {
