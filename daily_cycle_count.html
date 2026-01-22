@@ -873,7 +873,10 @@
 
                 <!-- Table 3: Inactive Users -->
                 <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:300px;">
-                    <h4 style="margin-top:0; margin-bottom:5px;">Inactive Users</h4>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <h4 style="margin:0;">Inactive Users</h4>
+                        <button id="ts-export-inactive-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
+                    </div>
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
                         <table id="inactive-users-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                             <thead>
@@ -1026,6 +1029,7 @@
         const tsExportBtn = document.getElementById('ts-export-btn');
         const tsFilterUser = document.getElementById('ts-filter-user');
         const tsShiftFilter = document.getElementById('ts-shift-filter');
+        const tsExportInactiveBtn = document.getElementById('ts-export-inactive-btn');
         const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
         const tsShowActive = document.getElementById('ts-show-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
@@ -4350,8 +4354,10 @@
             const tbody = document.querySelector('#inactive-users-table tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
+            const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
             
-            const filterDate = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('ts-analytics-date-filter');
+            const filterDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
             
             // Get all Full Counters for the date
             const fullCounters = attendanceData.filter(a => a.date === filterDate && a.status === 'Full counter');
@@ -4374,6 +4380,7 @@
             const inactiveList = [];
             
             fullCounters.forEach(att => {
+                if (filterShift && !att.shift.includes(filterShift)) return;
                 if (!activeUserIds.has(att.userId)) {
                     // Not currently active
                     let lastEnd = '-';
@@ -4885,33 +4892,112 @@
         if(tsExportBtn) {
             tsExportBtn.addEventListener('click', () => {
                 let data = getTimestamps();
+                const attendance = getAttendanceData();
                 const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
                 const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
+                const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
 
-                // Apply filters to export
-                if (filterUser) {
-                    data = data.filter(d => d.userId.toLowerCase().includes(filterUser));
-                }
-                if (filterShift) {
-                    data = data.filter(d => {
-                        const info = getShiftFromTimestamp(d.timestamp);
-                        return info.shift.includes(filterShift);
-                    });
-                }
+                // Reconstruct sessions to match table view
+                data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const sessions = [];
+                const openSessions = {};
+                
+                data.forEach(log => {
+                    if (log.deleted) return;
+                    if (log.action === 'Start') {
+                        if (openSessions[log.userId]) sessions.push(openSessions[log.userId]);
+                        openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null, breaks: [] };
+                    } else if (log.action === 'Start Break') {
+                        if (openSessions[log.userId]) openSessions[log.userId].currentBreakStart = log;
+                    } else if (log.action === 'End Break') {
+                        if (openSessions[log.userId] && openSessions[log.userId].currentBreakStart) {
+                            const bStart = new Date(openSessions[log.userId].currentBreakStart.timestamp);
+                            const bEnd = new Date(log.timestamp);
+                            openSessions[log.userId].breaks.push({ duration: (bEnd - bStart)/60000 });
+                            openSessions[log.userId].currentBreakStart = null;
+                        }
+                    } else if (log.action === 'End') {
+                        if (openSessions[log.userId]) {
+                            const session = openSessions[log.userId];
+                            session.endLog = log;
+                            sessions.push(session);
+                            delete openSessions[log.userId];
+                        } else {
+                            sessions.push({ userId: log.userId, startLog: null, endLog: log, breaks: [] });
+                        }
+                    }
+                });
+                Object.values(openSessions).forEach(s => sessions.push(s));
 
-                const logs = data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                // Filter sessions
+                let filteredSessions = sessions.filter(s => {
+                    if (showActiveOnly && s.endLog) return false;
+                    
+                    // Resolve details
+                    const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
+                    let sessionDate = '';
+                    if(ts) sessionDate = new Date(ts).toISOString().split('T')[0];
+                    
+                    let attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
+                    if (!attRecord) attRecord = attendance.find(a => a.userId === s.userId);
+                    
+                    const name = attRecord ? attRecord.name : '';
+                    let shift = attRecord ? attRecord.shift : (s.startLog ? getShiftFromTimestamp(s.startLog.timestamp).shift : '');
+                    
+                    if (filterShift && !shift.includes(filterShift)) return false;
+                    if (filterUser) {
+                        const searchStr = (s.userId + ' ' + name + ' ' + shift).toLowerCase();
+                        const terms = filterUser.split(' ').filter(t => t);
+                        if (!terms.every(term => searchStr.includes(term))) return false;
+                    }
+                    
+                    // Attach resolved data for export
+                    s.resolvedName = name;
+                    s.resolvedShift = shift;
+                    s.resolvedArea = s.startLog ? (s.startLog.areaType || '-') : '-';
+                    return true;
+                });
+
+                // Sort descending
+                filteredSessions.sort((a,b) => {
+                    const tA = a.startLog ? a.startLog.timestamp : (a.endLog ? a.endLog.timestamp : '');
+                    const tB = b.startLog ? b.startLog.timestamp : (b.endLog ? b.endLog.timestamp : '');
+                    return new Date(tB) - new Date(tA);
+                });
+
+                if(filteredSessions.length === 0) { alert('No logs to export.'); return; }
                 
-                if(logs.length === 0) { alert('No logs to export.'); return; }
-                
-                const headers = ['Timestamp', 'User ID', 'Action', 'Status'];
+                const headers = ['User ID', 'Name', 'Area Type', 'Shift', 'Start Time', 'End Time', 'Duration', 'Status', 'Pallets', 'SKUs'];
                 const rows = [headers.join(',')];
                 
-                logs.forEach(l => {
+                filteredSessions.forEach(s => {
+                    const startStr = s.startLog ? new Date(s.startLog.timestamp).toLocaleString() : '-';
+                    const endStr = s.endLog ? new Date(s.endLog.timestamp).toLocaleString() : '-';
+                    
+                    const pallets = s.endLog ? (s.endLog.pallets || 0) : 0;
+                    const skus = s.endLog ? (s.endLog.skus || 0) : 0;
+                    let duration = '-';
+                    const totalBreakMins = s.breaks ? s.breaks.reduce((acc, b) => acc + b.duration, 0) : 0;
+                    if (s.startLog && s.endLog) {
+                        const diff = new Date(s.endLog.timestamp) - new Date(s.startLog.timestamp);
+                        const mins = Math.round((diff / 60000) - totalBreakMins);
+                        duration = `${mins} min`;
+                    } else if (s.startLog) {
+                        const diff = new Date() - new Date(s.startLog.timestamp);
+                        duration = `Active (${Math.floor(diff/60000)}m)`;
+                    }
+
                     rows.push([
-                        `"${new Date(l.timestamp).toLocaleString()}"`,
-                        `"${l.userId}"`,
-                        l.action,
-                        l.deleted ? 'Deleted' : 'Active'
+                        `"${s.userId}"`,
+                        `"${s.resolvedName}"`,
+                        `"${s.resolvedArea}"`,
+                        `"${s.resolvedShift}"`,
+                        `"${startStr}"`,
+                        `"${endStr}"`,
+                        `"${duration}"`,
+                        s.endLog ? 'Completed' : 'Active',
+                        pallets,
+                        skus
                     ].join(','));
                 });
                 
@@ -4919,7 +5005,91 @@
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.setAttribute('href', url);
-                link.setAttribute('download', `counter_timestamps.csv`);
+                link.setAttribute('download', `counter_sessions.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        if(tsExportInactiveBtn) {
+            tsExportInactiveBtn.addEventListener('click', () => {
+                const attendanceData = getAttendanceData();
+                const sessions = []; // Rebuild sessions for last end time check
+                const allLogs = getTimestamps().sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const openSessions = {};
+                allLogs.forEach(log => {
+                    if(log.deleted) return;
+                    if (log.action === 'Start') {
+                        openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null };
+                    } else if (log.action === 'End') {
+                        if (openSessions[log.userId]) {
+                            const s = openSessions[log.userId];
+                            s.endLog = log;
+                            sessions.push(s);
+                            delete openSessions[log.userId];
+                        } else {
+                            sessions.push({ userId: log.userId, startLog: null, endLog: log });
+                        }
+                    }
+                });
+                Object.values(openSessions).forEach(s => sessions.push(s));
+
+                const dateInput = document.getElementById('ts-analytics-date-filter');
+                const filterDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
+                const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
+                
+                const fullCounters = attendanceData.filter(a => a.date === filterDate && a.status === 'Full counter');
+                const activeUserIds = new Set(Object.keys(openSessions));
+                const userLastEnd = {};
+                sessions.forEach(s => {
+                    if (s.endLog) {
+                        const t = new Date(s.endLog.timestamp).getTime();
+                        if (!userLastEnd[s.userId] || t > userLastEnd[s.userId]) userLastEnd[s.userId] = t;
+                    }
+                });
+
+                const inactiveList = [];
+                fullCounters.forEach(att => {
+                    if (filterShift && !att.shift.includes(filterShift)) return;
+                    if (!activeUserIds.has(att.userId)) {
+                        let lastEnd = '-';
+                        let status = 'Not Started';
+                        if (userLastEnd[att.userId]) {
+                            lastEnd = new Date(userLastEnd[att.userId]).toLocaleTimeString();
+                            status = 'Inactive';
+                        }
+                        inactiveList.push({
+                            userId: att.userId,
+                            name: att.name,
+                            shift: att.shift,
+                            role: att.role,
+                            lastEnd: lastEnd,
+                            status: status
+                        });
+                    }
+                });
+
+                if(inactiveList.length === 0) { alert('No inactive users to export.'); return; }
+
+                const headers = ['User ID', 'Name', 'Shift', 'Role', 'Last End Time', 'Status'];
+                const rows = [headers.join(',')];
+                inactiveList.forEach(u => {
+                    rows.push([
+                        `"${u.userId}"`,
+                        `"${u.name}"`,
+                        `"${u.shift}"`,
+                        `"${u.role}"`,
+                        `"${u.lastEnd}"`,
+                        `"${u.status}"`
+                    ].join(','));
+                });
+
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `inactive_users.csv`);
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -4944,18 +5114,9 @@
         });
         if(btnEndCount) btnEndCount.addEventListener('click', () => logTimestamp('End'));
         if(tsFilterUser) tsFilterUser.addEventListener('input', renderTimestamps);
+        if(tsShiftFilter) tsShiftFilter.addEventListener('change', renderTimestamps);
         if(tsShowActive) tsShowActive.addEventListener('change', renderTimestamps);
-        if(tsDateFilter) tsDateFilter.addEventListener('change', renderTimestamps);
         if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', renderTimestamps);
-        
-        if(tsAnalyticsFilterBtn) {
-            tsAnalyticsFilterBtn.addEventListener('click', () => {
-                if(tsAnalyticsDate && tsDateFilter) {
-                    tsDateFilter.value = tsAnalyticsDate.value;
-                    renderTimestamps();
-                }
-            });
-        }
         
         const breakLogTable = document.getElementById('break-log-table');
         if (breakLogTable) {
