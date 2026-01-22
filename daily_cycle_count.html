@@ -666,6 +666,9 @@
                 <button id="hourly-next-shift-btn" class="icon-btn" title="Next Shift" style="font-weight:bold; font-size:16px; padding:2px 8px;">&gt;</button>
             </div>
             <div>
+                <button id="hourly-back-timestamp-btn" class="icon-btn" title="Back to Timestamp" style="margin-right:5px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
                 <button id="email-hourly-btn" class="icon-btn" title="Email Report (Text)" style="margin-right:5px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </button>
@@ -1147,6 +1150,7 @@
         const dailyOutputBtn = document.getElementById('daily-output-btn');
         const hourlyPrevBtn = document.getElementById('hourly-prev-shift-btn');
         const hourlyNextBtn = document.getElementById('hourly-next-shift-btn');
+        const hourlyBackTimestampBtn = document.getElementById('hourly-back-timestamp-btn');
 
         // Timestamp Modal
         const timestampBtn = document.getElementById('counter-timestamp-btn');
@@ -2050,6 +2054,13 @@
                 let nextIdx = idx + 1;
                 if(nextIdx >= shiftOrder.length) nextIdx = 0;
                 openHourlyModal(date, shiftOrder[nextIdx]);
+            });
+        }
+
+        if(hourlyBackTimestampBtn) {
+            hourlyBackTimestampBtn.addEventListener('click', () => {
+                hourlyModal.classList.add('hidden');
+                timestampModal.classList.remove('hidden');
             });
         }
 
