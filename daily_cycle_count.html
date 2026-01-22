@@ -830,6 +830,7 @@
                             </select>
                             <input type="text" id="ts-filter-user" placeholder="Search User..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                             <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-active"> Active Only</label>
+                            <button id="ts-delete-selected-btn" class="icon-btn" title="Delete Selected" style="padding: 2px 6px; font-size: 12px; color:#d9534f; display:none;">Del Sel</button>
                             <button id="ts-purge-all-btn" class="icon-btn" title="Permanently Delete All Shown" style="padding: 2px 6px; font-size: 12px; background:#c0392b; color:white; border-color:#c0392b;">Purge All</button>
                             <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
                         </div>
@@ -838,6 +839,7 @@
                         <table id="timestamp-table" style="width:100%; border-collapse:collapse; font-size:12px;">
                             <thead>
                                 <tr style="background:#f9f9f9; border-bottom:1px solid #eee; position:sticky; top:0;">
+                                    <th style="padding:8px; text-align:left; width:30px;"><input type="checkbox" id="ts-select-all"></th>
                                     <th style="padding:8px; text-align:left;">User ID</th>
                                     <th style="padding:8px; text-align:left;">Name</th>
                                     <th style="padding:8px; text-align:left;">Area Type</th>
@@ -861,6 +863,8 @@
                              <input type="datetime-local" id="manual-break-time" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:130px;" title="Manual Break Time">
                              <button id="btn-break-start" class="icon-btn" style="background:#f1c40f; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">Start Break</button>
                              <button id="btn-break-end" class="icon-btn" style="background:#f39c12; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">End Break</button>
+                             <button id="break-delete-selected-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; display:none;">Del Sel</button>
+                             <button id="break-export-btn" class="icon-btn" title="Export CSV" style="padding:4px 8px; font-size:12px; font-weight:bold;">Export</button>
                              <button id="btn-break-delete-all" class="icon-btn" title="Delete All Breaks" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; margin-left:5px;">🗑 All</button>
                         </div>
                     </div>
@@ -868,6 +872,7 @@
                         <table id="break-log-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                             <thead>
                                 <tr style="background:#f9f9f9; position:sticky; top:0;">
+                                    <th style="padding:5px; text-align:left; width:30px;"><input type="checkbox" id="break-select-all"></th>
                                     <th style="padding:5px; text-align:left;">User</th>
                                     <th style="padding:5px; text-align:left;">Name</th>
                                     <th style="padding:5px; text-align:left;">Shift</th>
@@ -1043,6 +1048,8 @@
         const tsShiftFilter = document.getElementById('ts-shift-filter');
         const tsExportInactiveBtn = document.getElementById('ts-export-inactive-btn');
         const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
+        const tsDeleteSelectedBtn = document.getElementById('ts-delete-selected-btn');
+        const tsSelectAll = document.getElementById('ts-select-all');
         const tsShowActive = document.getElementById('ts-show-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
         
@@ -1052,6 +1059,10 @@
         const ecPalletGroup = document.getElementById('ec-pallet-group');
         const ecSaveBtn = document.getElementById('ec-save-btn');
         const ecCancelBtn = document.getElementById('ec-cancel-btn');
+
+        const breakDeleteSelectedBtn = document.getElementById('break-delete-selected-btn');
+        const breakExportBtn = document.getElementById('break-export-btn');
+        const breakSelectAll = document.getElementById('break-select-all');
 
         const editTimeModal = document.getElementById('edit-time-modal');
         const cancelEditTimeBtn = document.getElementById('cancel-edit-time-btn');
@@ -4045,6 +4056,7 @@
             timestampTableBody.innerHTML = '';
             if(filteredSessions.length === 0) {
                 timestampTableBody.innerHTML = '<tr><td colspan="5" style="padding:10px; text-align:center; color:#999;">No logs for today.</td></tr>';
+                if(tsSelectAll) tsSelectAll.checked = false;
             } else {
                 const now = new Date();
                 filteredSessions.forEach(session => {
@@ -4115,8 +4127,10 @@
                     
                     const idsToDelete = [session.startLog?.id, session.endLog?.id, ...(session.breaks || []).flatMap(b => [b.start.id, b.end.id])].filter(x=>x).join(',');
                     const deleteAction = `<button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Permanently Delete Session" style="color:#d9534f;">&times;</button>`;
+                    const rowIds = idsToDelete; // Store all related IDs for row selection
 
                     tr.innerHTML = `
+                        <td style="padding:8px; border-bottom:1px solid #eee;"><input type="checkbox" class="ts-row-checkbox" data-ids="${rowIds}"></td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${userId}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${name}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">${areaTypeDisplay}</td>
@@ -4131,6 +4145,7 @@
                     timestampTableBody.appendChild(tr);
                 });
             }
+            updateTsDeleteButton();
             
             // Calculate Total Duration
             const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
@@ -4151,6 +4166,22 @@
             renderTsAnalytics(sessions, analyticsDate);
             renderBreakLogTable(logsToProcess, attendance);
             renderInactiveUsersTable(sessions, attendance);
+        }
+        
+        function updateTsDeleteButton() {
+            const count = document.querySelectorAll('.ts-row-checkbox:checked').length;
+            if(tsDeleteSelectedBtn) tsDeleteSelectedBtn.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        
+        if(tsSelectAll) {
+            tsSelectAll.addEventListener('change', (e) => {
+                document.querySelectorAll('.ts-row-checkbox').forEach(cb => cb.checked = e.target.checked);
+                updateTsDeleteButton();
+            });
+        }
+        
+        if(timestampTableBody) {
+            timestampTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('ts-row-checkbox')) updateTsDeleteButton(); });
         }
 
         function renderTsAnalytics(sessions, date) {
@@ -4206,19 +4237,26 @@
             
             // Find Most/Least Frequent
             let mostFreqUser = '-'; let mostFreqCount = 0;
+            let mostFreqName = '-';
             let leastFreqUser = '-'; let leastFreqCount = Infinity;
             
             Object.entries(userStarts).forEach(([user, count]) => {
-                if (count > mostFreqCount) { mostFreqCount = count; mostFreqUser = user; }
+                if (count > mostFreqCount) { 
+                    mostFreqCount = count; mostFreqUser = user; 
+                    const att = attendance.find(a => a.userId === user);
+                    if(att) mostFreqName = att.name;
+                }
                 if (count < leastFreqCount) { leastFreqCount = count; leastFreqUser = user; }
             });
             if (leastFreqCount === Infinity) leastFreqCount = 0;
 
             // Build User List Table
-            let userListHtml = '<div style="margin-top:10px; max-height:150px; overflow-y:auto; border:1px solid #eee;"><table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f9f9f9;"><th style="padding:4px; text-align:left;">User</th><th style="padding:4px; text-align:right;">Starts</th></tr></thead><tbody>';
+            let userListHtml = '<div style="margin-top:10px; max-height:150px; overflow-y:auto; border:1px solid #eee;"><table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f9f9f9;"><th style="padding:4px; text-align:left;">User</th><th style="padding:4px; text-align:left;">Name</th><th style="padding:4px; text-align:right;">Starts</th></tr></thead><tbody>';
             const sortedUsers = Object.entries(userStarts).sort((a,b) => b[1] - a[1]);
             sortedUsers.forEach(([u, c]) => {
-                userListHtml += `<tr><td style="padding:4px; border-bottom:1px solid #eee;">${u}</td><td style="padding:4px; border-bottom:1px solid #eee; text-align:right;">${c}</td></tr>`;
+                const att = attendance.find(a => a.userId === u);
+                const name = att ? att.name : '-';
+                userListHtml += `<tr><td style="padding:4px; border-bottom:1px solid #eee;">${u}</td><td style="padding:4px; border-bottom:1px solid #eee;">${name}</td><td style="padding:4px; border-bottom:1px solid #eee; text-align:right;">${c}</td></tr>`;
             });
             userListHtml += '</tbody></table></div>';
 
@@ -4257,7 +4295,7 @@
                     <h5 style="margin:0 0 8px 0; color:#2752a7;">Session Insights</h5>
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
                         <span>Most Frequent Start:</span>
-                        <strong>${mostFreqUser} (${mostFreqCount})</strong>
+                        <strong>${mostFreqUser} | ${mostFreqName} (${mostFreqCount})</strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
                         <span>Least Frequent Start:</span>
@@ -4335,6 +4373,7 @@
             
             if(breaks.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" style="padding:10px; text-align:center; color:#999;">No breaks recorded.</td></tr>';
+                if(breakSelectAll) breakSelectAll.checked = false;
                 return;
             }
 
@@ -4365,12 +4404,30 @@
                 const endStr = b.end ? `<span class="editable-time" data-log-id="${b.endId}">${new Date(b.end).toLocaleTimeString()}</span>` : '-';
 
                 const deleteBtn = `<button class="icon-btn" onclick="deleteBreak('${b.startId}', '${b.endId}')" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px;">&times;</button>`;
+                const rowIds = [b.startId, b.endId].filter(x=>x).join(',');
 
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${deleteBtn}</td>`;
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;"><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${deleteBtn}</td>`;
                 tbody.appendChild(tr);
             });
+            updateBreakDeleteButton();
+        }
+        
+        function updateBreakDeleteButton() {
+            const count = document.querySelectorAll('.break-row-checkbox:checked').length;
+            if(breakDeleteSelectedBtn) breakDeleteSelectedBtn.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        
+        if(breakSelectAll) {
+            breakSelectAll.addEventListener('change', (e) => {
+                document.querySelectorAll('.break-row-checkbox').forEach(cb => cb.checked = e.target.checked);
+                updateBreakDeleteButton();
+            });
+        }
+        
+        if(document.getElementById('break-log-table')) {
+            document.getElementById('break-log-table').addEventListener('change', (e) => { if(e.target.classList.contains('break-row-checkbox')) updateBreakDeleteButton(); });
         }
 
         function renderInactiveUsersTable(sessions, attendanceData) {
@@ -4612,6 +4669,11 @@
                     alert(`User ${userId} has an active counting session. Please End Counting before starting a break.`);
                     return;
                 }
+            } else if (action === 'End Break') {
+                if (!lastLog || lastLog.action !== 'Start Break') {
+                    alert(`User ${userId} is not on break. Cannot End Break.`);
+                    return;
+                }
             } else if (action === 'End') {
                 if (!lastLog || (lastLog.action === 'End')) {
                     const actName = action === 'End' ? 'End Counting' : action;
@@ -4822,6 +4884,66 @@
             renderTimestamps();
             showToast('Break permanently deleted');
         };
+        
+        if(tsDeleteSelectedBtn) {
+            tsDeleteSelectedBtn.addEventListener('click', () => {
+                if(!confirm('Permanently delete selected sessions?')) return;
+                const checkboxes = document.querySelectorAll('.ts-row-checkbox:checked');
+                let idsToDelete = [];
+                checkboxes.forEach(cb => idsToDelete.push(...cb.dataset.ids.split(',')));
+                let data = getTimestamps();
+                data = data.filter(d => !idsToDelete.includes(d.id));
+                saveTimestamps(data);
+                renderTimestamps();
+                showToast(`${checkboxes.length} sessions deleted`);
+            });
+        }
+        
+        if(breakDeleteSelectedBtn) {
+            breakDeleteSelectedBtn.addEventListener('click', () => {
+                if(!confirm('Permanently delete selected breaks?')) return;
+                const checkboxes = document.querySelectorAll('.break-row-checkbox:checked');
+                let idsToDelete = [];
+                checkboxes.forEach(cb => idsToDelete.push(...cb.dataset.ids.split(',')));
+                let data = getTimestamps();
+                data = data.filter(d => !idsToDelete.includes(d.id));
+                saveTimestamps(data);
+                renderTimestamps();
+                showToast(`${checkboxes.length} breaks deleted`);
+            });
+        }
+        
+        if(breakExportBtn) {
+            breakExportBtn.addEventListener('click', () => {
+                const tbody = document.querySelector('#break-log-table tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                if(rows.length === 0 || rows[0].textContent.includes('No breaks')) { alert('No breaks to export'); return; }
+                
+                const csvRows = [['User', 'Name', 'Shift', 'Break Out', 'Break In', 'Duration']];
+                rows.forEach(tr => {
+                    const cols = tr.querySelectorAll('td');
+                    if(cols.length > 6) {
+                        csvRows.push([
+                            `"${cols[1].textContent}"`,
+                            `"${cols[2].textContent}"`,
+                            `"${cols[3].textContent}"`,
+                            `"${cols[4].textContent}"`,
+                            `"${cols[5].textContent}"`,
+                            `"${cols[6].textContent}"`
+                        ].join(','));
+                    }
+                });
+                
+                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `break_log.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
 
         if(document.getElementById('btn-break-delete-all')) {
             document.getElementById('btn-break-delete-all').addEventListener('click', () => {
