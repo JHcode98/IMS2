@@ -4591,16 +4591,57 @@
                     </ul>
                 </div>
                 <div style="text-align:center; margin-top:20px;">
-                    <div class="sand-timer" title="Total Shift Time">
+                    <div class="sand-timer" title="Shift Countdown">
                         <div class="sand-timer-top"><div class="sand-timer-sand-top"></div></div>
                         <div class="sand-timer-bottom"><div class="sand-timer-sand-bottom"></div></div>
                         <div class="sand-timer-stream"></div>
                     </div>
-                    <div style="margin-top:8px; font-weight:bold; color:#2752a7; font-size:18px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">${totalH}h ${totalM}m</div>
-                    <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:1px;">Total Shift Time</div>
+                    <div id="shift-countdown-display" style="margin-top:8px; font-weight:bold; color:#e74c3c; font-size:18px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">--h --m --s</div>
+                    <div id="shift-countdown-label" style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:1px;">Shift Remaining</div>
                 </div>
             `;
             container.innerHTML = html;
+            
+            if (!window.shiftTimerInterval) {
+                const updateTimer = () => {
+                    const el = document.getElementById('shift-countdown-display');
+                    const labelEl = document.getElementById('shift-countdown-label');
+                    if (!el) return;
+                    
+                    const now = new Date();
+                    const h = now.getHours();
+                    let end = new Date(now);
+                    let shiftName = '';
+                    
+                    if (h >= 6 && h < 14) {
+                        shiftName = '1st Shift';
+                        end.setHours(14, 0, 0, 0);
+                    } else if (h >= 14 && h < 22) {
+                        shiftName = '2nd Shift';
+                        end.setHours(22, 0, 0, 0);
+                    } else {
+                        shiftName = '3rd Shift';
+                        if (h >= 22) {
+                            end.setDate(end.getDate() + 1);
+                            end.setHours(6, 0, 0, 0);
+                        } else {
+                            end.setHours(6, 0, 0, 0);
+                        }
+                    }
+                    
+                    let diff = end - now;
+                    if (diff < 0) diff = 0;
+                    
+                    const hh = Math.floor(diff / 3600000);
+                    const mm = Math.floor((diff % 3600000) / 60000);
+                    const ss = Math.floor((diff % 60000) / 1000);
+                    
+                    el.textContent = `${hh}h ${mm}m ${ss}s`;
+                    if(labelEl) labelEl.textContent = `${shiftName} Ends`;
+                };
+                window.shiftTimerInterval = setInterval(updateTimer, 1000);
+                updateTimer();
+            }
         }
         
         function openEditTimeModal(logId) {
