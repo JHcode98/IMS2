@@ -984,6 +984,7 @@
                                     <th style="padding:5px; text-align:left;">User</th>
                                     <th style="padding:5px; text-align:left;">Name</th>
                                     <th style="padding:5px; text-align:left;">Shift</th>
+                                    <th style="padding:5px; text-align:left;">Role</th>
                                     <th style="padding:5px; text-align:left;">Break Out</th>
                                     <th style="padding:5px; text-align:left;">Break In</th>
                                     <th style="padding:5px; text-align:left;">Duration</th>
@@ -4697,6 +4698,7 @@
                 const att = attendanceData.find(a => a.userId === b.userId) || {};
                 const name = att.name || '-';
                 const shift = att.shift ? att.shift.split('-')[0] : '-';
+                const role = att.role || '-';
                 
                 const start = new Date(b.start);
                 const end = b.end ? new Date(b.end) : now;
@@ -4724,7 +4726,7 @@
 
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;"><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${deleteBtn}</td>`;
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;"><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${role}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${deleteBtn}</td>`;
                 tbody.appendChild(tr);
             });
             updateBreakDeleteButton();
@@ -5239,17 +5241,18 @@
                 const rows = Array.from(tbody.querySelectorAll('tr'));
                 if(rows.length === 0 || rows[0].textContent.includes('No breaks')) { alert('No breaks to export'); return; }
                 
-                const csvRows = [['User', 'Name', 'Shift', 'Break Out', 'Break In', 'Duration']];
+                const csvRows = [['User', 'Name', 'Shift', 'Role', 'Break Out', 'Break In', 'Duration']];
                 rows.forEach(tr => {
                     const cols = tr.querySelectorAll('td');
-                    if(cols.length > 6) {
+                    if(cols.length > 7) {
                         csvRows.push([
                             `"${cols[1].textContent}"`,
                             `"${cols[2].textContent}"`,
                             `"${cols[3].textContent}"`,
                             `"${cols[4].textContent}"`,
                             `"${cols[5].textContent}"`,
-                            `"${cols[6].textContent}"`
+                            `"${cols[6].textContent}"`,
+                            `"${cols[7].textContent}"`
                         ].join(','));
                     }
                 });
