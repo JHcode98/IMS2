@@ -258,6 +258,16 @@
     .area-card:hover { border-color: #2752a7 !important; background-color: #f0f4f8; transform: translateY(-2px); }
     .editable-time { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
     .editable-time:hover { color: #2752a7; }
+    
+    /* Sand Timer Animation */
+    .sand-timer {
+        width: 0; height: 0;
+        border-left: 10px solid transparent; border-right: 10px solid transparent;
+        border-top: 10px solid #f39c12; border-bottom: 10px solid #f39c12;
+        animation: sand-timer-spin 3s infinite ease-in-out;
+        margin: 0 auto;
+    }
+    @keyframes sand-timer-spin { 0% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
   </style>
 </head>
 <body class="inventory-mode">
@@ -4534,6 +4544,9 @@
                         <li>Completed Sessions: <strong>${completedSessions}</strong></li>
                         <li>Total Hours Logged: <strong>${Math.round(totalDuration/60)}h</strong></li>
                     </ul>
+                </div>
+                <div style="text-align:center; margin-top:20px; opacity:0.7;">
+                    <div class="sand-timer" title="Processing..."></div>
                 </div>
             `;
             container.innerHTML = html;
