@@ -603,8 +603,12 @@
     <div class="modal-content card resizable-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70vw; max-width: 900px; height: 85vh; display: flex; flex-direction: column; margin: 0;">
         <input type="hidden" id="hourly-date-val">
         <input type="hidden" id="hourly-shift-val">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="margin:0" id="hourly-modal-title">Hourly Output</h3>
+        <div id="hourly-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button id="hourly-prev-shift-btn" class="icon-btn" title="Previous Shift" style="font-weight:bold; font-size:16px; padding:2px 8px;">&lt;</button>
+                <h3 style="margin:0" id="hourly-modal-title">Hourly Output</h3>
+                <button id="hourly-next-shift-btn" class="icon-btn" title="Next Shift" style="font-weight:bold; font-size:16px; padding:2px 8px;">&gt;</button>
+            </div>
             <div>
                 <button id="email-hourly-btn" class="icon-btn" title="Email Report (Text)" style="margin-right:5px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
@@ -1036,6 +1040,9 @@
         const monitorExportBtn = document.getElementById('monitor-export-btn');
         const monitorSnapshotBtn = document.getElementById('monitor-snapshot-btn');
         
+        const hourlyPrevBtn = document.getElementById('hourly-prev-shift-btn');
+        const hourlyNextBtn = document.getElementById('hourly-next-shift-btn');
+
         // Timestamp Modal
         const timestampBtn = document.getElementById('counter-timestamp-btn');
         const timestampModal = document.getElementById('timestamp-modal');
@@ -1812,6 +1819,31 @@
         }
         window.openHourlyModal = openHourlyModal;
 
+        // Hourly Navigation Logic
+        const shiftOrder = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+        if(hourlyPrevBtn) {
+            hourlyPrevBtn.addEventListener('click', () => {
+                const date = document.getElementById('hourly-date-val').value;
+                const currentShift = document.getElementById('hourly-shift-val').value;
+                let idx = shiftOrder.indexOf(currentShift);
+                if(idx === -1) return;
+                let prevIdx = idx - 1;
+                if(prevIdx < 0) prevIdx = shiftOrder.length - 1;
+                openHourlyModal(date, shiftOrder[prevIdx]);
+            });
+        }
+        if(hourlyNextBtn) {
+            hourlyNextBtn.addEventListener('click', () => {
+                const date = document.getElementById('hourly-date-val').value;
+                const currentShift = document.getElementById('hourly-shift-val').value;
+                let idx = shiftOrder.indexOf(currentShift);
+                if(idx === -1) return;
+                let nextIdx = idx + 1;
+                if(nextIdx >= shiftOrder.length) nextIdx = 0;
+                openHourlyModal(date, shiftOrder[nextIdx]);
+            });
+        }
+
         // Table Column Resizing Logic
         function makeTableResizable(table) {
             if(!table) return;
@@ -1849,7 +1881,7 @@
 
         // Make Hourly Modal Draggable
         const hourlyModalContent = document.querySelector('#hourly-modal .modal-content');
-        const hourlyModalHeader = document.querySelector('#hourly-modal-title').parentElement; // The header div
+        const hourlyModalHeader = document.getElementById('hourly-header-bar'); // The header div
         if(hourlyModalContent && hourlyModalHeader) {
             hourlyModalHeader.style.cursor = 'move';
             hourlyModalHeader.addEventListener('mousedown', function(e) {
