@@ -3030,7 +3030,7 @@
 
         if (exportAttBtn) {
             exportAttBtn.addEventListener('click', () => {
-                const data = getAttendanceData();
+                const data = getFilteredAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
                 const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
                 const rows = [headers.join(',')];
