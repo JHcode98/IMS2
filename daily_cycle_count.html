@@ -4813,15 +4813,28 @@
                 const startStr = `<span class="editable-time" data-log-id="${b.startId}">${start.toLocaleTimeString()}</span>`;
                 const endStr = b.end ? `<span class="editable-time" data-log-id="${b.endId}">${new Date(b.end).toLocaleTimeString()}</span>` : '-';
 
+                let endBreakBtn = '';
+                if (!b.end) {
+                    endBreakBtn = `<button class="icon-btn end-break-btn" onclick="logTimestamp('End Break', null, '${b.userId}')" title="End Break" style="color:#f39c12; padding:2px 6px; font-size:10px; opacity:0; transition:opacity 0.2s; margin-right:4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>`;
+                }
+
                 const deleteBtn = `<button class="icon-btn delete-break-btn" onclick="deleteBreak('${b.startId}', '${b.endId}')" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px; opacity:0; transition:opacity 0.2s;">&times;</button>`;
                 const rowIds = [b.startId, b.endId].filter(x=>x).join(',');
 
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;"><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${role}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${deleteBtn}</td>`;
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;"><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${role}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endBreakBtn}${deleteBtn}</td>`;
                 
-                tr.onmouseenter = () => { tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '1'); };
-                tr.onmouseleave = () => { tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '0'); };
+                tr.onmouseenter = () => { 
+                    tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '1'); 
+                    tr.querySelectorAll('.end-break-btn').forEach(b => b.style.opacity = '1');
+                };
+                tr.onmouseleave = () => { 
+                    tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '0'); 
+                    tr.querySelectorAll('.end-break-btn').forEach(b => b.style.opacity = '0');
+                };
                 
                 tbody.appendChild(tr);
             });
@@ -5821,6 +5834,126 @@
         if(tsUserIdInput) {
             tsUserIdInput.addEventListener('input', () => {
                 const uid = tsUserIdInput.value.trim();
+                const nameDisplay = document.getElementById('ts-user-name-display');
+                if(nameDisplay) {
+                    if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>         const uid = tsUserIdInput.value.trim();
                 const nameDisplay = document.getElementById('ts-user-name-display');
                 if(nameDisplay) {
                     if(uid) {
