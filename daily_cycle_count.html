@@ -4442,9 +4442,9 @@
                 end: s.endLog.timestamp
             }));
             renderTimestampChart(chartSessions);
-            renderTsAnalytics(sessions, analyticsDate);
+            renderTsAnalytics(sessions, analyticsDate, logsToProcess);
             renderBreakLogTable(logsToProcess, attendance);
-            renderInactiveUsersTable(sessions, attendance);
+            renderInactiveUsersTable(sessions, attendance, logsToProcess);
         }
         
         function updateTsDeleteButton() {
@@ -4463,7 +4463,7 @@
             timestampTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('ts-row-checkbox')) updateTsDeleteButton(); });
         }
 
-        function renderTsAnalytics(sessions, date) {
+        function renderTsAnalytics(sessions, date, logs) {
             const container = document.getElementById('ts-analytics-content');
             if(!container) return;
             container.innerHTML = '';
@@ -4496,6 +4496,29 @@
                 }
             });
 
+            // Calculate On-Break Users
+            const onBreakUserIds = new Set();
+            const userLastAction = {};
+            logs.forEach(l => {
+                if (!l.deleted) userLastAction[l.userId] = l.action;
+            });
+            Object.entries(userLastAction).forEach(([uid, action]) => {
+                if (action === 'Start Break') onBreakUserIds.add(uid);
+            });
+
+            // Calculate Inactive Users (Full counters only, not active, not on break)
+            let inactiveCount = 0;
+            const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
+            attendance.forEach(a => {
+                if (a.status === 'Full counter') {
+                    if (filterShift && !a.shift.includes(filterShift)) return;
+                    if (a.timeOut) return; // Already timed out
+                    if (!activeUserIds.has(a.userId) && !onBreakUserIds.has(a.userId)) {
+                        inactiveCount++;
+                    }
+                }
+            });
+
             // 2. Session Stats
             const userStarts = {};
             let totalDuration = 0;
@@ -4513,6 +4536,13 @@
                 }
                 if (s.breaks) totalBreaks += s.breaks.length;
             });
+
+            // Calculate Unique Users with Breaks (from logs directly to catch all)
+            const usersWithBreaks = new Set();
+            logs.forEach(l => {
+                if (l.action === 'Start Break') usersWithBreaks.add(l.userId);
+            });
+            const uniqueBreakUsers = usersWithBreaks.size;
             
             // Find Most/Least Frequent
             let mostFreqUser = '-'; let mostFreqCount = 0;
@@ -4608,6 +4638,8 @@
                         <li>Total Breaks Taken: <strong>${totalBreaks}</strong></li>
                         <li>Completed Sessions: <strong>${completedSessions}</strong></li>
                         <li>Total Hours Logged: <strong>${Math.round(totalDuration/60)}h</strong></li>
+                        <li>Total Inactive Users: <strong style="color:${inactiveCount > 0 ? '#e74c3c' : '#2ecc71'}">${inactiveCount}</strong></li>
+                        <li>Unique Users w/ Breaks: <strong>${uniqueBreakUsers}</strong></li>
                     </ul>
                 </div>
                 <div style="text-align:center; margin-top:20px;">
@@ -4767,7 +4799,7 @@
             document.getElementById('break-log-table').addEventListener('change', (e) => { if(e.target.classList.contains('break-row-checkbox')) updateBreakDeleteButton(); });
         }
 
-        function renderInactiveUsersTable(sessions, attendanceData) {
+        function renderInactiveUsersTable(sessions, attendanceData, logs) {
             const tbody = document.querySelector('#inactive-users-table tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
@@ -4793,6 +4825,14 @@
                     }
                 }
             });
+
+            // Determine users currently on break
+            const onBreakUserIds = new Set();
+            const userLastAction = {};
+            logs.forEach(l => { if (!l.deleted) userLastAction[l.userId] = l.action; });
+            Object.entries(userLastAction).forEach(([uid, action]) => {
+                if (action === 'Start Break') onBreakUserIds.add(uid);
+            });
             
             const inactiveList = [];
             
@@ -4800,7 +4840,7 @@
                 if (filterShift && !att.shift.includes(filterShift)) return;
                 if (att.timeOut) return; // Skip if already timed out
                 if (!activeUserIds.has(att.userId)) {
-                    // Not currently active
+                    // Not currently active session
                     let lastEnd = '-';
                     let status = 'Not Started';
                     
@@ -4808,6 +4848,9 @@
                         lastEnd = new Date(userLastEnd[att.userId]).toLocaleTimeString();
                         status = 'Inactive';
                     }
+
+                    // If on break, do not add to inactive list
+                    if (onBreakUserIds.has(att.userId)) return;
                     
                     inactiveList.push({
                         userId: att.userId,
