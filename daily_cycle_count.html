@@ -1028,6 +1028,7 @@
                                     <th style="padding:5px; text-align:left;">Shift</th>
                                     <th style="padding:5px; text-align:left;">Role</th>
                                     <th style="padding:5px; text-align:left;">Last End Count</th>
+                                    <th style="padding:5px; text-align:center; width:40px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -4863,7 +4864,7 @@
                 }
             });
             
-            if(inactiveList.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="padding:10px; text-align:center; color:#999;">No inactive users found.</td></tr>'; return; }
+            if(inactiveList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="padding:10px; text-align:center; color:#999;">No inactive users found.</td></tr>'; return; }
             
             // Sort: Not Started first
             inactiveList.sort((a,b) => {
@@ -4875,7 +4876,19 @@
             inactiveList.forEach(u => {
                 const tr = document.createElement('tr');
                 const color = u.status === 'Not Started' ? '#e74c3c' : '#333';
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.shift || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.role || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.lastEnd}</td>`;
+                
+                const btnHtml = `<button class="icon-btn quick-start-btn" 
+                    onclick="document.getElementById('ts-user-id').value = '${u.userId}'; document.getElementById('ts-user-id').dispatchEvent(new Event('input')); logTimestamp('Start', null, '${u.userId}')" 
+                    title="Quick Start Count" 
+                    style="color:#2ecc71; padding:2px; opacity:0; transition:opacity 0.2s;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </button>`;
+
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.shift || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.role || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.lastEnd}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:center;">${btnHtml}</td>`;
+                
+                tr.onmouseenter = () => { const b = tr.querySelector('.quick-start-btn'); if(b) b.style.opacity = '1'; };
+                tr.onmouseleave = () => { const b = tr.querySelector('.quick-start-btn'); if(b) b.style.opacity = '0'; };
+                
                 tbody.appendChild(tr);
             });
         }
@@ -5205,6 +5218,7 @@
             }
             if(manualBreakInput) manualBreakInput.value = ''; // Clear manual input
         }
+        window.logTimestamp = logTimestamp;
 
         // End Count Modal Logic
         if (ecAreaType) {
