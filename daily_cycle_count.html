@@ -1023,11 +1023,11 @@
                         <table id="inactive-users-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                             <thead>
                                 <tr style="background:#f9f9f9; position:sticky; top:0;">
-                                    <th style="padding:5px; text-align:left;">User</th>
-                                    <th style="padding:5px; text-align:left;">Name</th>
-                                    <th style="padding:5px; text-align:left;">Shift</th>
-                                    <th style="padding:5px; text-align:left;">Role</th>
-                                    <th style="padding:5px; text-align:left;">Last End Count</th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('userId')">User <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('name')">Name <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('shift')">Shift <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('role')">Role <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('lastEnd')">Last End Count <span class="sort-icon"></span></th>
                                     <th style="padding:5px; text-align:center; width:40px;">Action</th>
                                 </tr>
                             </thead>
@@ -1168,6 +1168,19 @@
         const hourlyBackTimestampBtn = document.getElementById('hourly-back-timestamp-btn');
 
         // Timestamp Modal
+        let cachedInactiveArgs = null;
+        let inactiveSort = { field: 'status', dir: 'asc' };
+
+        window.sortInactiveTable = function(field) {
+            if (inactiveSort.field === field) {
+                inactiveSort.dir = inactiveSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                inactiveSort.field = field;
+                inactiveSort.dir = 'asc';
+            }
+            if (cachedInactiveArgs) renderInactiveUsersTable(...cachedInactiveArgs);
+        };
+
         const timestampBtn = document.getElementById('counter-timestamp-btn');
         const timestampModal = document.getElementById('timestamp-modal');
         const tsUserIdInput = document.getElementById('ts-user-id');
@@ -4408,6 +4421,21 @@
                     const idsToDelete = [session.startLog?.id, session.endLog?.id, ...(session.breaks || []).flatMap(b => [b.start.id, b.end.id])].filter(x=>x).join(',');
                     const deleteAction = `<button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Permanently Delete Session" style="color:#d9534f;">&times;</button>`;
                     const rowIds = idsToDelete; // Store all related IDs for row selection
+                    
+                    let quickAction = '';
+                    if (!session.endLog) {
+                        if (session.currentBreakStart) {
+                            // On Break -> End Break
+                            quickAction = `<button class="icon-btn" onclick="logTimestamp('End Break', null, '${userId}')" title="End Break" style="color:#f39c12; margin-right:4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            </button>`;
+                        } else {
+                            // Active -> Start Break
+                            quickAction = `<button class="icon-btn" onclick="logTimestamp('Start Break', null, '${userId}')" title="Start Break" style="color:#3498db; margin-right:4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+                            </button>`;
+                        }
+                    }
 
                     tr.innerHTML = `
                         <td style="padding:8px; border-bottom:1px solid #eee;"><input type="checkbox" class="ts-row-checkbox" data-ids="${rowIds}"></td>
@@ -4419,6 +4447,7 @@
                         <td style="padding:8px; border-bottom:1px solid #eee; color:#e74c3c; font-weight:bold;">${endStr}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee; ${isHigh ? 'color:#e74c3c; font-weight:bold;' : (duration==='Active'?'color:#2ecc71;font-weight:bold':'')}">${duration}</td>
                         <td style="padding:8px; border-bottom:1px solid #eee;">
+                            ${quickAction}
                             ${deleteAction}
                         </td>
                     `;
@@ -4445,6 +4474,7 @@
             renderTimestampChart(chartSessions);
             renderTsAnalytics(sessions, analyticsDate, logsToProcess);
             renderBreakLogTable(logsToProcess, attendance);
+            cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
         }
         
@@ -4867,6 +4897,13 @@
             if(inactiveList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="padding:10px; text-align:center; color:#999;">No inactive users found.</td></tr>'; return; }
             
             // Sort: Not Started first
+            if (inactiveSort.field) {
+                inactiveList.sort((a,b) => {
+                    const valA = (a[inactiveSort.field] || '').toString().toLowerCase();
+                    const valB = (b[inactiveSort.field] || '').toString().toLowerCase();
+                    return inactiveSort.dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                });
+            }
             inactiveList.sort((a,b) => {
                 if (a.status === 'Not Started' && b.status !== 'Not Started') return -1;
                 if (a.status !== 'Not Started' && b.status === 'Not Started') return 1;
@@ -4877,20 +4914,32 @@
                 const tr = document.createElement('tr');
                 const color = u.status === 'Not Started' ? '#e74c3c' : '#333';
                 
-                const btnHtml = `<button class="icon-btn quick-start-btn" 
+                const startBtn = `<button class="icon-btn quick-start-btn" 
                     onclick="document.getElementById('ts-user-id').value = '${u.userId}'; document.getElementById('ts-user-id').dispatchEvent(new Event('input')); logTimestamp('Start', null, '${u.userId}')" 
                     title="Quick Start Count" 
-                    style="color:#2ecc71; padding:2px; opacity:0; transition:opacity 0.2s;">
+                    style="color:#2ecc71; padding:2px; opacity:0; transition:opacity 0.2s; margin-right:4px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 </button>`;
 
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.shift || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.role || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.lastEnd}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:center;">${btnHtml}</td>`;
+                const breakBtn = `<button class="icon-btn quick-start-btn" 
+                    onclick="document.getElementById('ts-user-id').value = '${u.userId}'; document.getElementById('ts-user-id').dispatchEvent(new Event('input')); logTimestamp('Start Break', null, '${u.userId}')" 
+                    title="Quick Break" 
+                    style="color:#3498db; padding:2px; opacity:0; transition:opacity 0.2s;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+                </button>`;
+
+                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.shift || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.role || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.lastEnd}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:center; white-space:nowrap;">${startBtn}${breakBtn}</td>`;
                 
-                tr.onmouseenter = () => { const b = tr.querySelector('.quick-start-btn'); if(b) b.style.opacity = '1'; };
-                tr.onmouseleave = () => { const b = tr.querySelector('.quick-start-btn'); if(b) b.style.opacity = '0'; };
+                tr.onmouseenter = () => { tr.querySelectorAll('.quick-start-btn').forEach(b => b.style.opacity = '1'); };
+                tr.onmouseleave = () => { tr.querySelectorAll('.quick-start-btn').forEach(b => b.style.opacity = '0'); };
                 
                 tbody.appendChild(tr);
             });
+            
+            // Update sort icons
+            document.querySelectorAll('#inactive-users-table th .sort-icon').forEach(el => el.textContent = '');
+            const activeTh = document.querySelector(`#inactive-users-table th[onclick*="'${inactiveSort.field}'"] .sort-icon`);
+            if(activeTh) activeTh.textContent = inactiveSort.dir === 'asc' ? '↑' : '↓';
         }
 
         function renderCountersSummary() {
