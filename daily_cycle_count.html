@@ -2667,6 +2667,7 @@
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write('<html><head><title>Attendance Report</title>');
                 printWindow.document.write('<style>@page { size: letter; margin: 0.25in; } body{font-family:sans-serif;font-size:11px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ccc;padding:4px;text-align:left;} th{background:#f0f0f0;} .sig{height:30px;}</style>');
+                printWindow.document.write('<style>@page { size: letter landscape; margin: 0.25in; } body{font-family:sans-serif;font-size:11px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ccc;padding:4px;text-align:left;} th{background:#f0f0f0;} .sig{height:30px;}</style>');
                 printWindow.document.write('</head><body>');
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
