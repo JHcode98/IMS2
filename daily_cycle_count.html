@@ -378,6 +378,7 @@
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <div style="display:flex; align-items:center; gap:10px;">
             <h2 style="margin:0;">Manage Daily Counters</h2>
+            <button id="counters-flip-to-summary" class="icon-btn" title="View Statistics" style="background:#6f42c1; color:white; font-size:12px; padding:4px 8px;">View Stats</button>
             <button class="icon-btn expand-toggle-btn" title="Collapse" style="padding:4px; border:none; background:transparent; color:var(--muted);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
         </div>
         <div style="display:flex; gap:5px;">
@@ -400,6 +401,9 @@
         </div>
       </div>
       <div class="card-content">
+      <div id="counters-flip-container" class="flip-container">
+        <div class="flip-inner">
+            <div class="flip-front">
 
       <!-- Form -->
       <form id="daily-counters-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eef2f6;">
@@ -467,6 +471,16 @@
         <div style="display:flex; gap:8px;">
             <button id="counters-prev-page" class="icon-btn" title="Previous">‹</button>
             <button id="counters-next-page" class="icon-btn" title="Next">›</button>
+        </div>
+      </div>
+            </div>
+            <div class="flip-back" style="padding:20px; background:#fff; border:1px solid #eee; border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0; color:#2752a7;">Performance Statistics</h3>
+                    <button id="counters-flip-to-table" class="icon-btn" title="Back to Table">↩ Back to Table</button>
+                </div>
+                <div id="counters-summary-content"></div>
+            </div>
         </div>
       </div>
     </div>
@@ -4869,6 +4883,7 @@
             };
             let total24Output = 0;
             let total24Counters = 0;
+            let total24Target = 0;
 
             data.forEach(item => {
                 let act = 0;
@@ -4895,6 +4910,16 @@
                 }
                 total24Output += act;
                 total24Counters += actCounters;
+                
+                // Calculate Target for stats
+                const rate = Number(item.standardRate) || 0;
+                let target = 0;
+                if (item.hourlyTargets && Object.keys(item.hourlyTargets).length > 0) {
+                    target = Object.values(item.hourlyTargets).reduce((a, b) => a + (Number(b)||0), 0);
+                } else {
+                    target = rate > 0 ? (actCounters * rate) : (Number(item.targetOutput) || 0);
+                }
+                total24Target += target;
             });
 
             let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
@@ -4913,6 +4938,37 @@
                 <div class="stat-card" style="border-color:#2752a7;">
                     <div class="stat-value" style="color:#2752a7;">${total24Output} <span style="font-size:14px; color:#666; font-weight:normal;">items</span></div>
                     <div class="stat-label">Total 24hrs (${total24Counters} counters)</div>
+                </div>
+            </div>`;
+            
+            // Additional Stats
+            const avgProductivity = total24Counters > 0 ? Math.round(total24Output / total24Counters) : 0;
+            const targetPct = total24Target > 0 ? Math.round((total24Output / total24Target) * 100) : 0;
+            const variance = total24Output - total24Target;
+            
+            let topShift = '-';
+            let topShiftVal = -1;
+            Object.entries(shiftOutput).forEach(([k,v]) => {
+                if(v > topShiftVal) { topShiftVal = v; topShift = k.split('-')[0]; }
+            });
+            
+            html += `
+            <div style="margin-top:20px; border-top:1px solid #eee; padding-top:20px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                <div class="stat-card">
+                    <div class="stat-value" style="color:#2ecc71;">${avgProductivity}</div>
+                    <div class="stat-label">Avg Items / Person</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color:${targetPct >= 100 ? '#2ecc71' : '#f1c40f'};">${targetPct}%</div>
+                    <div class="stat-label">Target Achievement</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color:${variance >= 0 ? '#2ecc71' : '#e74c3c'};">${variance > 0 ? '+' : ''}${variance}</div>
+                    <div class="stat-label">Total Variance</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color:#3498db;">${topShift}</div>
+                    <div class="stat-label">Top Performing Shift</div>
                 </div>
             </div>`;
             
