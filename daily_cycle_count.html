@@ -4419,7 +4419,7 @@
                     }
                     
                     const idsToDelete = [session.startLog?.id, session.endLog?.id, ...(session.breaks || []).flatMap(b => [b.start.id, b.end.id])].filter(x=>x).join(',');
-                    const deleteAction = `<button class="icon-btn" onclick="deleteSession('${idsToDelete}')" title="Permanently Delete Session" style="color:#d9534f;">&times;</button>`;
+                    const deleteAction = `<button class="icon-btn delete-action-btn" onclick="deleteSession('${idsToDelete}')" title="Permanently Delete Session" style="color:#d9534f; opacity:0; transition:opacity 0.2s;">&times;</button>`;
                     const rowIds = idsToDelete; // Store all related IDs for row selection
                     
                     let quickAction = '';
@@ -4452,8 +4452,14 @@
                         </td>
                     `;
                     
-                    tr.onmouseenter = () => { tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '1'); };
-                    tr.onmouseleave = () => { tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '0'); };
+                    tr.onmouseenter = () => { 
+                        tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '1'); 
+                        tr.querySelectorAll('.delete-action-btn').forEach(b => b.style.opacity = '1'); 
+                    };
+                    tr.onmouseleave = () => { 
+                        tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '0'); 
+                        tr.querySelectorAll('.delete-action-btn').forEach(b => b.style.opacity = '0'); 
+                    };
 
                     timestampTableBody.appendChild(tr);
                 });
@@ -4807,12 +4813,16 @@
                 const startStr = `<span class="editable-time" data-log-id="${b.startId}">${start.toLocaleTimeString()}</span>`;
                 const endStr = b.end ? `<span class="editable-time" data-log-id="${b.endId}">${new Date(b.end).toLocaleTimeString()}</span>` : '-';
 
-                const deleteBtn = `<button class="icon-btn" onclick="deleteBreak('${b.startId}', '${b.endId}')" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px;">&times;</button>`;
+                const deleteBtn = `<button class="icon-btn delete-break-btn" onclick="deleteBreak('${b.startId}', '${b.endId}')" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px; opacity:0; transition:opacity 0.2s;">&times;</button>`;
                 const rowIds = [b.startId, b.endId].filter(x=>x).join(',');
 
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
                 tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;"><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${role}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${deleteBtn}</td>`;
+                
+                tr.onmouseenter = () => { tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '1'); };
+                tr.onmouseleave = () => { tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '0'); };
+                
                 tbody.appendChild(tr);
             });
             updateBreakDeleteButton();
