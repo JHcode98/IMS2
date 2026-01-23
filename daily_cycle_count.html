@@ -4426,12 +4426,12 @@
                     if (!session.endLog) {
                         if (session.currentBreakStart) {
                             // On Break -> End Break
-                            quickAction = `<button class="icon-btn" onclick="logTimestamp('End Break', null, '${userId}')" title="End Break" style="color:#f39c12; margin-right:4px;">
+                            quickAction = `<button class="icon-btn quick-action-btn" onclick="logTimestamp('End Break', null, '${userId}')" title="End Break" style="color:#f39c12; margin-right:4px; opacity:0; transition:opacity 0.2s;">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                             </button>`;
                         } else {
                             // Active -> End Counting
-                            quickAction = `<button class="icon-btn" onclick="logTimestamp('End', null, '${userId}')" title="End Counting" style="color:#e74c3c; margin-right:4px;">
+                            quickAction = `<button class="icon-btn quick-action-btn" onclick="logTimestamp('End', null, '${userId}')" title="End Counting" style="color:#e74c3c; margin-right:4px; opacity:0; transition:opacity 0.2s;">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
                             </button>`;
                         }
@@ -4451,6 +4451,10 @@
                             ${deleteAction}
                         </td>
                     `;
+                    
+                    tr.onmouseenter = () => { tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '1'); };
+                    tr.onmouseleave = () => { tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '0'); };
+
                     timestampTableBody.appendChild(tr);
                 });
             }
