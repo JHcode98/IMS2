@@ -933,7 +933,10 @@
                 <!-- Table 1: Today's Logs -->
                 <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:400px;">
                     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <h4 style="margin:0;">Today's Logs</h4>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <h4 style="margin:0;">Today's Logs</h4>
+                        </div>
                         <div style="display:flex; gap:5px; align-items:center;">
                             <select id="ts-shift-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
                                 <option value="">All Shifts</option>
@@ -949,6 +952,7 @@
                             <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
                         </div>
                     </div>
+                    <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee; border-radius:4px;">
                         <table id="timestamp-table" style="width:100%; border-collapse:collapse; font-size:12px;">
                             <thead>
@@ -982,12 +986,16 @@
                             <button id="ts-next-page" class="icon-btn" title="Next" style="padding:2px 6px; font-size:12px;">›</button>
                         </div>
                     </div>
+                    </div>
                 </div>
 
                 <!-- Table 2: Break Log -->
                 <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:300px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <h4 style="margin:0;">Break Log</h4>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <h4 style="margin:0;">Break Log</h4>
+                        </div>
                         <div style="display:flex; gap:5px;">
                              <select id="break-shift-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 80px;">
                                 <option value="">All Shifts</option>
@@ -1004,6 +1012,7 @@
                              <button id="btn-break-delete-all" class="icon-btn" title="Delete All Breaks" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; margin-left:5px;">🗑 All</button>
                         </div>
                     </div>
+                    <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
                         <table id="break-log-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                             <thead>
@@ -1023,13 +1032,18 @@
                         </table>
                     </div>
                 </div>
+                </div>
 
                 <!-- Table 3: Inactive Users -->
                 <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:300px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <h4 style="margin:0;">Inactive Users</h4>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <h4 style="margin:0;">Inactive Users</h4>
+                        </div>
                         <button id="ts-export-inactive-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
                     </div>
+                    <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
                         <table id="inactive-users-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                             <thead>
@@ -1045,6 +1059,7 @@
                             <tbody></tbody>
                         </table>
                     </div>
+                </div>
                 </div>
             </div>
 
@@ -6218,6 +6233,26 @@
                 }
             });
         }
+
+        // Toggle Section Logic for Timestamp Modal Tables
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-section-btn');
+            if (btn) {
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
     });
   </script>
 </body>
