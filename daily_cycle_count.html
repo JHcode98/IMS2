@@ -1109,11 +1109,11 @@
         </div>
         <div id="ec-pallet-group" style="margin-bottom:10px;">
             <label style="font-weight:bold; display:block; margin-bottom:5px;">Pallets Completed:</label>
-            <input type="number" id="ec-pallets" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
+            <input type="number" id="ec-pallets" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="0" min="0">
         </div>
         <div style="margin-bottom:15px;">
             <label style="font-weight:bold; display:block; margin-bottom:5px;">SKUs (Items) Counted:</label>
-            <input type="number" id="ec-skus" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" value="0" min="0">
+            <input type="number" id="ec-skus" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="0" min="0">
         </div>
         <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
             <button id="ec-cancel-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
@@ -1129,19 +1129,19 @@
         <h3 style="margin-top:0">Select Warehouse Area</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; justify-content:center; margin-top:20px;">
             <div class="card area-card" data-warehouse-area="Coldroom" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
-                <div style="font-size:30px;">❄️</div>
+                <div style="font-size:30px;">🌡️</div>
                 <div style="font-weight:bold; margin-top:10px;">Coldroom</div>
             </div>
             <div class="card area-card" data-warehouse-area="Ecom 2" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
-                <div style="font-size:30px;">🌐</div>
+                <div style="font-size:30px;">🏢</div>
                 <div style="font-weight:bold; margin-top:10px;">Ecom 2</div>
             </div>
             <div class="card area-card" data-warehouse-area="Storage" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
-                <div style="font-size:30px;">🗄️</div>
+                <div style="font-size:30px;">🏭</div>
                 <div style="font-weight:bold; margin-top:10px;">Storage</div>
             </div>
             <div class="card area-card" data-warehouse-area="Pallet Picking" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
-                <div style="font-size:30px;">🏗️</div>
+                <div style="font-size:30px;">🪵</div>
                 <div style="font-weight:bold; margin-top:10px;">Pallet Picking</div>
             </div>
         </div>
@@ -5553,8 +5553,8 @@
                 const area = startLog ? (startLog.areaType || 'Reserved') : 'Reserved';
 
                 // Open Modal
-                document.getElementById('ec-pallets').value = '0';
-                document.getElementById('ec-skus').value = '0';
+                document.getElementById('ec-pallets').value = '';
+                document.getElementById('ec-skus').value = '';
                 
                 const areaInput = document.getElementById('ec-area-type');
                 areaInput.value = area;
@@ -5639,11 +5639,17 @@
                 const userId = endCountModal.dataset.userId;
                 const pallets = parseInt(document.getElementById('ec-pallets').value) || 0;
                 const skus = parseInt(document.getElementById('ec-skus').value) || 0;
+                const areaType = document.getElementById('ec-area-type').value;
                 const now = new Date();
+
+                // Validation
+                if (areaType && areaType.startsWith('Reserved') && pallets === 0) {
+                    alert('Pallets Completed cannot be zero for Reserved area.');
+                    return;
+                }
 
                 // 1. Log Timestamp
                 const data = getTimestamps();
-                const areaType = document.getElementById('ec-area-type').value;
                 data.push({
                     id: Date.now().toString(),
                     userId: userId,
