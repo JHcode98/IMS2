@@ -1071,6 +1071,33 @@
     </div>
   </div>
 
+  <!-- Warehouse Area Selection Modal -->
+  <div id="warehouse-area-modal" class="modal hidden" style="z-index: 10016;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 500px; margin: 150px auto; text-align: center;">
+        <h3 style="margin-top:0">Select Warehouse Area</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; justify-content:center; margin-top:20px;">
+            <div class="card area-card" data-warehouse-area="Coldroom" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">❄️</div>
+                <div style="font-weight:bold; margin-top:10px;">Coldroom</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Ecom 2" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🌐</div>
+                <div style="font-weight:bold; margin-top:10px;">Ecom 2</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Storage" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🗄️</div>
+                <div style="font-weight:bold; margin-top:10px;">Storage</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Pallet Picking" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🏗️</div>
+                <div style="font-weight:bold; margin-top:10px;">Pallet Picking</div>
+            </div>
+        </div>
+        <button id="cancel-warehouse-area-btn" class="icon-btn" style="margin-top:20px; border:1px solid #ccc;">Back</button>
+    </div>
+  </div>
+
   <!-- End Count Details Modal -->
   <div id="end-count-modal" class="modal hidden" style="z-index: 10010;">
     <div class="modal-overlay"></div>
@@ -1328,17 +1355,34 @@
         }
         // Start Area Modal Logic
         const startAreaModal = document.getElementById('start-area-modal');
+        const warehouseAreaModal = document.getElementById('warehouse-area-modal');
         const cancelStartAreaBtn = document.getElementById('cancel-start-area-btn');
+        const cancelWarehouseAreaBtn = document.getElementById('cancel-warehouse-area-btn');
+        let selectedBinType = '';
         
-        document.querySelectorAll('.area-card').forEach(card => {
+        document.querySelectorAll('#start-area-modal .area-card').forEach(card => {
             card.addEventListener('click', () => {
-                const area = card.dataset.area;
+                selectedBinType = card.dataset.binType;
                 startAreaModal.classList.add('hidden');
-                logTimestamp('Start', area);
+                if(warehouseAreaModal) warehouseAreaModal.classList.remove('hidden');
+                else logTimestamp('Start', selectedBinType);
+            });
+        });
+
+        document.querySelectorAll('#warehouse-area-modal .area-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const warehouseArea = card.dataset.warehouseArea;
+                const finalArea = `${selectedBinType} - ${warehouseArea}`;
+                warehouseAreaModal.classList.add('hidden');
+                logTimestamp('Start', finalArea);
             });
         });
         
         if(cancelStartAreaBtn) cancelStartAreaBtn.addEventListener('click', () => startAreaModal.classList.add('hidden'));
+        if(cancelWarehouseAreaBtn) cancelWarehouseAreaBtn.addEventListener('click', () => {
+            warehouseAreaModal.classList.add('hidden');
+            startAreaModal.classList.remove('hidden');
+        });
 
         // Reports Modal Logic
         if(reportsMenuBtn) {
