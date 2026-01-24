@@ -369,6 +369,9 @@
       <button id="counter-timestamp-btn" class="icon-btn" title="Counter Timestamp" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Timestamp
       </button>
+      <button id="reports-menu-btn" class="icon-btn" title="Reports" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
+      </button>
       <div style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #ccc; padding-left:10px;">
           <input type="checkbox" id="auto-refresh-check" title="Auto Refresh every 15s">
           <label for="auto-refresh-check" style="font-size:13px; cursor:pointer;">Auto Refresh</label>
@@ -1095,6 +1098,35 @@
     </div>
   </div>
 
+  <!-- Reports Selection Modal -->
+  <div id="reports-modal" class="modal hidden" style="z-index: 10020;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 100px auto; text-align: center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Select Report</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="display:grid; gap:10px;">
+            <button id="rep-attendance-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Attendance List (CSV)
+            </button>
+            <button id="rep-breaklog-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Break Logs (CSV)
+            </button>
+            <button id="rep-daily-output-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                Daily Output Report (View)
+            </button>
+            <button id="rep-inactive-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                Inactive Users (CSV)
+            </button>
+        </div>
+    </div>
+  </div>
+
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
   <script>
@@ -1166,6 +1198,14 @@
         const hourlyPrevBtn = document.getElementById('hourly-prev-shift-btn');
         const hourlyNextBtn = document.getElementById('hourly-next-shift-btn');
         const hourlyBackTimestampBtn = document.getElementById('hourly-back-timestamp-btn');
+        
+        // Reports Modal
+        const reportsMenuBtn = document.getElementById('reports-menu-btn');
+        const reportsModal = document.getElementById('reports-modal');
+        const repAttendanceBtn = document.getElementById('rep-attendance-btn');
+        const repBreaklogBtn = document.getElementById('rep-breaklog-btn');
+        const repDailyOutputBtn = document.getElementById('rep-daily-output-btn');
+        const repInactiveBtn = document.getElementById('rep-inactive-btn');
 
         // Timestamp Modal
         let cachedInactiveArgs = null;
@@ -1257,6 +1297,88 @@
         });
         
         if(cancelStartAreaBtn) cancelStartAreaBtn.addEventListener('click', () => startAreaModal.classList.add('hidden'));
+
+        // Reports Modal Logic
+        if(reportsMenuBtn) {
+            reportsMenuBtn.addEventListener('click', () => {
+                reportsModal.classList.remove('hidden');
+            });
+        }
+        
+        if(repAttendanceBtn) {
+            repAttendanceBtn.addEventListener('click', () => {
+                if(exportAttBtn) exportAttBtn.click();
+                reportsModal.classList.add('hidden');
+            });
+        }
+        
+        if(repDailyOutputBtn) {
+            repDailyOutputBtn.addEventListener('click', () => {
+                if(dailyOutputBtn) dailyOutputBtn.click();
+                reportsModal.classList.add('hidden');
+            });
+        }
+        
+        if(repInactiveBtn) {
+            repInactiveBtn.addEventListener('click', () => {
+                if(tsExportInactiveBtn) tsExportInactiveBtn.click();
+                reportsModal.classList.add('hidden');
+            });
+        }
+        
+        if(repBreaklogBtn) {
+            repBreaklogBtn.addEventListener('click', () => {
+                const logs = getTimestamps();
+                const attendance = getAttendanceData();
+                // Filter logs for breaks
+                const breaks = [];
+                const openBreaks = {};
+                logs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                logs.forEach(log => {
+                    if (log.userId && !log.deleted) {
+                        if (log.action === 'Start Break') openBreaks[log.userId] = log;
+                        else if (log.action === 'End Break' && openBreaks[log.userId]) {
+                            breaks.push({ userId: log.userId, start: openBreaks[log.userId].timestamp, end: log.timestamp });
+                            delete openBreaks[log.userId];
+                        }
+                    }
+                });
+                // Add open breaks
+                Object.keys(openBreaks).forEach(uid => {
+                     breaks.push({ userId: uid, start: openBreaks[uid].timestamp, end: null });
+                });
+                
+                if(breaks.length === 0) { alert('No breaks to export.'); return; }
+                
+                const csvRows = [['User', 'Name', 'Shift', 'Role', 'Break Out', 'Break In', 'Duration']];
+                breaks.forEach(b => {
+                    const att = attendance.find(a => a.userId === b.userId) || {};
+                    const name = att.name || '-';
+                    const shift = att.shift ? att.shift.split('-')[0] : '-';
+                    const role = att.role || '-';
+                    const start = new Date(b.start).toLocaleTimeString();
+                    const end = b.end ? new Date(b.end).toLocaleTimeString() : '-';
+                    
+                    let duration = '-';
+                    if(b.end) {
+                        const diff = new Date(b.end) - new Date(b.start);
+                        duration = Math.floor(diff/60000) + ' min';
+                    }
+                    
+                    csvRows.push([
+                        `"${b.userId}"`, `"${name}"`, `"${shift}"`, `"${role}"`, `"${start}"`, `"${end}"`, `"${duration}"`
+                    ].join(','));
+                });
+                
+                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'break_log_report.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                
+                reportsModal.classList.add('hidden');
+            });
+        }
 
         // Counters Flip Logic
         const countersFlipContainer = document.getElementById('counters-flip-container');
