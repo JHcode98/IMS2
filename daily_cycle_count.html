@@ -930,20 +930,7 @@
     <div class="modal-content card" style="width: 98vw; max-width: 1800px; height: 90vh; margin: 20px auto; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">Counter Timestamp</h3>
-            <div style="display:flex; align-items:center;">
-                <div id="header-shift-timer" style="display:flex; align-items:center; gap:8px; margin-right:15px; background:#f9f9f9; padding:4px 8px; border-radius:4px; border:1px solid #eee;">
-                    <div class="sand-timer" title="Shift Countdown" style="transform: scale(0.4); margin: -20px -10px;">
-                        <div class="sand-timer-top"><div class="sand-timer-sand-top"></div></div>
-                        <div class="sand-timer-bottom"><div class="sand-timer-sand-bottom"></div></div>
-                        <div class="sand-timer-stream"></div>
-                    </div>
-                    <div style="text-align:right; line-height:1.1;">
-                        <div id="shift-countdown-display" style="font-weight:bold; color:#e74c3c; font-size:13px;">--h --m --s</div>
-                        <div id="shift-countdown-label" style="font-size:9px; color:#888; text-transform:uppercase;">Shift Remaining</div>
-                    </div>
-                </div>
-                <button class="icon-btn close-modal">&times;</button>
-            </div>
+            <button class="icon-btn close-modal">&times;</button>
         </div>
         
         <div style="display:flex; gap: 20px; flex:1; overflow:hidden;">
@@ -4974,6 +4961,8 @@
               </div>
             </div>`;
             
+            container.innerHTML = flipCardHtml;
+            
             // 1. Attendance Stats (Full vs Temp)
             const attendance = getAttendanceData().filter(a => a.date === date);
             
@@ -5085,8 +5074,8 @@
             const totalM = totalDuration % 60;
 
             // Render HTML
-            const fullCountersHtml = `
-                <div style="margin-bottom:20px;">
+            let html = container.innerHTML + `
+                <div style="margin-bottom:15px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                         <h5 style="margin:0; color:#2752a7;">Full Counters (Active / Total)</h5>
                         <span style="font-size:11px; color:#f57c00; font-weight:bold;">Temp Slide: ${totalTemp}</span>
@@ -5112,9 +5101,8 @@
                         </div>
                     </div>
                 </div>
-            `;
-            const sessionInsightsHtml = `
-                <div style="background:#f8f9fa; border-radius:6px; padding:12px; margin-bottom:20px; border:1px solid #eee;">
+
+                <div style="background:#f8f9fa; border-radius:6px; padding:12px; margin-bottom:10px; border:1px solid #eee;">
                     <h5 style="margin:0 0 8px 0; color:#2752a7;">Session Insights</h5>
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
                         <span>Most Frequent Start:</span>
@@ -5139,9 +5127,6 @@
                 </div>
 
                 <div style="background:#fff; border-radius:6px; padding:12px; border:1px solid #eee;">
-            `;
-            const suggestionsStatsHtml = `
-                <div style="background:#fff; border-radius:6px; padding:12px; border:1px solid #eee; margin-bottom:20px;">
                     <h5 style="margin:0 0 8px 0; color:#666;">Suggestions & Stats</h5>
                     <ul style="margin:0; padding-left:20px; font-size:12px; color:#555;">
                         <li>Total Users Tracked: <strong>${Object.keys(userStarts).length}</strong></li>
@@ -5163,9 +5148,6 @@
                 </div>
             `;
             container.innerHTML = html;
-            
-            // Reorder: 1. Full Counters, 2. Flip Card (Active Sessions), 3. Session Insights, 4. Suggestions
-            container.innerHTML = fullCountersHtml + flipCardHtml + sessionInsightsHtml + suggestionsStatsHtml;
             
             // Render Charts
             const renderChart = (canvasId, datasetKey, title) => {
