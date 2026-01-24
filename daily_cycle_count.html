@@ -27,28 +27,6 @@
     .flip-back { transform: rotateY(180deg); position: absolute; height: 100%; top: 0; overflow-y: auto; }
   </style>
   <style>
-    /* Analytics Flip Card */
-    .analytics-flip-card {
-      background-color: transparent;
-      perspective: 1000px;
-      height: 300px;
-      margin-bottom: 20px;
-    }
-    .analytics-flip-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 0.6s;
-      transform-style: preserve-3d;
-    }
-    .analytics-flip-card.flipped .analytics-flip-inner { transform: rotateY(180deg); }
-    .analytics-flip-front, .analytics-flip-back {
-      position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-      border: 1px solid #eee; border-radius: 8px; background-color: #fff; display: flex; flex-direction: column;
-    }
-    .analytics-flip-back { transform: rotateY(180deg); }
-  </style>
-  <style>
     /* Card content expand/collapse */
     .card-content.hidden { display: none; }
     /* Resizable box */
@@ -1295,7 +1273,6 @@
         const hourlyBackTimestampBtn = document.getElementById('hourly-back-timestamp-btn');
         
         // Reports Modal
-        let tsAnalyticsCharts = {};
         const reportsMenuBtn = document.getElementById('reports-menu-btn');
         const reportsModal = document.getElementById('reports-modal');
         const repAttendanceBtn = document.getElementById('rep-attendance-btn');
@@ -4892,77 +4869,6 @@
             if(!container) return;
             container.innerHTML = '';
             
-            // Filter sessions for the specific date
-            const dateSessions = sessions.filter(s => {
-                const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
-                if (!ts) return false;
-                const info = getShiftFromTimestamp(ts);
-                return info.date === date;
-            });
-
-            // Aggregate Data for Charts
-            const shifts = ['1st Shift-(6am-2pm)', '2nd Shift-(2pm-10pm)', '3rd Shift-(10pm-6am)'];
-            const areas = ['Coldroom', 'Ecom 2', 'Storage', 'Pallet Picking'];
-            const chartData = { active: {}, total: {} };
-            
-            shifts.forEach(s => {
-                chartData.active[s] = {};
-                chartData.total[s] = {};
-                areas.forEach(a => {
-                    chartData.active[s][a] = 0;
-                    chartData.total[s][a] = 0;
-                });
-            });
-
-            dateSessions.forEach(s => {
-                let shift = '';
-                const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
-                if (ts) {
-                    const info = getShiftFromTimestamp(ts);
-                    shift = info.shift;
-                }
-                
-                // Resolve Area
-                let area = 'Unknown';
-                if (s.startLog && s.startLog.areaType) {
-                    const parts = s.startLog.areaType.split(' - ');
-                    if (parts.length > 1) area = parts[1];
-                    else area = s.startLog.areaType;
-                }
-                
-                if (chartData.total[shift] && chartData.total[shift][area] !== undefined) {
-                    chartData.total[shift][area]++;
-                    if (!s.endLog) chartData.active[shift][area]++;
-                }
-            });
-
-            // Build Flip Card HTML
-            const flipCardHtml = `
-            <div class="analytics-flip-card">
-              <div class="analytics-flip-inner">
-                <div class="analytics-flip-front">
-                  <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                    <h5 style="margin:0; color:#2752a7;">Active Sessions by Area</h5>
-                    <button class="icon-btn" onclick="this.closest('.analytics-flip-card').classList.add('flipped')" title="View Total Logs" style="font-size:12px;">↻ Total</button>
-                  </div>
-                  <div style="flex:1; position:relative; padding:10px;">
-                    <canvas id="ts-chart-active"></canvas>
-                  </div>
-                </div>
-                <div class="analytics-flip-back">
-                  <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                    <h5 style="margin:0; color:#2752a7;">Total Logs by Area</h5>
-                    <button class="icon-btn" onclick="this.closest('.analytics-flip-card').classList.remove('flipped')" title="View Active Sessions" style="font-size:12px;">↻ Active</button>
-                  </div>
-                  <div style="flex:1; position:relative; padding:10px;">
-                    <canvas id="ts-chart-total"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>`;
-            
-            container.innerHTML = flipCardHtml;
-            
             // 1. Attendance Stats (Full vs Temp)
             const attendance = getAttendanceData().filter(a => a.date === date);
             
@@ -5074,7 +4980,7 @@
             const totalM = totalDuration % 60;
 
             // Render HTML
-            let html = container.innerHTML + `
+            let html = `
                 <div style="margin-bottom:15px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                         <h5 style="margin:0; color:#2752a7;">Full Counters (Active / Total)</h5>
@@ -5148,46 +5054,6 @@
                 </div>
             `;
             container.innerHTML = html;
-            
-            // Render Charts
-            const renderChart = (canvasId, datasetKey, title) => {
-                const ctx = document.getElementById(canvasId);
-                if (!ctx) return;
-                
-                if (tsAnalyticsCharts[canvasId]) tsAnalyticsCharts[canvasId].destroy();
-                
-                const datasets = areas.map((area, i) => {
-                    const colors = ['#3498db', '#e74c3c', '#f1c40f', '#2ecc71'];
-                    return {
-                        label: area,
-                        data: shifts.map(s => chartData[datasetKey][s][area]),
-                        backgroundColor: colors[i % colors.length]
-                    };
-                });
-
-                tsAnalyticsCharts[canvasId] = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: shifts.map(s => s.split('-')[0]),
-                        datasets: datasets
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: { stacked: true },
-                            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
-                        },
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-                            title: { display: false }
-                        }
-                    }
-                });
-            };
-
-            renderChart('ts-chart-active', 'active', 'Active Sessions');
-            renderChart('ts-chart-total', 'total', 'Total Logs');
             
             if (!window.shiftTimerInterval) {
                 const updateTimer = () => {
