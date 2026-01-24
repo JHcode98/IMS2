@@ -943,6 +943,7 @@
                             </select>
                             <input type="text" id="ts-filter-user" placeholder="Search User..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                             <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-active"> Active Only</label>
+                            <label style="font-size:12px; cursor:pointer; margin-left:5px;"><input type="checkbox" id="ts-show-long-active"> > 1hr</label>
                             <button id="ts-delete-selected-btn" class="icon-btn" title="Delete Selected" style="padding: 2px 6px; font-size: 12px; color:#d9534f; display:none;">Del Sel</button>
                             <button id="ts-purge-all-btn" class="icon-btn" title="Permanently Delete All Shown" style="padding: 2px 6px; font-size: 12px; background:#c0392b; color:white; border-color:#c0392b;">Purge All</button>
                             <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
@@ -988,6 +989,13 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                         <h4 style="margin:0;">Break Log</h4>
                         <div style="display:flex; gap:5px;">
+                             <select id="break-shift-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 80px;">
+                                <option value="">All Shifts</option>
+                                <option value="1st Shift">1st Shift</option>
+                                <option value="2nd Shift">2nd Shift</option>
+                                <option value="3rd Shift">3rd Shift</option>
+                             </select>
+                             <label style="font-size:12px; cursor:pointer; display:flex; align-items:center;"><input type="checkbox" id="break-show-active"> Active</label>
                              <input type="datetime-local" id="manual-break-time" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:130px;" title="Manual Break Time">
                              <button id="btn-break-start" class="icon-btn" style="background:#f1c40f; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">Start Break</button>
                              <button id="btn-break-end" class="icon-btn" style="background:#f39c12; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">End Break</button>
@@ -1304,6 +1312,7 @@
         const tsDeleteSelectedBtn = document.getElementById('ts-delete-selected-btn');
         const tsSelectAll = document.getElementById('ts-select-all');
         const tsShowActive = document.getElementById('ts-show-active');
+        const tsShowLongActive = document.getElementById('ts-show-long-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
         
         // End Count Modal Elements
@@ -1316,6 +1325,8 @@
         const breakDeleteSelectedBtn = document.getElementById('break-delete-selected-btn');
         const breakExportBtn = document.getElementById('break-export-btn');
         const breakSelectAll = document.getElementById('break-select-all');
+        const breakShiftFilter = document.getElementById('break-shift-filter');
+        const breakShowActive = document.getElementById('break-show-active');
 
         const editTimeModal = document.getElementById('edit-time-modal');
         const cancelEditTimeBtn = document.getElementById('cancel-edit-time-btn');
@@ -1361,6 +1372,13 @@
             card.addEventListener('click', () => {
                 selectedBinType = card.dataset.binType;
                 startAreaModal.classList.add('hidden');
+                
+                // Hide Pallet Picking if Reserved Bin is selected
+                const palletCard = document.querySelector('#warehouse-area-modal .area-card[data-warehouse-area="Pallet Picking"]');
+                if(palletCard) {
+                    palletCard.style.display = (selectedBinType === 'Reserved') ? 'none' : 'block';
+                }
+
                 if(warehouseAreaModal) warehouseAreaModal.classList.remove('hidden');
                 else logTimestamp('Start', selectedBinType);
             });
@@ -4564,6 +4582,7 @@
             const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
+            const showLongActive = tsShowLongActive ? tsShowLongActive.checked : false;
             
             // Analytics Date
             let analyticsDate = tsAnalyticsDateFilter ? tsAnalyticsDateFilter.value : '';
@@ -4653,6 +4672,15 @@
 
             if (showActiveOnly) {
                 filteredSessions = filteredSessions.filter(s => !s.endLog);
+            }
+            
+            if (showLongActive) {
+                const now = new Date();
+                filteredSessions = filteredSessions.filter(s => {
+                    if (s.endLog) return false; // Must be active
+                    const diff = now - new Date(s.startLog.timestamp);
+                    return (diff / 60000) > 60; // Greater than 60 mins
+                });
             }
 
             // Sort descending (newest first)
@@ -5109,16 +5137,30 @@
             Object.keys(openBreaks).forEach(uid => {
                  breaks.push({ userId: uid, start: openBreaks[uid].timestamp, end: null, startId: openBreaks[uid].id, endId: null });
             });
-
-            breaks.sort((a,b) => new Date(b.start) - new Date(a.start));
             
-            if(breaks.length === 0) {
+            // Filters
+            const filterShift = breakShiftFilter ? breakShiftFilter.value : '';
+            const showActive = breakShowActive ? breakShowActive.checked : false;
+            
+            const filteredBreaks = breaks.filter(b => {
+                if (showActive && b.end) return false;
+                if (filterShift) {
+                    const att = attendanceData.find(a => a.userId === b.userId) || {};
+                    const shift = att.shift || '';
+                    if (!shift.includes(filterShift)) return false;
+                }
+                return true;
+            });
+
+            filteredBreaks.sort((a,b) => new Date(b.start) - new Date(a.start));
+            
+            if(filteredBreaks.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" style="padding:10px; text-align:center; color:#999;">No breaks recorded.</td></tr>';
                 if(breakSelectAll) breakSelectAll.checked = false;
                 return;
             }
 
-            breaks.forEach(b => {
+            filteredBreaks.forEach(b => {
                 const att = attendanceData.find(a => a.userId === b.userId) || {};
                 const name = att.name || '-';
                 const shift = att.shift ? att.shift.split('-')[0] : '-';
@@ -6126,6 +6168,7 @@
         if(tsFilterUser) tsFilterUser.addEventListener('input', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShiftFilter) tsShiftFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShowActive) tsShowActive.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
+        if(tsShowLongActive) tsShowLongActive.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         
         // Pagination Listeners for Timestamp Table
@@ -6156,6 +6199,58 @@
                 }
             });
         }
+        
+        if(breakShiftFilter) breakShiftFilter.addEventListener('change', () => renderTimestamps());
+        if(breakShowActive) breakShowActive.addEventListener('change', () => renderTimestamps());
+
+        if(tsUserIdInput) {
+            tsUserIdInput.addEventListener('input', () => {
+                const uid = tsUserIdInput.value.trim();
+                const nameDisplay = document.getElementById('ts-user-name-display');
+                if(nameDisplay) {
+                    if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+    });
+  </script>
+</body>
+</html>             nationControls = document.getElementById('ts-pagination-controls');
+        if (tsPaginationControls) {
+            tsPaginationControls.addEventListener('click', (e) => {
+                if (e.target.closest('#ts-prev-page') && !e.target.closest('#ts-prev-page').disabled) {
+                    tsCurrentPage--;
+                    renderTimestamps();
+                } else if (e.target.closest('#ts-next-page') && !e.target.closest('#ts-next-page').disabled) {
+                    tsCurrentPage++;
+                    renderTimestamps();
+                }
+            });
+            document.getElementById('ts-rows-per-page').addEventListener('change', (e) => {
+                tsItemsPerPage = parseInt(e.target.value);
+                tsCurrentPage = 1;
+                renderTimestamps();
+            });
+        }
+        
+        const breakLogTable = document.getElementById('break-log-table');
+        if (breakLogTable) {
+            breakLogTable.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('editable-time')) {
+                    openEditTimeModal(target.dataset.logId);
+                }
+            });
+        }
+        
+        if(breakShiftFilter) breakShiftFilter.addEventListener('change', () => renderTimestamps());
+        if(breakShowActive) breakShowActive.addEventListener('change', () => renderTimestamps());
 
         if(tsUserIdInput) {
             tsUserIdInput.addEventListener('input', () => {
