@@ -1105,10 +1105,7 @@
         <h3 style="margin-top:0">End Count Details</h3>
         <div style="margin-bottom:10px;">
             <label style="font-weight:bold; display:block; margin-bottom:5px;">Area Type:</label>
-            <select id="ec-area-type" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-                <option value="Reserved">Reserved</option>
-                <option value="Pick Bin">Pick Bin</option>
-            </select>
+            <input type="text" id="ec-area-type" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; background-color: #f9f9f9;" readonly>
         </div>
         <div id="ec-pallet-group" style="margin-bottom:10px;">
             <label style="font-weight:bold; display:block; margin-bottom:5px;">Pallets Completed:</label>
@@ -5559,11 +5556,10 @@
                 document.getElementById('ec-pallets').value = '0';
                 document.getElementById('ec-skus').value = '0';
                 
-                const areaSelect = document.getElementById('ec-area-type');
-                areaSelect.value = area;
-                areaSelect.disabled = true;
+                const areaInput = document.getElementById('ec-area-type');
+                areaInput.value = area;
                 
-                if (area === 'Pick Bin') {
+                if (area && area.startsWith('Pick Bin')) {
                     ecPalletGroup.style.display = 'none';
                     document.getElementById('ec-pallets').value = 0;
                 } else {
@@ -5632,17 +5628,6 @@
         window.logTimestamp = logTimestamp;
 
         // End Count Modal Logic
-        if (ecAreaType) {
-            ecAreaType.addEventListener('change', () => {
-                if (ecAreaType.value === 'Pick Bin') {
-                    ecPalletGroup.style.display = 'none';
-                    document.getElementById('ec-pallets').value = 0;
-                } else {
-                    ecPalletGroup.style.display = 'block';
-                }
-            });
-        }
-
         if (ecCancelBtn) {
             ecCancelBtn.addEventListener('click', () => {
                 endCountModal.classList.add('hidden');
