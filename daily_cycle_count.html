@@ -1058,11 +1058,11 @@
     <div class="modal-content card" style="max-width: 400px; margin: 150px auto; text-align: center;">
         <h3 style="margin-top:0">Select Area</h3>
         <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
-            <div class="card area-card" data-area="Reserved" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
+            <div class="card area-card" data-bin-type="Reserved" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
                 <div style="font-size:30px;">📦</div>
                 <div style="font-weight:bold; margin-top:10px;">Reserved Bin</div>
             </div>
-            <div class="card area-card" data-area="Pick Bin" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
+            <div class="card area-card" data-bin-type="Pick Bin" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
                 <div style="font-size:30px;">🛒</div>
                 <div style="font-weight:bold; margin-top:10px;">Pick Bin</div>
             </div>
@@ -1095,6 +1095,33 @@
             <button id="ec-cancel-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
             <button id="ec-save-btn" class="icon-btn" style="background:#2752a7; color:white;">Submit</button>
         </div>
+    </div>
+  </div>
+
+  <!-- Warehouse Area Selection Modal -->
+  <div id="warehouse-area-modal" class="modal hidden" style="z-index: 10016;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 500px; margin: 150px auto; text-align: center;">
+        <h3 style="margin-top:0">Select Warehouse Area</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; justify-content:center; margin-top:20px;">
+            <div class="card area-card" data-warehouse-area="Coldroom" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">❄️</div>
+                <div style="font-weight:bold; margin-top:10px;">Coldroom</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Ecom 2" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🌐</div>
+                <div style="font-weight:bold; margin-top:10px;">Ecom 2</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Storage" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🗄️</div>
+                <div style="font-weight:bold; margin-top:10px;">Storage</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Pallet Picking" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🏗️</div>
+                <div style="font-weight:bold; margin-top:10px;">Pallet Picking</div>
+            </div>
+        </div>
+        <button id="cancel-warehouse-area-btn" class="icon-btn" style="margin-top:20px; border:1px solid #ccc;">Back</button>
     </div>
   </div>
 
