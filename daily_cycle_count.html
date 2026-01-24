@@ -1106,7 +1106,21 @@
             <h3 style="margin:0">Select Report</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
+        <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center; justify-content:center; background:#f9f9f9; padding:10px; border-radius:4px;">
+            <div style="text-align:left;">
+                <label style="font-size:11px; display:block; font-weight:bold;">From</label>
+                <input type="date" id="rep-start-date" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+            </div>
+            <div style="text-align:left;">
+                <label style="font-size:11px; display:block; font-weight:bold;">To</label>
+                <input type="date" id="rep-end-date" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+            </div>
+        </div>
         <div style="display:grid; gap:10px;">
+            <button id="rep-sessions-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Counter Sessions (CSV)
+            </button>
             <button id="rep-attendance-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 Attendance List (CSV)
@@ -1206,6 +1220,7 @@
         const repBreaklogBtn = document.getElementById('rep-breaklog-btn');
         const repDailyOutputBtn = document.getElementById('rep-daily-output-btn');
         const repInactiveBtn = document.getElementById('rep-inactive-btn');
+        const repSessionsBtn = document.getElementById('rep-sessions-btn');
 
         // Timestamp Modal
         let cachedInactiveArgs = null;
@@ -1301,13 +1316,34 @@
         // Reports Modal Logic
         if(reportsMenuBtn) {
             reportsMenuBtn.addEventListener('click', () => {
+                // Set default dates if empty
+                if(!document.getElementById('rep-start-date').value) {
+                    document.getElementById('rep-start-date').value = new Date().toISOString().split('T')[0];
+                }
+                if(!document.getElementById('rep-end-date').value) {
+                    document.getElementById('rep-end-date').value = new Date().toISOString().split('T')[0];
+                }
                 reportsModal.classList.remove('hidden');
             });
         }
         
         if(repAttendanceBtn) {
             repAttendanceBtn.addEventListener('click', () => {
-                if(exportAttBtn) exportAttBtn.click();
+                const startVal = document.getElementById('rep-start-date').value;
+                const endVal = document.getElementById('rep-end-date').value;
+                const start = startVal ? new Date(startVal) : null;
+                if(start) start.setHours(0,0,0,0);
+                const end = endVal ? new Date(endVal) : null;
+                if(end) end.setHours(23,59,59,999);
+
+                let data = getAttendanceData();
+                if(start || end) {
+                    data = data.filter(item => {
+                        const d = new Date(item.date);
+                        return (!start || d >= start) && (!end || d <= end);
+                    });
+                }
+                exportAttendanceCSV(data);
                 reportsModal.classList.add('hidden');
             });
         }
@@ -1328,6 +1364,13 @@
         
         if(repBreaklogBtn) {
             repBreaklogBtn.addEventListener('click', () => {
+                const startVal = document.getElementById('rep-start-date').value;
+                const endVal = document.getElementById('rep-end-date').value;
+                const start = startVal ? new Date(startVal) : null;
+                if(start) start.setHours(0,0,0,0);
+                const end = endVal ? new Date(endVal) : null;
+                if(end) end.setHours(23,59,59,999);
+
                 const logs = getTimestamps();
                 const attendance = getAttendanceData();
                 // Filter logs for breaks
@@ -1335,6 +1378,10 @@
                 const openBreaks = {};
                 logs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 logs.forEach(log => {
+                    const d = new Date(log.timestamp);
+                    if(start && d < start) return;
+                    if(end && d > end) return;
+
                     if (log.userId && !log.deleted) {
                         if (log.action === 'Start Break') openBreaks[log.userId] = log;
                         else if (log.action === 'End Break' && openBreaks[log.userId]) {
@@ -1376,6 +1423,98 @@
                 a.href = url; a.download = 'break_log_report.csv';
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 
+                reportsModal.classList.add('hidden');
+            });
+        }
+
+        if(repSessionsBtn) {
+            repSessionsBtn.addEventListener('click', () => {
+                const startVal = document.getElementById('rep-start-date').value;
+                const endVal = document.getElementById('rep-end-date').value;
+                const start = startVal ? new Date(startVal) : null;
+                if(start) start.setHours(0,0,0,0);
+                const end = endVal ? new Date(endVal) : null;
+                if(end) end.setHours(23,59,59,999);
+
+                let data = getTimestamps();
+                const attendance = getAttendanceData();
+
+                // Reconstruct sessions
+                data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const sessions = [];
+                const openSessions = {};
+                
+                data.forEach(log => {
+                    if (log.deleted) return;
+                    // Filter by date range based on log timestamp
+                    const d = new Date(log.timestamp);
+                    if(start && d < start) return;
+                    if(end && d > end) return;
+
+                    if (log.action === 'Start') {
+                        if (openSessions[log.userId]) sessions.push(openSessions[log.userId]);
+                        openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null, breaks: [] };
+                    } else if (log.action === 'Start Break') {
+                        if (openSessions[log.userId]) openSessions[log.userId].currentBreakStart = log;
+                    } else if (log.action === 'End Break') {
+                        if (openSessions[log.userId] && openSessions[log.userId].currentBreakStart) {
+                            const bStart = new Date(openSessions[log.userId].currentBreakStart.timestamp);
+                            const bEnd = new Date(log.timestamp);
+                            openSessions[log.userId].breaks.push({ duration: (bEnd - bStart)/60000 });
+                            openSessions[log.userId].currentBreakStart = null;
+                        }
+                    } else if (log.action === 'End') {
+                        if (openSessions[log.userId]) {
+                            const session = openSessions[log.userId];
+                            session.endLog = log;
+                            sessions.push(session);
+                            delete openSessions[log.userId];
+                        } else {
+                            sessions.push({ userId: log.userId, startLog: null, endLog: log, breaks: [] });
+                        }
+                    }
+                });
+                Object.values(openSessions).forEach(s => sessions.push(s));
+
+                if(sessions.length === 0) { alert('No sessions found in selected range.'); return; }
+                
+                const headers = ['User ID', 'Name', 'Area Type', 'Shift', 'Start Time', 'End Time', 'Duration', 'Status', 'Pallets', 'SKUs'];
+                const rows = [headers.join(',')];
+                
+                sessions.forEach(s => {
+                    const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
+                    let sessionDate = ts ? new Date(ts).toISOString().split('T')[0] : '';
+                    let attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
+                    if (!attRecord) attRecord = attendance.find(a => a.userId === s.userId);
+                    
+                    const name = attRecord ? attRecord.name : '';
+                    let shift = attRecord ? attRecord.shift : (s.startLog ? getShiftFromTimestamp(s.startLog.timestamp).shift : '');
+                    const area = s.startLog ? (s.startLog.areaType || '-') : '-';
+
+                    const startStr = s.startLog ? new Date(s.startLog.timestamp).toLocaleString() : '-';
+                    const endStr = s.endLog ? new Date(s.endLog.timestamp).toLocaleString() : '-';
+                    const pallets = s.endLog ? (s.endLog.pallets || 0) : 0;
+                    const skus = s.endLog ? (s.endLog.skus || 0) : 0;
+                    
+                    let duration = '-';
+                    const totalBreakMins = s.breaks ? s.breaks.reduce((acc, b) => acc + b.duration, 0) : 0;
+                    if (s.startLog && s.endLog) {
+                        const diff = new Date(s.endLog.timestamp) - new Date(s.startLog.timestamp);
+                        const mins = Math.round((diff / 60000) - totalBreakMins);
+                        duration = `${mins} min`;
+                    } else if (s.startLog) {
+                        const diff = new Date() - new Date(s.startLog.timestamp);
+                        duration = `Active (${Math.floor(diff/60000)}m)`;
+                    }
+
+                    rows.push([`"${s.userId}"`, `"${name}"`, `"${area}"`, `"${shift}"`, `"${startStr}"`, `"${endStr}"`, `"${duration}"`, s.endLog ? 'Completed' : 'Active', pallets, skus].join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url; link.download = 'counter_sessions_report.csv';
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
                 reportsModal.classList.add('hidden');
             });
         }
@@ -3166,25 +3305,28 @@
 
         if (exportAttBtn) {
             exportAttBtn.addEventListener('click', () => {
-                const data = getFilteredAttendanceData();
-                if (data.length === 0) { alert('No attendance records to export.'); return; }
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
-                const rows = [headers.join(',')];
-                
-                data.forEach(item => {
-                    const dur = getDuration(item.breakOut, item.breakIn);
-                    const row = [
-                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
-                    ];
-                    rows.push(row.join(','));
-                });
-                
-                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = 'attendance_sheet.csv';
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                exportAttendanceCSV(getFilteredAttendanceData());
             });
+        }
+
+        function exportAttendanceCSV(data) {
+            if (data.length === 0) { alert('No attendance records to export.'); return; }
+            const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
+            const rows = [headers.join(',')];
+            
+            data.forEach(item => {
+                const dur = getDuration(item.breakOut, item.breakIn);
+                const row = [
+                    item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
+                ];
+                rows.push(row.join(','));
+            });
+            
+            const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'attendance_sheet.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
         if (attendanceTableBody) {
