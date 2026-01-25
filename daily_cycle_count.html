@@ -3322,6 +3322,21 @@
             });
         }
 
+        // Auto-fill Name and Role based on User ID
+        const attUserIdInput = document.getElementById('att-user-id');
+        if (attUserIdInput) {
+            attUserIdInput.addEventListener('input', () => {
+                const val = attUserIdInput.value.trim();
+                if (!val) return;
+                const data = getAttendanceData();
+                const user = data.slice().reverse().find(d => d.userId && d.userId.toLowerCase() === val.toLowerCase());
+                if (user) {
+                    if (user.name) document.getElementById('att-name').value = user.name;
+                    if (user.role) document.getElementById('att-role').value = user.role;
+                }
+            });
+        }
+
         function updateAttNameDatalist() {
             const list = document.getElementById('att-name-list');
             if (!list) return;
