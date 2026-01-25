@@ -60,6 +60,16 @@
     body.dark-mode .report-table th { background-color: #2c2c2c; }
     body.dark-mode .report-table tbody tr:nth-child(even) { background-color: #1f1f1f; }
     body.dark-mode .report-table tr:hover { background-color: #333; }
+
+    /* Tabs */
+    .att-tabs { display: flex; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
+    .att-tab { padding: 8px 16px; cursor: pointer; border: 1px solid transparent; border-bottom: none; background: transparent; color: #666; font-weight: 600; font-size: 13px; }
+    .att-tab:hover { color: #2752a7; background: #f9f9f9; }
+    .att-tab.active { border-color: #ccc; border-bottom-color: #fff; background: #fff; color: #2752a7; border-radius: 4px 4px 0 0; margin-bottom: -1px; }
+    body.dark-mode .att-tab { color: #aaa; }
+    body.dark-mode .att-tab:hover { color: #fff; background: #333; }
+    body.dark-mode .att-tab.active { border-color: #444; border-bottom-color: #1e1e1e; background: #1e1e1e; color: #fff; }
+    body.dark-mode .att-tabs { border-bottom-color: #444; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -130,12 +140,6 @@
             <h2 style="margin:0;">Attendance Sheet</h2>
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <select id="att-filter-shift" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
-                <option value="">All Shifts</option>
-                <option value="1st Shift-(6am-2pm)">1st Shift</option>
-                <option value="2nd Shift-(2pm-10pm)">2nd Shift</option>
-                <option value="3rd Shift-(10pm-6am)">3rd Shift</option>
-            </select>
             <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Roles</option>
                 <option value="IC Support">IC Support</option>
@@ -164,6 +168,12 @@
         </div>
       </div>
       <div class="card-content">
+      <div class="att-tabs">
+          <button class="att-tab active" data-shift="">All Shifts</button>
+          <button class="att-tab" data-shift="1st Shift-(6am-2pm)">1st Shift</button>
+          <button class="att-tab" data-shift="2nd Shift-(2pm-10pm)">2nd Shift</button>
+          <button class="att-tab" data-shift="3rd Shift-(10pm-6am)">3rd Shift</button>
+      </div>
       <div style="overflow-x: auto;">
           <table id="attendance-table" class="report-table">
               <thead>
@@ -617,6 +627,7 @@
         let attSortDirection = 'desc';
         let tsSortField = 'startTime';
         let tsSortDirection = 'desc';
+        let currentShiftFilter = '';
         
         // Elements
         const attendanceTableBody = document.querySelector('#attendance-table tbody');
@@ -628,7 +639,6 @@
         const attSearchInput = document.getElementById('att-search');
         const attFilterRole = document.getElementById('att-filter-role');
         const attFilterArea = document.getElementById('att-filter-area');
-        const attFilterShift = document.getElementById('att-filter-shift');
         const deleteSelectedAttBtn = document.getElementById('delete-selected-att-btn');
         const selectAllAtt = document.getElementById('select-all-att');
         
@@ -762,7 +772,7 @@
             }
             if (attFilterRole && attFilterRole.value) data = data.filter(item => item.role === attFilterRole.value);
             if (attFilterArea && attFilterArea.value) data = data.filter(item => item.area === attFilterArea.value);
-            if (attFilterShift && attFilterShift.value) data = data.filter(item => item.shift === attFilterShift.value);
+            if (currentShiftFilter) data = data.filter(item => item.shift === currentShiftFilter);
             
             data.sort((a, b) => {
                 let valA = a[attSortField] || '';
@@ -1118,7 +1128,16 @@
         if (attSearchInput) attSearchInput.addEventListener('input', renderAttendanceTable);
         if (attFilterRole) attFilterRole.addEventListener('change', renderAttendanceTable);
         if (attFilterArea) attFilterArea.addEventListener('change', renderAttendanceTable);
-        if (attFilterShift) attFilterShift.addEventListener('change', renderAttendanceTable);
+        
+        // Tab Listeners
+        document.querySelectorAll('.att-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.att-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentShiftFilter = tab.dataset.shift;
+                renderAttendanceTable();
+            });
+        });
 
         // Attendance Sorting Listeners
         document.querySelectorAll('#attendance-table th.sortable').forEach(th => {
