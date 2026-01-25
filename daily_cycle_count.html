@@ -3354,36 +3354,6 @@
         });
     }
 
-    // Auto-fill User ID based on Name and ensure uniqueness
-    const attNameInput = document.getElementById('att-name');
-    if (attNameInput) {
-        attNameInput.addEventListener('input', (e) => {
-            const name = e.target.value.trim().toUpperCase();
-            const userIdInput = document.getElementById('att-user-id');
-            if (name && !userIdInput.value) {
-                const data = getAttendanceData();
-                // Find most recent entry with this name to get User ID
-                const match = [...data].reverse().find(d => d.name === name && d.userId);
-                if (match) {
-                    userIdInput.value = match.userId;
-                }
-            }
-        });
-        attNameInput.addEventListener('change', (e) => {
-             const name = e.target.value.trim().toUpperCase();
-             const userIdInput = document.getElementById('att-user-id');
-             const currentId = userIdInput.value.trim();
-             if (name && currentId) {
-                 const data = getAttendanceData();
-                 // Check if this name is associated with a different User ID
-                 const conflict = data.find(d => d.name === name && d.userId !== currentId);
-                 if (conflict) {
-                     alert(`Warning: Name "${name}" was previously associated with User ID "${conflict.userId}". You are using "${currentId}". Please verify uniqueness.`);
-                 }
-             }
-        });
-    }
-
         if (attForm) {
             attForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -3413,23 +3383,6 @@
                 if (existing) {
                     alert(`User ID ${newEntry.userId} is already assigned to ${existing.shift} on ${newEntry.date}.`);
                     return;
-                }
-
-                // Name check: Confirmation if name exists in different shift
-                const existingName = getAttendanceData().find(a => 
-                    a.date === newEntry.date && 
-                    a.name === newEntry.name &&
-                    a.id !== newEntry.id
-                );
-                if (existingName) {
-                    if (existingName.shift === newEntry.shift) {
-                         alert(`Counter ${newEntry.name} is already assigned to this shift (${newEntry.shift}) on ${newEntry.date}.`);
-                         return;
-                    } else {
-                         if (!confirm(`Counter ${newEntry.name} is already assigned to ${existingName.shift} on ${newEntry.date}. Do you want to add them to ${newEntry.shift} as well?`)) {
-                             return;
-                         }
-                    }
                 }
 
                 let data = getAttendanceData();
