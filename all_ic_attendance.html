@@ -70,6 +70,31 @@
     body.dark-mode .att-tab:hover { color: #fff; background: #333; }
     body.dark-mode .att-tab.active { border-color: #444; border-bottom-color: #1e1e1e; background: #1e1e1e; color: #fff; }
     body.dark-mode .att-tabs { border-bottom-color: #444; }
+
+    /* Floating Action Button */
+    .fab-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #2752a7;
+      color: white;
+      border: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 9999;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+    .fab-btn:hover {
+      transform: scale(1.1);
+      background-color: #1f4287;
+    }
   </style>
 </head>
 <body class="inventory-mode">
@@ -612,6 +637,9 @@
     </div>
   </div>
 
+  <!-- Floating Add Button -->
+  <button id="fab-add-att" class="fab-btn" title="Add Attendance">+</button>
+
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
   <script>
@@ -641,6 +669,7 @@
         const attFilterArea = document.getElementById('att-filter-area');
         const deleteSelectedAttBtn = document.getElementById('delete-selected-att-btn');
         const selectAllAtt = document.getElementById('select-all-att');
+        const fabAddBtn = document.getElementById('fab-add-att');
         
         const globalStartDate = document.getElementById('global-start-date');
         const globalEndDate = document.getElementById('global-end-date');
@@ -902,6 +931,12 @@
                 
                 updateAttNameDatalist();
                 attModal.classList.remove('hidden');
+            });
+        }
+        
+        if (fabAddBtn) {
+            fabAddBtn.addEventListener('click', () => {
+                if(addAttBtn) addAttBtn.click();
             });
         }
 
