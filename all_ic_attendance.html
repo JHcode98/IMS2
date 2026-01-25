@@ -77,6 +77,18 @@
     .summary-value { font-size: 24px; font-weight: bold; color: #2752a7; }
     .summary-label { font-size: 12px; color: #6c757d; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
+    /* Flip Card Styles */
+    .flip-container { perspective: 1000px; position: relative; margin-top: 20px; min-height: 600px; }
+    .flip-inner { transition: transform 0.6s; transform-style: preserve-3d; position: relative; width: 100%; height: 100%; }
+    .flip-container.flipped .flip-inner { transform: rotateY(180deg); }
+    .flip-front, .flip-back { 
+        backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+        border-radius: 8px; 
+        display: flex; flex-direction: column;
+    }
+    .flip-front { z-index: 2; transform: rotateY(0deg); }
+    .flip-back { transform: rotateY(180deg); }
+
     /* Floating Action Button */
     .fab-btn {
       position: fixed;
@@ -187,10 +199,13 @@
         </div>
     </div>
 
-    <div class="card resizable-box" id="attendance-card" style="margin-top: 20px; min-height: 600px;">
+    <div class="flip-container" id="attendance-flip-container">
+      <div class="flip-inner">
+      <div class="flip-front card resizable-box" id="attendance-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <div style="display:flex; align-items:center; gap:10px;">
             <h2 style="margin:0;">Attendance Sheet</h2>
+            <button id="view-chart-btn" class="icon-btn" title="View Chart" style="background:#6f42c1; color:white; font-size:12px; padding:4px 8px;">View Chart</button>
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
@@ -258,7 +273,7 @@
                       <th>Break In</th>
                       <th>Time Out</th>
                       <th class="sortable" data-sort="duration">Duration <span class="sort-icon"></span></th>
-                      <th>Status</th>
+                      <th>Notes</th>
                       <th>Action</th>
                   </tr>
               </thead>
@@ -277,6 +292,18 @@
         </div>
       </div>
       </div>
+    </div>
+
+    <div class="flip-back card resizable-box" style="padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="margin:0;">Sub Role Distribution per Shift</h2>
+            <button id="view-table-btn" class="icon-btn" title="Back to Table">↩ Back to Table</button>
+        </div>
+        <div style="flex:1; position:relative; min-height:0;">
+            <canvas id="sub-role-chart"></canvas>
+        </div>
+    </div>
+    </div>
     </div>
   </main>
 
@@ -359,11 +386,8 @@
                     </div>
                 </div>
                 <div>
-                    <label for="att-status">Status</label>
-                    <select id="att-status" style="width:100%">
-                        <option value="Full counter">Full counter</option>
-                        <option value="Temporary slide to Other task">Temporary slide to Other task</option>
-                    </select>
+                    <label for="att-notes">Notes (Optional)</label>
+                    <input type="text" id="att-notes" style="width:100%" placeholder="Enter notes">
                 </div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -785,6 +809,10 @@
         const setReqBtn = document.getElementById('set-requirements-btn');
         const saveReqBtn = document.getElementById('save-req-btn');
         const exportReqBtn = document.getElementById('export-req-btn');
+        const viewChartBtn = document.getElementById('view-chart-btn');
+        const viewTableBtn = document.getElementById('view-table-btn');
+        const flipContainer = document.getElementById('attendance-flip-container');
+        let subRoleChart = null;
 
         // Start Area Modal
         const startAreaModal = document.getElementById('start-area-modal');
@@ -989,7 +1017,7 @@
                     <td>${item.breakIn || '-'}</td>
                     <td>${item.timeOut || '-'}</td>
                     <td style="font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
-                    <td>${item.status || '-'}</td>
+                    <td>${item.notes || ''}</td>
                     <td>
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
                         <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
@@ -1088,7 +1116,7 @@
                     breakIn: document.getElementById('att-break-in').value,
                     breakOut: document.getElementById('att-break-out').value,
                     timeOut: document.getElementById('att-time-out').value,
-                    status: document.getElementById('att-status').value
+                    notes: document.getElementById('att-notes').value.trim()
                 };
                 if(!newEntry.name) return;
 
@@ -1126,6 +1154,7 @@
                 showToast('Attendance saved successfully!');
                 attModal.classList.add('hidden');
                 renderAttendanceTable();
+                if(flipContainer.classList.contains('flipped')) renderSubRoleChart();
             });
         }
 
@@ -1158,7 +1187,7 @@
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
                         document.getElementById('att-time-out').value = item.timeOut || '';
-                        document.getElementById('att-status').value = item.status || 'Full counter';
+                        document.getElementById('att-notes').value = item.notes || '';
                         attModal.classList.remove('hidden');
                     }
                 }
@@ -1227,13 +1256,13 @@
             exportAttBtn.addEventListener('click', () => {
                 const data = getFilteredAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Notes'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
                     const dur = getDuration(item.breakOut, item.breakIn);
                     const row = [
-                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.notes||''}"`
                     ];
                     rows.push(row.join(','));
                 });
@@ -1262,7 +1291,7 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Notes', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
@@ -1277,7 +1306,7 @@
                     printWindow.document.write(`<td>${item.breakOut || ''}</td>`);
                     printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
                     printWindow.document.write(`<td>${item.timeOut || ''}</td>`);
-                    printWindow.document.write(`<td>${item.status || ''}</td>`);
+                    printWindow.document.write(`<td>${item.notes || ''}</td>`);
                     printWindow.document.write('<td class="sig"></td>');
                     printWindow.document.write('</tr>');
                 });
@@ -1353,6 +1382,52 @@
             });
         }
 
+        // Chart Logic
+        function renderSubRoleChart() {
+            const ctx = document.getElementById('sub-role-chart');
+            if (!ctx) return;
+            
+            const data = getFilteredAttendanceData(true); // Ignore shift tab
+            const shifts = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+            const subRoles = [...new Set(data.map(d => d.area).filter(Boolean))].sort();
+            
+            const datasets = subRoles.map((role, index) => {
+                const counts = shifts.map(shift => {
+                    return data.filter(d => d.shift === shift && d.area === role).length;
+                });
+                // Generate distinct colors
+                const hue = (index * 137.508) % 360; 
+                return {
+                    label: role,
+                    data: counts,
+                    backgroundColor: `hsl(${hue}, 70%, 50%)`,
+                    stack: 'Stack 0',
+                };
+            });
+
+            if (subRoleChart) subRoleChart.destroy();
+
+            subRoleChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['1st Shift', '2nd Shift', '3rd Shift'],
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { position: 'right' },
+                        title: { display: true, text: 'Sub Role Distribution per Shift' }
+                    }
+                }
+            });
+        }
+
         // Event Listeners for Filters
         if (applyGlobalFilterBtn) applyGlobalFilterBtn.addEventListener('click', renderAttendanceTable);
         if (clearGlobalFilterBtn) clearGlobalFilterBtn.addEventListener('click', () => { globalStartDate.value = ''; globalEndDate.value = ''; renderAttendanceTable(); });
@@ -1391,6 +1466,17 @@
                 areaDropdown.style.display = 'none';
                 renderAttendanceTable();
             });
+        }
+
+        // Flip Card Listeners
+        if(viewChartBtn && flipContainer) {
+            viewChartBtn.addEventListener('click', () => {
+                flipContainer.classList.add('flipped');
+                renderSubRoleChart();
+            });
+        }
+        if(viewTableBtn && flipContainer) {
+            viewTableBtn.addEventListener('click', () => flipContainer.classList.remove('flipped'));
         }
         
         // Tab Listeners
