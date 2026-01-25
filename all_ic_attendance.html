@@ -197,20 +197,29 @@
                 <option value="">All Roles</option>
                 <option value="IC Support">IC Support</option>
             </select>
-            <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
-                <option value="">All Sub Roles</option>
-                <option value="Cycle Counter">Cycle Counter</option>
-                <option value="TL">TL</option>
-                <option value="OIC">OIC</option>
-                <option value="Encoder">Encoder</option>
-                <option value="SBD Checker">SBD Checker</option>
-                <option value="RTV">RTV</option>
-                <option value="Damaged Checker">Damaged Checker</option>
-                <option value="B1T1 Checker">B1T1 Checker</option>
-                <option value="Validator">Validator</option>
-                <option value="HVI Support">HVI Support</option>
-                <option value="Projects">Projects</option>
-            </select>
+            <div id="att-filter-area-wrapper" style="position:relative; display:inline-block;">
+                <button id="att-filter-area-btn" style="padding:6px; border:1px solid #ccc; border-radius:4px; background:#fff; cursor:pointer; min-width:150px; text-align:left; display:flex; justify-content:space-between; align-items:center;">
+                    <span id="att-filter-area-text">All Sub Roles</span>
+                    <span style="font-size:10px; margin-left:5px;">▼</span>
+                </button>
+                <div id="att-filter-area-dropdown" style="display:none; position:absolute; top:100%; left:0; background:#fff; border:1px solid #ccc; border-radius:4px; padding:10px; z-index:1000; min-width:200px; box-shadow:0 4px 8px rgba(0,0,0,0.1); max-height:300px; overflow-y:auto;">
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="Cycle Counter"> Cycle Counter</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="TL"> TL</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="OIC"> OIC</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="Encoder"> Encoder</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="SBD Checker"> SBD Checker</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="RTV"> RTV</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="Damaged Checker"> Damaged Checker</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="B1T1 Checker"> B1T1 Checker</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="Validator"> Validator</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="HVI Support"> HVI Support</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="Projects"> Projects</label>
+                    <div style="border-top:1px solid #eee; margin-top:5px; padding-top:5px; text-align:right;">
+                        <button id="att-filter-area-clear" style="padding:4px 8px; background:#eee; color:#333; border:none; border-radius:4px; font-size:12px; margin-right:5px;">Clear</button>
+                        <button id="att-filter-area-apply" style="padding:4px 8px; background:#2752a7; color:white; border:none; border-radius:4px; font-size:12px;">Apply</button>
+                    </div>
+                </div>
+            </div>
             <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
             <button id="print-att-btn" class="icon-btn" title="Print List">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -734,7 +743,6 @@
         const printAttBtn = document.getElementById('print-att-btn');
         const attSearchInput = document.getElementById('att-search');
         const attFilterRole = document.getElementById('att-filter-role');
-        const attFilterArea = document.getElementById('att-filter-area');
         const deleteSelectedAttBtn = document.getElementById('delete-selected-att-btn');
         const selectAllAtt = document.getElementById('select-all-att');
         const fabAddBtn = document.getElementById('fab-add-att');
@@ -874,7 +882,10 @@
                 );
             }
             if (attFilterRole && attFilterRole.value) data = data.filter(item => item.role === attFilterRole.value);
-            if (attFilterArea && attFilterArea.value) data = data.filter(item => item.area === attFilterArea.value);
+            const selectedAreas = Array.from(document.querySelectorAll('.att-area-cb:checked')).map(cb => cb.value);
+            if (selectedAreas.length > 0) {
+                data = data.filter(item => selectedAreas.includes(item.area));
+            }
             if (!ignoreShift && currentShiftFilter) data = data.filter(item => item.shift === currentShiftFilter);
             
             data.sort((a, b) => {
@@ -1347,7 +1358,40 @@
         if (clearGlobalFilterBtn) clearGlobalFilterBtn.addEventListener('click', () => { globalStartDate.value = ''; globalEndDate.value = ''; renderAttendanceTable(); });
         if (attSearchInput) attSearchInput.addEventListener('input', renderAttendanceTable);
         if (attFilterRole) attFilterRole.addEventListener('change', renderAttendanceTable);
-        if (attFilterArea) attFilterArea.addEventListener('change', renderAttendanceTable);
+        
+        // Sub Role Multi-Select Logic
+        const areaBtn = document.getElementById('att-filter-area-btn');
+        const areaDropdown = document.getElementById('att-filter-area-dropdown');
+        const areaApplyBtn = document.getElementById('att-filter-area-apply');
+        const areaClearBtn = document.getElementById('att-filter-area-clear');
+        const areaText = document.getElementById('att-filter-area-text');
+
+        if(areaBtn && areaDropdown) {
+            areaBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                areaDropdown.style.display = areaDropdown.style.display === 'block' ? 'none' : 'block';
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!areaBtn.contains(e.target) && !areaDropdown.contains(e.target)) {
+                    areaDropdown.style.display = 'none';
+                }
+            });
+
+            areaApplyBtn.addEventListener('click', () => {
+                const checked = Array.from(document.querySelectorAll('.att-area-cb:checked')).map(cb => cb.value);
+                areaText.textContent = checked.length === 0 ? 'All Sub Roles' : (checked.length <= 2 ? checked.join(', ') : `${checked.length} Selected`);
+                areaDropdown.style.display = 'none';
+                renderAttendanceTable();
+            });
+
+            areaClearBtn.addEventListener('click', () => {
+                document.querySelectorAll('.att-area-cb').forEach(cb => cb.checked = false);
+                areaText.textContent = 'All Sub Roles';
+                areaDropdown.style.display = 'none';
+                renderAttendanceTable();
+            });
+        }
         
         // Tab Listeners
         document.querySelectorAll('.att-tab').forEach(tab => {
