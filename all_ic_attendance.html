@@ -205,7 +205,7 @@
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <div style="display:flex; align-items:center; gap:10px;">
             <h2 style="margin:0;">Attendance Sheet</h2>
-            <button id="view-chart-btn" class="icon-btn" title="View Chart" style="background:#6f42c1; color:white; font-size:12px; padding:4px 8px;">View Chart</button>
+            <button id="view-chart-btn" class="icon-btn" title="View Analysis" style="background:#6f42c1; color:white; font-size:12px; padding:4px 8px;">View Analysis</button>
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
@@ -278,6 +278,11 @@
                   </tr>
               </thead>
               <tbody></tbody>
+              <tfoot>
+                  <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #eef2f6;">
+                      <td colspan="14" style="text-align: right; padding: 10px;">Total Records: <span id="att-total-count">0</span></td>
+                  </tr>
+              </tfoot>
           </table>
       </div>
       <div id="att-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-top: 1px solid #eee;">
@@ -296,11 +301,11 @@
 
     <div class="flip-back card resizable-box" style="padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 style="margin:0;">Sub Role Distribution per Shift</h2>
+            <h2 style="margin:0;">Sub Role Analysis</h2>
             <button id="view-table-btn" class="icon-btn" title="Back to Table">↩ Back to Table</button>
         </div>
-        <div style="flex:1; position:relative; min-height:0;">
-            <canvas id="sub-role-chart"></canvas>
+        <div id="sub-role-dashboard" style="flex:1; position:relative; min-height:0; overflow:auto;">
+            <!-- Analysis content -->
         </div>
     </div>
     </div>
@@ -812,7 +817,6 @@
         const viewChartBtn = document.getElementById('view-chart-btn');
         const viewTableBtn = document.getElementById('view-table-btn');
         const flipContainer = document.getElementById('attendance-flip-container');
-        let subRoleChart = null;
 
         // Start Area Modal
         const startAreaModal = document.getElementById('start-area-modal');
@@ -986,6 +990,9 @@
             if (attCurrentPage > totalPages) attCurrentPage = totalPages;
             const paginatedData = data.slice((attCurrentPage - 1) * attItemsPerPage, attCurrentPage * attItemsPerPage);
 
+            const totalCountSpan = document.getElementById('att-total-count');
+            if (totalCountSpan) totalCountSpan.textContent = totalItems;
+
             attendanceTableBody.innerHTML = '';
             const paginationControls = document.getElementById('att-pagination-controls');
             if (paginationControls) {
@@ -1154,7 +1161,7 @@
                 showToast('Attendance saved successfully!');
                 attModal.classList.add('hidden');
                 renderAttendanceTable();
-                if(flipContainer.classList.contains('flipped')) renderSubRoleChart();
+                if(flipContainer.classList.contains('flipped')) renderSubRoleDashboard();
             });
         }
 
@@ -1382,83 +1389,110 @@
             });
         }
 
-        // Chart Logic
-        function renderSubRoleChart() {
-            const ctx = document.getElementById('sub-role-chart');
-            if (!ctx) return;
+        // Analysis Dashboard Logic
+        function renderSubRoleDashboard() {
+            const container = document.getElementById('sub-role-dashboard');
+            if (!container) return;
             
             const data = getFilteredAttendanceData(true); // Ignore shift tab
             const shifts = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
             const subRoles = [...new Set(data.map(d => d.area).filter(Boolean))].sort();
             
-            const datasets = subRoles.map((role, index) => {
-                const counts = shifts.map(shift => {
-                    return data.filter(d => d.shift === shift && d.area === role).length;
+            let html = `
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:20px;">
+            `;
+            
+            // Summary Cards for Analysis
+            const total = data.length;
+            const shiftCounts = {};
+            shifts.forEach(s => shiftCounts[s] = data.filter(d => d.shift === s).length);
+            
+            shifts.forEach(s => {
+                const count = shiftCounts[s];
+                const pct = total > 0 ? Math.round((count/total)*100) : 0;
+                const label = s.split('-')[0];
+                html += `
+                <div class="summary-card" style="padding:10px;">
+                    <div class="summary-value" style="font-size:20px;">${count} <span style="font-size:14px; color:#999;">(${pct}%)</span></div>
+                    <div class="summary-label">${label}</div>
+                </div>`;
+            });
+            
+            html += `</div>
+            <div style="overflow-x:auto;">
+            <table class="report-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Sub Role</th>
+                        <th>1st Shift</th>
+                        <th>2nd Shift</th>
+                        <th>3rd Shift</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            const shiftTotals = {
+                "1st Shift-(6am-2pm)": 0,
+                "2nd Shift-(2pm-10pm)": 0,
+                "3rd Shift-(10pm-6am)": 0
+            };
+
+            subRoles.forEach(role => {
+                let roleTotal = 0;
+                html += `<tr><td style="font-weight:bold;">${role}</td>`;
+                
+                shifts.forEach(shift => {
+                    const count = data.filter(d => d.shift === shift && d.area === role).length;
+                    shiftTotals[shift] += count;
+                    roleTotal += count;
+                    // Make cell clickable to filter
+                    const cursorStyle = count > 0 ? 'cursor:pointer; color:#2752a7; text-decoration:underline;' : '';
+                    const clickAttr = count > 0 ? `onclick="filterByAnalysis('${role}', '${shift}')"` : '';
+                    html += `<td style="${cursorStyle}" ${clickAttr}>${count}</td>`;
                 });
-                // Generate distinct colors
-                const hue = (index * 137.508) % 360; 
-                return {
-                    label: role,
-                    data: counts,
-                    backgroundColor: `hsl(${hue}, 70%, 50%)`,
-                    stack: 'Stack 0',
-                };
+                
+                html += `<td style="font-weight:bold;">${roleTotal}</td></tr>`;
             });
-
-            if (subRoleChart) subRoleChart.destroy();
-
-            subRoleChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['1st Shift', '2nd Shift', '3rd Shift'],
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { stacked: true },
-                        y: { stacked: true, beginAtZero: true }
-                    },
-                    plugins: {
-                        legend: { position: 'right' },
-                        title: { display: true, text: 'Sub Role Distribution per Shift' }
-                    },
-                    onClick: (evt, elements) => {
-                        if (elements.length > 0) {
-                            const element = elements[0];
-                            const shiftIndex = element.index;
-                            const datasetIndex = element.datasetIndex;
-                            
-                            const selectedShift = shifts[shiftIndex];
-                            const selectedSubRole = subRoleChart.data.datasets[datasetIndex].label;
-                            
-                            // Apply Shift Filter
-                            const shiftTab = document.querySelector(`.att-tab[data-shift="${selectedShift}"]`);
-                            if(shiftTab) shiftTab.click();
-                            
-                            // Apply Sub Role Filter (Multi-select)
-                            const checkboxes = document.querySelectorAll('.att-area-cb');
-                            let matched = false;
-                            checkboxes.forEach(cb => {
-                                cb.checked = (cb.value === selectedSubRole);
-                                if(cb.checked) matched = true;
-                            });
-                            
-                            // Update Dropdown Text
-                            const areaText = document.getElementById('att-filter-area-text');
-                            if(areaText) areaText.textContent = matched ? selectedSubRole : 'All Sub Roles';
-                            
-                            // Trigger Render
-                            renderAttendanceTable();
-                            
-                            // Flip back to table
-                            const flipContainer = document.getElementById('attendance-flip-container');
-                            if(flipContainer) flipContainer.classList.remove('flipped');
-                        }
-                    }
-                }
+            
+            // Totals Row
+            html += `<tr style="background-color:#f8f9fa; font-weight:bold; border-top:2px solid #ddd;">
+                <td>TOTAL</td>`;
+            shifts.forEach(shift => {
+                html += `<td>${shiftTotals[shift]}</td>`;
             });
+            html += `<td>${total}</td></tr>`;
+            
+            html += `</tbody></table></div>`;
+            
+            container.innerHTML = html;
+        }
+
+        // Helper for click interaction
+        window.filterByAnalysis = function(role, shift) {
+             // Apply Shift Filter
+             const shiftTab = document.querySelector(`.att-tab[data-shift="${shift}"]`);
+             if(shiftTab) shiftTab.click();
+             
+             // Apply Sub Role Filter (Multi-select)
+             const checkboxes = document.querySelectorAll('.att-area-cb');
+             let matched = false;
+             checkboxes.forEach(cb => {
+                 cb.checked = (cb.value === role);
+                 if(cb.checked) matched = true;
+             });
+             
+             // Update Dropdown Text
+             const areaText = document.getElementById('att-filter-area-text');
+             if(areaText) areaText.textContent = matched ? role : 'All Sub Roles';
+             
+             // Trigger Render
+             renderAttendanceTable();
+             
+             // Flip back to table
+             const flipContainer = document.getElementById('attendance-flip-container');
+             if(flipContainer) flipContainer.classList.remove('flipped');
         }
 
         // Event Listeners for Filters
@@ -1505,7 +1539,7 @@
         if(viewChartBtn && flipContainer) {
             viewChartBtn.addEventListener('click', () => {
                 flipContainer.classList.add('flipped');
-                renderSubRoleChart();
+                renderSubRoleDashboard();
             });
         }
         if(viewTableBtn && flipContainer) {
