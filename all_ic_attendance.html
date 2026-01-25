@@ -71,6 +71,12 @@
     body.dark-mode .att-tab.active { border-color: #444; border-bottom-color: #1e1e1e; background: #1e1e1e; color: #fff; }
     body.dark-mode .att-tabs { border-bottom-color: #444; }
 
+    /* Summary Cards */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .summary-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eef2f6; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .summary-value { font-size: 24px; font-weight: bold; color: #2752a7; }
+    .summary-label { font-size: 12px; color: #6c757d; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
     /* Floating Action Button */
     .fab-btn {
       position: fixed;
@@ -159,6 +165,25 @@
       </div>
     </div>
 
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-value" id="summary-1st">0</div>
+            <div class="summary-label">1st Shift</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value" id="summary-2nd">0</div>
+            <div class="summary-label">2nd Shift</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value" id="summary-3rd">0</div>
+            <div class="summary-label">3rd Shift</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value" id="summary-total">0</div>
+            <div class="summary-label">Total Attendance</div>
+        </div>
+    </div>
+
     <div class="card resizable-box" id="attendance-card" style="margin-top: 20px; min-height: 600px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <div style="display:flex; align-items:center; gap:10px;">
@@ -168,9 +193,6 @@
             <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Roles</option>
                 <option value="IC Support">IC Support</option>
-                <option value="IC Back up">IC Back up</option>
-                <option value="Cycle Counter">Cycle Counter</option>
-                <option value="Other">Other</option>
             </select>
             <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Sub Roles</option>
@@ -285,9 +307,6 @@
                     <label for="att-role">Role</label>
                     <select id="att-role" style="width:100%">
                         <option value="IC Support">IC Support</option>
-                        <option value="IC Back up">IC Back up</option>
-                        <option value="Cycle Counter">Cycle Counter</option>
-                        <option value="Other">Other</option>
                     </select>
                 </div>
                 <div>
@@ -795,7 +814,7 @@
 
         // --- Attendance Logic ---
         
-        function getFilteredAttendanceData() {
+        function getFilteredAttendanceData(ignoreShift = false) {
             let data = getAttendanceData();
             if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
@@ -817,7 +836,7 @@
             }
             if (attFilterRole && attFilterRole.value) data = data.filter(item => item.role === attFilterRole.value);
             if (attFilterArea && attFilterArea.value) data = data.filter(item => item.area === attFilterArea.value);
-            if (currentShiftFilter) data = data.filter(item => item.shift === currentShiftFilter);
+            if (!ignoreShift && currentShiftFilter) data = data.filter(item => item.shift === currentShiftFilter);
             
             data.sort((a, b) => {
                 let valA = a[attSortField] || '';
@@ -831,6 +850,26 @@
                 return 0;
             });
             return data;
+        }
+
+        function updateSummary() {
+            const data = getFilteredAttendanceData(true); // Ignore shift tab filter
+            const summary = {
+                '1st Shift-(6am-2pm)': 0,
+                '2nd Shift-(2pm-10pm)': 0,
+                '3rd Shift-(10pm-6am)': 0,
+                'total': 0
+            };
+            
+            data.forEach(item => {
+                if (summary.hasOwnProperty(item.shift)) summary[item.shift]++;
+                summary.total++;
+            });
+            
+            document.getElementById('summary-1st').textContent = summary['1st Shift-(6am-2pm)'];
+            document.getElementById('summary-2nd').textContent = summary['2nd Shift-(2pm-10pm)'];
+            document.getElementById('summary-3rd').textContent = summary['3rd Shift-(10pm-6am)'];
+            document.getElementById('summary-total').textContent = summary.total;
         }
 
         function renderAttendanceTable() {
@@ -882,6 +921,7 @@
                 `;
                 attendanceTableBody.appendChild(tr);
             });
+            updateSummary();
         }
 
         // Auto-fill User ID based on Name selection
