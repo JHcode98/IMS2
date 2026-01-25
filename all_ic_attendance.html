@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All IC Attendance - IMS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* Dark Mode Header */
+    body.dark-mode header { background: #1a252f; border-bottom: 1px solid #2c3e50; }
+    body.dark-mode header h1 { color: #ecf0f1; }
+    
+    /* Card content expand/collapse */
+    .card-content.hidden { display: none; }
+    .section-content.hidden { display: none !important; }
+    /* Resizable box */
+    .resizable-box { resize: both; overflow: auto; min-width: 300px; min-height: 200px; }
+    /* Ensure modal is on top */
+    .modal { z-index: 10001; }
+    
+    /* Fix tooltips inside modal */
+    .modal-content .icon-btn[data-tooltip]::after { top: 100%; bottom: auto; margin-top: 8px; margin-bottom: 0; }
+    .modal-content .icon-btn[data-tooltip]::before { top: 100%; bottom: auto; margin-top: 3px; margin-bottom: 0; border-top-color: transparent; border-bottom-color: #2c3e50; }
+    
+    /* Sortable headers */
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { background-color: #f1f1f1; }
+    .sort-icon { margin-left: 5px; font-size: 10px; }
+    body.dark-mode th.sortable:hover { background-color: #333; }
+    
+    .editable-time { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+    .editable-time:hover { color: #2752a7; }
+  </style>
+</head>
+<body class="inventory-mode">
+  <script>
+    if(localStorage.getItem('ims_sidebar_collapsed') === '1') document.body.classList.add('sidebar-collapsed');
+  </script>
+  
+  <!-- Main App Sidebar -->
+  <nav id="app-sidebar">
+    <div class="sidebar-brand">
+      <img src="Logo.jpg" alt="Logo" class="sidebar-logo" style="height:32px;width:auto;margin-right:8px">
+      <span class="brand-text">IMS</span>
+      <button id="main-sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+    </div>
+    <ul class="sidebar-menu">
+      <li>
+        <button onclick="window.location.href='homepage.html'" data-tooltip="Homepage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span class="menu-text">Homepage</span>
+        </button>
+      </li>
+      <li>
+        <button data-tooltip="Document Monitoring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span class="menu-text">Document Monitoring</span>
+        </button>
+        <ul class="sidebar-submenu">
+            <li><button onclick="window.location.href='index.html'">IAAF Monitoring</button></li>
+            <li><button onclick="window.location.href='ir_monitoring.html'">IR Monitoring</button></li>
+        </ul>
+      </li>
+      <li>
+        <button class="active" data-tooltip="Inventory Tracker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <span class="menu-text">Inventory Tracker</span>
+        </button>
+        <ul class="sidebar-submenu" style="display:block">
+          <li><button onclick="window.location.href='cycle_count.html'">Cycle Count</button></li>
+          <li><button onclick="window.location.href='daily_cycle_count.html'">Daily Counters</button></li>
+          <li><button onclick="window.location.href='cycle_count_reports.html'">Cycle Count Report</button></li>
+          <li><button onclick="window.location.href='cycle_count_completion.html'">Cycle Count Completion</button></li>
+          <li><button onclick="window.location.href='cycle_count_schedule.html'">Cycle Count Schedule</button></li>
+          <li><button class="active" onclick="window.location.href='all_ic_attendance.html'">All IC Attendance</button></li>
+        </ul>
+      </li>
+      <li><button onclick="window.location.href='settings.html'" data-tooltip="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span class="menu-text">Settings</span>
+      </button></li>
+    </ul>
+  </nav>
+
+  <header>
+    <h1>All IC Attendance</h1>
+    <div class="navbar" role="navigation">
+      <div class="nav-left">
+        <!-- Optional back button -->
+      </div>
+      <div class="nav-right">
+        <div class="nav-user" id="nav-user">
+          <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
+          <button class="user-btn" id="user-btn"><span id="username-display"></span></button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 15px;">
+      <strong style="color: var(--accent);">Global Date Filter:</strong>
+      <label for="global-start-date">From:</label>
+      <input type="date" id="global-start-date" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+      <label for="global-end-date">To:</label>
+      <input type="date" id="global-end-date" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+      <button id="apply-global-filter" class="icon-btn" title="Apply Filter" style="background: #2752a7; color: white;">Filter</button>
+      <button id="clear-global-filter" class="icon-btn" title="Clear Filter">Clear</button>
+      
+      <button id="counter-timestamp-btn" class="icon-btn" title="Counter Timestamp" style="margin-left: 10px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Timestamp
+      </button>
+      <button id="reports-menu-btn" class="icon-btn" title="Reports" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
+      </button>
+      <div style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #ccc; padding-left:10px;">
+          <input type="checkbox" id="auto-refresh-check" title="Auto Refresh every 15s">
+          <label for="auto-refresh-check" style="font-size:13px; cursor:pointer;">Auto Refresh</label>
+      </div>
+    </div>
+
+    <div class="card resizable-box" id="attendance-card" style="margin-top: 20px; min-height: 600px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <h2 style="margin:0;">Attendance Sheet</h2>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select id="att-filter-shift" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Shifts</option>
+                <option value="1st Shift-(6am-2pm)">1st Shift</option>
+                <option value="2nd Shift-(2pm-10pm)">2nd Shift</option>
+                <option value="3rd Shift-(10pm-6am)">3rd Shift</option>
+            </select>
+            <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Roles</option>
+                <option value="IC Support">IC Support</option>
+                <option value="IC Back up">IC Back up</option>
+                <option value="Cycle Counter">Cycle Counter</option>
+                <option value="Other">Other</option>
+            </select>
+            <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Areas</option>
+                <option value="Pick Bin">Pick Bin</option>
+                <option value="Reserved Bin">Reserved Bin</option>
+            </select>
+            <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+            <button id="print-att-btn" class="icon-btn" title="Print List">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            </button>
+            <button id="delete-selected-att-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+            </button>
+            <button id="export-att-btn" class="icon-btn" title="Export CSV" style="margin-right:5px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+            <button id="add-att-btn" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Entry
+            </button>
+        </div>
+      </div>
+      <div class="card-content">
+      <div style="overflow-x: auto;">
+          <table id="attendance-table" style="width:100%; border-collapse: collapse;">
+              <thead>
+                  <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
+                      <th style="padding: 12px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-att" title="Select All"></th>
+                      <th class="sortable" data-sort="date" style="padding: 12px; text-align: left;">Date <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="userId" style="padding: 12px; text-align: left;">User ID <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="shift" style="padding: 12px; text-align: left;">Shift <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="name" style="padding: 12px; text-align: left;">Name <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="role" style="padding: 12px; text-align: left;">Role <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="area" style="padding: 12px; text-align: left;">Area <span class="sort-icon"></span></th>
+                      <th style="padding: 12px; text-align: left;">Time In</th>
+                      <th style="padding: 12px; text-align: left;">Break Out</th>
+                      <th style="padding: 12px; text-align: left;">Break In</th>
+                      <th style="padding: 12px; text-align: left;">Time Out</th>
+                      <th class="sortable" data-sort="duration" style="padding: 12px; text-align: left;">Duration <span class="sort-icon"></span></th>
+                      <th style="padding: 12px; text-align: left;">Status</th>
+                      <th style="padding: 12px; text-align: left;">Action</th>
+                  </tr>
+              </thead>
+              <tbody></tbody>
+          </table>
+      </div>
+      <div id="att-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-top: 1px solid #eee;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="att-rows-per-page" style="font-size:13px; color:var(--muted);">Rows:</label>
+            <select id="att-rows-per-page" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #d6dbe6;"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option><option value="100">100</option></select>
+        </div>
+        <span id="att-page-info" style="font-size: 13px; font-weight: 600; color: var(--muted);"></span>
+        <div style="display:flex; gap:8px;">
+            <button id="att-prev-page" class="icon-btn" title="Previous">‹</button>
+            <button id="att-next-page" class="icon-btn" title="Next">›</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Attendance Modal -->
+  <div id="att-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 500px; margin: 50px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0" id="att-modal-title">Add Attendance</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <form id="att-modal-form" style="display: grid; gap: 15px;">
+            <input type="hidden" id="att-edit-id">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-date">Date</label>
+                    <input type="date" id="att-date" required style="width:100%">
+                </div>
+                <div>
+                    <label for="att-shift">Shift</label>
+                    <select id="att-shift" required style="width:100%">
+                        <option value="1st Shift-(6am-2pm)">1st Shift-(6am-2pm)</option>
+                        <option value="2nd Shift-(2pm-10pm)">2nd Shift-(2pm-10pm)</option>
+                        <option value="3rd Shift-(10pm-6am)">3rd Shift-(10pm-6am)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+                <div>
+                    <label for="att-user-id">User ID</label>
+                    <input type="text" id="att-user-id" placeholder="ID" style="width:100%">
+                </div>
+                <div>
+                    <label for="att-name">Name</label>
+                    <input type="text" id="att-name" required placeholder="Enter Name" style="width:100%" list="att-name-list" autocomplete="off">
+                    <datalist id="att-name-list"></datalist>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-role">Role</label>
+                    <select id="att-role" style="width:100%">
+                        <option value="IC Support">IC Support</option>
+                        <option value="IC Back up">IC Back up</option>
+                        <option value="Cycle Counter">Cycle Counter</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="att-area">Area</label>
+                    <select id="att-area" style="width:100%">
+                        <option value="Pick Bin">Pick Bin</option>
+                        <option value="Reserved Bin">Reserved Bin</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-time-in">Time In</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-time-in" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-time-in" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="att-time-out">Time Out</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-time-out" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-time-out" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="att-status">Status</label>
+                    <select id="att-status" style="width:100%">
+                        <option value="Full counter">Full counter</option>
+                        <option value="Temporary slide to Other task">Temporary slide to Other task</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="att-break-out">Break Out</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-break-out" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-break-out" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="att-break-in">Break In</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="time" id="att-break-in" style="width:100%">
+                        <button type="button" class="icon-btn set-current-time" data-target="att-break-in" title="Set Current Time">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:right; margin-top:10px; border-top: 1px solid #eee; padding-top: 15px;">
+                <button type="button" class="icon-btn close-modal" style="margin-right:5px; border: 1px solid #ccc; padding: 8px 16px;">Close</button>
+                <button type="submit" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 16px;">Save</button>
+            </div>
+        </form>
+    </div>
+  </div>
+
+  <!-- Counter Timestamp Modal -->
+  <div id="timestamp-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="width: 98vw; max-width: 1800px; height: 90vh; margin: 20px auto; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Counter Timestamp</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        
+        <div style="display:flex; gap: 20px; flex:1; overflow:hidden;">
+            <!-- Left Column: Controls & Tables -->
+            <div style="flex: 2; display:flex; flex-direction:column; gap:10px; overflow-y:auto; padding-right:10px;">
+                <!-- Controls -->
+                <div>
+                    <div style="margin-bottom:10px;">
+                    <label for="ts-user-id" style="font-weight:bold;">User ID / Name</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="ts-user-id" placeholder="User ID" style="flex:1; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:4px;">
+                        <input type="text" id="ts-user-name-display" placeholder="Name" readonly style="flex:1; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">
+                    </div>
+                    </div>
+                    <div style="display:flex; gap:5px; margin-bottom:10px;">
+                        <button id="btn-start-count" class="icon-btn" style="flex:1; background:#2ecc71; color:white; padding:10px; font-weight:bold; justify-content:center;">Start Counting</button>
+                        <button id="btn-end-count" class="icon-btn" style="flex:1; background:#e74c3c; color:white; padding:10px; font-weight:bold; justify-content:center;">End Counting</button>
+                        <button id="btn-time-out" class="icon-btn" style="flex:1; background:#34495e; color:white; padding:10px; font-weight:bold; justify-content:center;">Time Out</button>
+                    </div>
+                </div>
+
+                <!-- Table 1: Today's Logs -->
+                <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:400px;">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <h4 style="margin:0;">Today's Logs</h4>
+                        </div>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <select id="ts-shift-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px;">
+                                <option value="">All Shifts</option>
+                                <option value="1st Shift">1st Shift</option>
+                                <option value="2nd Shift">2nd Shift</option>
+                                <option value="3rd Shift">3rd Shift</option>
+                            </select>
+                            <input type="text" id="ts-filter-user" placeholder="Search User..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
+                            <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ts-show-active"> Active Only</label>
+                            <button id="ts-delete-selected-btn" class="icon-btn" title="Delete Selected" style="padding: 2px 6px; font-size: 12px; color:#d9534f; display:none;">Del Sel</button>
+                            <button id="ts-purge-all-btn" class="icon-btn" title="Permanently Delete All Shown" style="padding: 2px 6px; font-size: 12px; background:#c0392b; color:white; border-color:#c0392b;">Purge All</button>
+                            <button id="ts-export-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
+                        </div>
+                    </div>
+                    <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+                    <div style="flex:1; overflow-y:auto; border:1px solid #eee; border-radius:4px;">
+                        <table id="timestamp-table" style="width:100%; border-collapse:collapse; font-size:12px;">
+                            <thead>
+                                <tr style="background:#f9f9f9; border-bottom:1px solid #eee; position:sticky; top:0;">
+                                    <th style="padding:8px; text-align:left; width:30px;"><input type="checkbox" id="ts-select-all"></th>
+                                    <th style="padding:8px; text-align:left;">User ID</th>
+                                    <th style="padding:8px; text-align:left;">Name</th>
+                                    <th style="padding:8px; text-align:left;">Area Type</th>
+                                    <th style="padding:8px; text-align:left;">Shift</th>
+                                    <th style="padding:8px; text-align:left;">Start Time</th>
+                                    <th style="padding:8px; text-align:left;">End Time</th>
+                                    <th style="padding:8px; text-align:left;">Duration</th>
+                                    <th style="padding:8px; text-align:left;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div id="ts-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding-top:5px; margin-top:5px; border-top: 1px solid #eee;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <label for="ts-rows-per-page" style="font-size:11px; color:#666;">Rows:</label>
+                            <select id="ts-rows-per-page" style="padding: 2px 4px; font-size:11px; border-radius: 4px; border: 1px solid #ccc;">
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <span id="ts-page-info" style="font-size: 11px; font-weight: 600; color: #666;"></span>
+                        <div style="display:flex; gap:5px;">
+                            <button id="ts-prev-page" class="icon-btn" title="Previous" style="padding:2px 6px; font-size:12px;">‹</button>
+                            <button id="ts-next-page" class="icon-btn" title="Next" style="padding:2px 6px; font-size:12px;">›</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- Table 2: Break Log -->
+                <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:300px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <h4 style="margin:0;">Break Log</h4>
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                             <select id="break-shift-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 80px;">
+                                <option value="">All Shifts</option>
+                                <option value="1st Shift">1st Shift</option>
+                                <option value="2nd Shift">2nd Shift</option>
+                                <option value="3rd Shift">3rd Shift</option>
+                             </select>
+                             <label style="font-size:12px; cursor:pointer; display:flex; align-items:center;"><input type="checkbox" id="break-show-active"> Active</label>
+                             <input type="datetime-local" id="manual-break-time" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:130px;" title="Manual Break Time">
+                             <button id="btn-break-start" class="icon-btn" style="background:#f1c40f; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">Start Break</button>
+                             <button id="btn-break-end" class="icon-btn" style="background:#f39c12; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">End Break</button>
+                             <button id="break-delete-selected-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; display:none;">Del Sel</button>
+                             <button id="break-export-btn" class="icon-btn" title="Export CSV" style="padding:4px 8px; font-size:12px; font-weight:bold;">Export</button>
+                             <button id="btn-break-delete-all" class="icon-btn" title="Delete All Breaks" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; margin-left:5px;">🗑 All</button>
+                        </div>
+                    </div>
+                    <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+                    <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
+                        <table id="break-log-table" style="width:100%; font-size:12px; border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f9f9f9; position:sticky; top:0;">
+                                    <th style="padding:5px; text-align:left; width:30px;"><input type="checkbox" id="break-select-all"></th>
+                                    <th style="padding:5px; text-align:left;">User</th>
+                                    <th style="padding:5px; text-align:left;">Name</th>
+                                    <th style="padding:5px; text-align:left;">Shift</th>
+                                    <th style="padding:5px; text-align:left;">Role</th>
+                                    <th style="padding:5px; text-align:left;">Break Out</th>
+                                    <th style="padding:5px; text-align:left;">Break In</th>
+                                    <th style="padding:5px; text-align:left;">Duration</th>
+                                    <th style="padding:5px; text-align:left;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                </div>
+
+                <!-- Table 3: Inactive Users -->
+                <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:300px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                            <h4 style="margin:0;">Inactive Users</h4>
+                        </div>
+                        <button id="ts-export-inactive-btn" class="icon-btn" title="Export CSV" style="padding: 2px 6px; font-size: 12px;">Export</button>
+                    </div>
+                    <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+                    <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
+                        <table id="inactive-users-table" style="width:100%; font-size:12px; border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f9f9f9; position:sticky; top:0;">
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('userId')">User <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('name')">Name <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('shift')">Shift <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('role')">Role <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('lastEnd')">Last End Count <span class="sort-icon"></span></th>
+                                    <th style="padding:5px; text-align:center; width:40px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Analytics -->
+            <div style="flex: 1; display:flex; flex-direction:column; border-left:1px solid #eee; padding-left:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0;">Analytics Overview</h4>
+                    <input type="date" id="ts-analytics-date-filter" style="padding:2px 5px; border:1px solid #ccc; border-radius:4px; font-size:12px; color:#333;" title="Filter Analytics Date">
+                </div>
+                <div id="ts-analytics-content" style="flex: 1; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Start Count Area Selection Modal -->
+  <div id="start-area-modal" class="modal hidden" style="z-index: 10015;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 150px auto; text-align: center;">
+        <h3 style="margin-top:0">Select Area</h3>
+        <div style="display:flex; gap:15px; justify-content:center; margin-top:20px;">
+            <div class="card area-card" data-bin-type="Reserved" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
+                <div style="font-size:30px;">📦</div>
+                <div style="font-weight:bold; margin-top:10px;">Reserved Bin</div>
+            </div>
+            <div class="card area-card" data-bin-type="Pick Bin" style="cursor:pointer; padding:20px; border:2px solid #eee; width:120px; transition:all 0.2s;">
+                <div style="font-size:30px;">🛒</div>
+                <div style="font-weight:bold; margin-top:10px;">Pick Bin</div>
+            </div>
+        </div>
+        <button id="cancel-start-area-btn" class="icon-btn" style="margin-top:20px; border:1px solid #ccc;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Warehouse Area Selection Modal -->
+  <div id="warehouse-area-modal" class="modal hidden" style="z-index: 10016;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 500px; margin: 150px auto; text-align: center;">
+        <h3 style="margin-top:0">Select Warehouse Area</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; justify-content:center; margin-top:20px;">
+            <div class="card area-card" data-warehouse-area="Coldroom" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">❄️</div>
+                <div style="font-weight:bold; margin-top:10px;">Coldroom</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Ecom 2" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🌐</div>
+                <div style="font-weight:bold; margin-top:10px;">Ecom 2</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Storage" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🗄️</div>
+                <div style="font-weight:bold; margin-top:10px;">Storage</div>
+            </div>
+            <div class="card area-card" data-warehouse-area="Pallet Picking" style="cursor:pointer; padding:20px; border:2px solid #eee; transition:all 0.2s;">
+                <div style="font-size:30px;">🏗️</div>
+                <div style="font-weight:bold; margin-top:10px;">Pallet Picking</div>
+            </div>
+        </div>
+        <button id="cancel-warehouse-area-btn" class="icon-btn" style="margin-top:20px; border:1px solid #ccc;">Back</button>
+    </div>
+  </div>
+
+  <!-- Reports Selection Modal -->
+  <div id="reports-modal" class="modal hidden" style="z-index: 10020;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 100px auto; text-align: center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Select Report</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center; justify-content:center; background:#f9f9f9; padding:10px; border-radius:4px;">
+            <div style="text-align:left;">
+                <label style="font-size:11px; display:block; font-weight:bold;">From</label>
+                <input type="date" id="rep-start-date" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+            </div>
+            <div style="text-align:left;">
+                <label style="font-size:11px; display:block; font-weight:bold;">To</label>
+                <input type="date" id="rep-end-date" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+            </div>
+        </div>
+        <div style="display:grid; gap:10px;">
+            <button id="rep-sessions-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Counter Sessions (CSV)
+            </button>
+            <button id="rep-attendance-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                Attendance List (CSV)
+            </button>
+            <button id="rep-breaklog-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Break Logs (CSV)
+            </button>
+            <button id="rep-inactive-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                Inactive Users (CSV)
+            </button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Supervisor Delete Modal -->
+  <div id="supervisor-delete-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px;">
+      <h3 id="supervisor-modal-title">Confirm Deletion</h3>
+      <p>You are about to delete <strong id="supervisor-delete-count">0</strong> records.</p>
+      <p class="muted">This action cannot be undone. Please enter Supervisor Code to proceed.</p>
+      <div style="margin: 15px 0;">
+        <label for="supervisor-code" style="display:block; margin-bottom:5px; font-weight:bold;">Supervisor Code</label>
+        <input type="password" id="supervisor-code" style="width:100%;" placeholder="Enter code">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="icon-btn close-modal">Cancel</button>
+        <button type="button" id="confirm-supervisor-delete-btn" class="icon-btn" style="background:#d9534f; color:white;">Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Timestamp Modal -->
+  <div id="edit-time-modal" class="modal hidden" style="z-index: 10015;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 150px auto;">
+        <h3 style="margin-top:0">Edit Timestamp</h3>
+        <input type="hidden" id="edit-time-log-id">
+        <div style="margin-bottom:15px;">
+            <label for="edit-time-input" style="font-weight:bold;">New Date & Time:</label>
+            <input type="datetime-local" id="edit-time-input" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+        <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
+            <button id="cancel-edit-time-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
+            <button id="save-edit-time-btn" class="icon-btn" style="background:#2752a7; color:white;">Save</button>
+        </div>
+    </div>
+  </div>
+
+  <div id="toast-notification" class="toast"></div>
+  <script src="app.js"></script>
+  <script>
+    if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
+        const STORAGE_KEY_TIMESTAMPS = 'ims_counter_timestamps_v1';
+        
+        let attCurrentPage = 1;
+        let attItemsPerPage = 20;
+        let attSortField = 'date';
+        let attSortDirection = 'desc';
+        
+        // Elements
+        const attendanceTableBody = document.querySelector('#attendance-table tbody');
+        const attModal = document.getElementById('att-modal');
+        const attForm = document.getElementById('att-modal-form');
+        const addAttBtn = document.getElementById('add-att-btn');
+        const exportAttBtn = document.getElementById('export-att-btn');
+        const printAttBtn = document.getElementById('print-att-btn');
+        const attSearchInput = document.getElementById('att-search');
+        const attFilterRole = document.getElementById('att-filter-role');
+        const attFilterArea = document.getElementById('att-filter-area');
+        const attFilterShift = document.getElementById('att-filter-shift');
+        const deleteSelectedAttBtn = document.getElementById('delete-selected-att-btn');
+        const selectAllAtt = document.getElementById('select-all-att');
+        
+        const globalStartDate = document.getElementById('global-start-date');
+        const globalEndDate = document.getElementById('global-end-date');
+        const applyGlobalFilterBtn = document.getElementById('apply-global-filter');
+        const clearGlobalFilterBtn = document.getElementById('clear-global-filter');
+        
+        // Timestamp Elements
+        const timestampBtn = document.getElementById('counter-timestamp-btn');
+        const timestampModal = document.getElementById('timestamp-modal');
+        const tsUserIdInput = document.getElementById('ts-user-id');
+        const btnStartCount = document.getElementById('btn-start-count');
+        const btnBreakStart = document.getElementById('btn-break-start');
+        const btnBreakEnd = document.getElementById('btn-break-end');
+        const btnTimeOut = document.getElementById('btn-time-out');
+        const btnEndCount = document.getElementById('btn-end-count');
+        const timestampTableBody = document.querySelector('#timestamp-table tbody');
+        const tsExportBtn = document.getElementById('ts-export-btn');
+        const tsFilterUser = document.getElementById('ts-filter-user');
+        const tsShiftFilter = document.getElementById('ts-shift-filter');
+        const tsExportInactiveBtn = document.getElementById('ts-export-inactive-btn');
+        const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
+        const tsDeleteSelectedBtn = document.getElementById('ts-delete-selected-btn');
+        const tsSelectAll = document.getElementById('ts-select-all');
+        const tsShowActive = document.getElementById('ts-show-active');
+        const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
+        
+        // Reports
+        const reportsMenuBtn = document.getElementById('reports-menu-btn');
+        const reportsModal = document.getElementById('reports-modal');
+        const repAttendanceBtn = document.getElementById('rep-attendance-btn');
+        const repBreaklogBtn = document.getElementById('rep-breaklog-btn');
+        const repInactiveBtn = document.getElementById('rep-inactive-btn');
+        const repSessionsBtn = document.getElementById('rep-sessions-btn');
+        
+        // Start Area Modal
+        const startAreaModal = document.getElementById('start-area-modal');
+        const warehouseAreaModal = document.getElementById('warehouse-area-modal');
+        const cancelStartAreaBtn = document.getElementById('cancel-start-area-btn');
+        const cancelWarehouseAreaBtn = document.getElementById('cancel-warehouse-area-btn');
+        let selectedBinType = '';
+        
+        // Supervisor Delete
+        const supervisorDeleteModal = document.getElementById('supervisor-delete-modal');
+        const confirmSupervisorDeleteBtn = document.getElementById('confirm-supervisor-delete-btn');
+        let supervisorDeleteCallback = null;
+
+        // Edit Time
+        const editTimeModal = document.getElementById('edit-time-modal');
+        const cancelEditTimeBtn = document.getElementById('cancel-edit-time-btn');
+        const saveEditTimeBtn = document.getElementById('save-edit-time-btn');
+
+        // Helper Functions
+        function getAttendanceData() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY_ATTENDANCE) || '[]'); } catch (e) { return []; }
+        }
+        function saveAttendanceData(data) {
+            localStorage.setItem(STORAGE_KEY_ATTENDANCE, JSON.stringify(data));
+        }
+        function getTimestamps() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TIMESTAMPS) || '[]'); } catch(e) { return []; }
+        }
+        function saveTimestamps(data) {
+            localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
+        }
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+        }
+        function getDuration(start, end) {
+            if (!start || !end) return '-';
+            const [h1, m1] = start.split(':').map(Number);
+            const [h2, m2] = end.split(':').map(Number);
+            let minutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (minutes < 0) minutes += 24 * 60;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return (h > 0 ? h + 'h ' : '') + m + 'm';
+        }
+        function getShiftFromTimestamp(ts) {
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) return { date: '', shift: '' };
+            const h = d.getHours();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            let dateStr = `${year}-${month}-${day}`;
+            let shift = '';
+            if (h >= 6 && h < 14) shift = '1st Shift-(6am-2pm)';
+            else if (h >= 14 && h < 22) shift = '2nd Shift-(2pm-10pm)';
+            else {
+                shift = '3rd Shift-(10pm-6am)';
+                if (h < 6) {
+                    const prev = new Date(d);
+                    prev.setDate(d.getDate() - 1);
+                    const pYear = prev.getFullYear();
+                    const pMonth = String(prev.getMonth() + 1).padStart(2, '0');
+                    const pDay = String(prev.getDate()).padStart(2, '0');
+                    dateStr = `${pYear}-${pMonth}-${pDay}`;
+                }
+            }
+            return { date: dateStr, shift };
+        }
+
+        // --- Attendance Logic ---
+        
+        function getFilteredAttendanceData() {
+            let data = getAttendanceData();
+            if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+                if (start) start.setHours(0,0,0,0);
+                const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+                if (end) end.setHours(23,59,59,999);
+                data = data.filter(item => {
+                    const itemDate = new Date(item.date);
+                    return (!start || itemDate >= start) && (!end || itemDate <= end);
+                });
+            }
+            const searchTerm = attSearchInput ? attSearchInput.value.toLowerCase() : '';
+            if (searchTerm) {
+                data = data.filter(item => 
+                    (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+                    (item.role && item.role.toLowerCase().includes(searchTerm)) ||
+                    (item.area && item.area.toLowerCase().includes(searchTerm))
+                );
+            }
+            if (attFilterRole && attFilterRole.value) data = data.filter(item => item.role === attFilterRole.value);
+            if (attFilterArea && attFilterArea.value) data = data.filter(item => item.area === attFilterArea.value);
+            if (attFilterShift && attFilterShift.value) data = data.filter(item => item.shift === attFilterShift.value);
+            
+            data.sort((a, b) => {
+                let valA = a[attSortField] || '';
+                let valB = b[attSortField] || '';
+                if (attSortField === 'duration') {
+                    valA = getDuration(a.breakOut, a.breakIn);
+                    valB = getDuration(b.breakOut, b.breakIn);
+                }
+                if (valA < valB) return attSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return attSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            return data;
+        }
+
+        function renderAttendanceTable() {
+            if (!attendanceTableBody) return;
+            const attRowsPerPageSelect = document.getElementById('att-rows-per-page');
+            if (attRowsPerPageSelect) attItemsPerPage = parseInt(attRowsPerPageSelect.value, 10);
+            let data = getFilteredAttendanceData();
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / attItemsPerPage) || 1;
+            if (attCurrentPage > totalPages) attCurrentPage = totalPages;
+            const paginatedData = data.slice((attCurrentPage - 1) * attItemsPerPage, attCurrentPage * attItemsPerPage);
+
+            attendanceTableBody.innerHTML = '';
+            const paginationControls = document.getElementById('att-pagination-controls');
+            if (paginationControls) {
+                document.getElementById('att-page-info').textContent = `Page ${attCurrentPage} of ${totalPages} (${totalItems} records)`;
+                document.getElementById('att-prev-page').disabled = attCurrentPage <= 1;
+                document.getElementById('att-next-page').disabled = attCurrentPage >= totalPages;
+            }
+            
+            document.querySelectorAll('#attendance-table th.sortable .sort-icon').forEach(icon => icon.textContent = '');
+            const activeHeader = document.querySelector(`#attendance-table th[data-sort="${attSortField}"]`);
+            if(activeHeader) activeHeader.querySelector('.sort-icon').textContent = attSortDirection === 'asc' ? '↑' : '↓';
+
+            if (paginatedData.length === 0) {
+                attendanceTableBody.innerHTML = `<tr><td colspan="14" class="muted" style="text-align:center; padding: 20px;">No attendance records found.</td></tr>`;
+                return;
+            }
+            paginatedData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:12px;border-bottom:1px solid #eee"><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.date}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.userId || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.shift}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.name}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.role || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.area || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.timeIn || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.breakOut || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.breakIn || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.timeOut || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee; font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">${item.status || '-'}</td>
+                    <td style="padding:12px;border-bottom:1px solid #eee">
+                        <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
+                        <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
+                    </td>
+                `;
+                attendanceTableBody.appendChild(tr);
+            });
+        }
+
+        // Auto-fill User ID based on Name selection
+        const attNameInput = document.getElementById('att-name');
+        if (attNameInput) {
+            attNameInput.addEventListener('input', () => {
+                const val = attNameInput.value.trim();
+                if (!val) return;
+                const data = getAttendanceData();
+                const user = data.slice().reverse().find(d => d.name && d.name.toLowerCase() === val.toLowerCase());
+                if (user) {
+                    if (user.userId) document.getElementById('att-user-id').value = user.userId;
+                    if (user.role) document.getElementById('att-role').value = user.role;
+                }
+            });
+        }
+
+        // Auto-fill Name and Role based on User ID
+        const attUserIdInput = document.getElementById('att-user-id');
+        if (attUserIdInput) {
+            attUserIdInput.addEventListener('input', () => {
+                const val = attUserIdInput.value.trim();
+                if (!val) return;
+                const data = getAttendanceData();
+                const user = data.slice().reverse().find(d => d.userId && d.userId.toLowerCase() === val.toLowerCase());
+                if (user) {
+                    if (user.name) document.getElementById('att-name').value = user.name;
+                    if (user.role) document.getElementById('att-role').value = user.role;
+                }
+            });
+        }
+
+        function updateAttNameDatalist() {
+            const list = document.getElementById('att-name-list');
+            if (!list) return;
+            list.innerHTML = '';
+            const data = getAttendanceData();
+            const uniqueNames = [...new Set(data.map(d => d.name).filter(n => n))].sort();
+            uniqueNames.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                list.appendChild(opt);
+            });
+        }
+
+        if (addAttBtn) {
+            addAttBtn.addEventListener('click', () => {
+                document.getElementById('att-modal-title').textContent = 'Add Attendance';
+                attForm.reset();
+                document.getElementById('att-edit-id').value = '';
+                document.getElementById('att-date').valueAsDate = new Date();
+                const now = new Date();
+                const h = now.getHours();
+                let shiftVal = '3rd Shift-(10pm-6am)';
+                if (h >= 6 && h < 14) shiftVal = '1st Shift-(6am-2pm)';
+                else if (h >= 14 && h < 22) shiftVal = '2nd Shift-(2pm-10pm)';
+                document.getElementById('att-shift').value = shiftVal;
+                
+                const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                const letter = letters.charAt(Math.floor(Math.random() * letters.length));
+                const num = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+                document.getElementById('att-user-id').value = letter + num;
+                
+                updateAttNameDatalist();
+                attModal.classList.remove('hidden');
+            });
+        }
+
+        if (attForm) {
+            attForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('att-edit-id').value;
+                const newEntry = {
+                    id: editId || Date.now().toString(),
+                    date: document.getElementById('att-date').value,
+                    shift: document.getElementById('att-shift').value,
+                    userId: document.getElementById('att-user-id').value.trim(),
+                    name: document.getElementById('att-name').value.trim().toUpperCase(),
+                    role: document.getElementById('att-role').value,
+                    area: document.getElementById('att-area').value,
+                    timeIn: document.getElementById('att-time-in').value,
+                    breakIn: document.getElementById('att-break-in').value,
+                    breakOut: document.getElementById('att-break-out').value,
+                    timeOut: document.getElementById('att-time-out').value,
+                    status: document.getElementById('att-status').value
+                };
+                if(!newEntry.name) return;
+
+                // Duplicate check: User ID and Name must be unique for the same shift
+                const attendanceData = getAttendanceData();
+                const existingId = attendanceData.find(a => 
+                    a.date === newEntry.date && 
+                    a.shift === newEntry.shift &&
+                    a.userId === newEntry.userId &&
+                    a.id !== newEntry.id
+                );
+                if (existingId) {
+                    alert(`User ID ${newEntry.userId} is already assigned to this shift on ${newEntry.date}.`);
+                    return;
+                }
+                const existingName = attendanceData.find(a => 
+                    a.date === newEntry.date && 
+                    a.shift === newEntry.shift &&
+                    a.name === newEntry.name &&
+                    a.id !== newEntry.id
+                );
+                if (existingName) {
+                    alert(`Name "${newEntry.name}" is already assigned to this shift on ${newEntry.date}.`);
+                    return;
+                }
+
+                let data = attendanceData;
+                if (editId) {
+                    const idx = data.findIndex(x => x.id === editId);
+                    if (idx > -1) data[idx] = newEntry;
+                } else {
+                    data.push(newEntry);
+                }
+                saveAttendanceData(data);
+                showToast('Attendance saved successfully!');
+                attModal.classList.add('hidden');
+                renderAttendanceTable();
+            });
+        }
+
+        if (attendanceTableBody) {
+            attendanceTableBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                if (btn.classList.contains('delete-att-btn')) {
+                    if(confirm('Remove this person?')) {
+                        let data = getAttendanceData();
+                        data = data.filter(item => item.id !== id);
+                        saveAttendanceData(data);
+                        renderAttendanceTable();
+                        showToast('Attendance entry deleted');
+                    }
+                } else if (btn.classList.contains('edit-att-btn')) {
+                    const data = getAttendanceData();
+                    const item = data.find(x => x.id === id);
+                    if (item) {
+                        document.getElementById('att-modal-title').textContent = 'Edit Attendance';
+                        document.getElementById('att-edit-id').value = item.id;
+                        document.getElementById('att-date').value = item.date;
+                        document.getElementById('att-user-id').value = item.userId || '';
+                        document.getElementById('att-shift').value = item.shift;
+                        document.getElementById('att-name').value = item.name;
+                        document.getElementById('att-role').value = item.role;
+                        document.getElementById('att-area').value = item.area;
+                        document.getElementById('att-time-in').value = item.timeIn || '';
+                        document.getElementById('att-break-out').value = item.breakOut;
+                        document.getElementById('att-break-in').value = item.breakIn;
+                        document.getElementById('att-time-out').value = item.timeOut || '';
+                        document.getElementById('att-status').value = item.status || 'Full counter';
+                        attModal.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+
+        // Mass Delete for Attendance
+        function updateAttendanceActionButtons() {
+            const selectedCount = document.querySelectorAll('.att-row-checkbox:checked').length;
+            if (deleteSelectedAttBtn) {
+                deleteSelectedAttBtn.style.display = selectedCount > 0 ? 'inline-flex' : 'none';
+            }
+        }
+
+        if (selectAllAtt) {
+            selectAllAtt.addEventListener('change', (e) => {
+                document.querySelectorAll('.att-row-checkbox').forEach(cb => cb.checked = e.target.checked);
+                updateAttendanceActionButtons();
+            });
+        }
+
+        if (attendanceTableBody) {
+            attendanceTableBody.addEventListener('change', (e) => {
+                if (e.target.classList.contains('att-row-checkbox')) {
+                    updateAttendanceActionButtons();
+                }
+            });
+        }
+
+        if (deleteSelectedAttBtn) {
+            deleteSelectedAttBtn.addEventListener('click', () => {
+                const selectedIds = Array.from(document.querySelectorAll('.att-row-checkbox:checked')).map(cb => cb.dataset.id);
+                if (selectedIds.length === 0) return;
+
+                showSupervisorDeleteModal(selectedIds.length, () => {
+                    const selectedSet = new Set(selectedIds);
+                    let data = getAttendanceData();
+                    data = data.filter(item => !selectedSet.has(item.id));
+                    saveAttendanceData(data);
+                    renderAttendanceTable();
+                    updateAttendanceActionButtons();
+                    showToast(`${selectedIds.length} attendance records deleted`);
+                });
+            });
+        }
+
+        function showSupervisorDeleteModal(count, callback) {
+            if (!supervisorDeleteModal) return;
+            document.getElementById('supervisor-delete-count').textContent = count;
+            document.getElementById('supervisor-code').value = '';
+            supervisorDeleteCallback = callback;
+            supervisorDeleteModal.classList.remove('hidden');
+        }
+
+        if (confirmSupervisorDeleteBtn) {
+            confirmSupervisorDeleteBtn.addEventListener('click', () => {
+                const code = document.getElementById('supervisor-code').value;
+                if (code !== '12345' && code !== 'admin') { alert('Invalid Supervisor Code.'); return; }
+                if (typeof supervisorDeleteCallback === 'function') supervisorDeleteCallback();
+                supervisorDeleteModal.classList.add('hidden');
+            });
+        }
+
+        // Export CSV
+        if (exportAttBtn) {
+            exportAttBtn.addEventListener('click', () => {
+                const data = getFilteredAttendanceData();
+                if (data.length === 0) { alert('No attendance records to export.'); return; }
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
+                const rows = [headers.join(',')];
+                
+                data.forEach(item => {
+                    const dur = getDuration(item.breakOut, item.breakIn);
+                    const row = [
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
+                    ];
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'attendance_sheet.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            });
+        }
+
+        // Print
+        if (printAttBtn) {
+            printAttBtn.addEventListener('click', () => {
+                const dataToPrint = getFilteredAttendanceData();
+                if (dataToPrint.length === 0) {
+                    alert('No records to print.');
+                    return;
+                }
+
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write('<html><head><title>Attendance Report</title>');
+                printWindow.document.write('<style>@page { size: letter landscape; margin: 0.25in; } body{font-family:sans-serif;font-size:11px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ccc;padding:4px;text-align:left;} th{background:#f0f0f0;} .sig{height:30px;}</style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write('<h2>Attendance Report</h2>');
+                printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
+                printWindow.document.write('<table><thead><tr>');
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Signature'];
+                headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
+                printWindow.document.write('</tr></thead><tbody>');
+
+                dataToPrint.forEach(item => {
+                    printWindow.document.write('<tr>');
+                    printWindow.document.write(`<td>${item.date}</td>`);
+                    printWindow.document.write(`<td>${item.userId || ''}</td>`);
+                    printWindow.document.write(`<td>${item.shift}</td>`);
+                    printWindow.document.write(`<td>${item.name}</td>`);
+                    printWindow.document.write(`<td>${item.role || '-'}</td>`);
+                    printWindow.document.write(`<td>${item.timeIn || ''}</td>`);
+                    printWindow.document.write(`<td>${item.breakOut || ''}</td>`);
+                    printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
+                    printWindow.document.write(`<td>${item.timeOut || ''}</td>`);
+                    printWindow.document.write(`<td>${item.status || ''}</td>`);
+                    printWindow.document.write('<td class="sig"></td>');
+                    printWindow.document.write('</tr>');
+                });
+
+                printWindow.document.write('</tbody></table>');
+                printWindow.document.write('<script>window.onload=function(){window.print();window.close();}<\/script>');
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+            });
+        }
+
+        // Event Listeners for Filters
+        if (applyGlobalFilterBtn) applyGlobalFilterBtn.addEventListener('click', renderAttendanceTable);
+        if (clearGlobalFilterBtn) clearGlobalFilterBtn.addEventListener('click', () => { globalStartDate.value = ''; globalEndDate.value = ''; renderAttendanceTable(); });
+        if (attSearchInput) attSearchInput.addEventListener('input', renderAttendanceTable);
+        if (attFilterRole) attFilterRole.addEventListener('change', renderAttendanceTable);
+        if (attFilterArea) attFilterArea.addEventListener('change', renderAttendanceTable);
+        if (attFilterShift) attFilterShift.addEventListener('change', renderAttendanceTable);
+
+        // Attendance Sorting Listeners
+        document.querySelectorAll('#attendance-table th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if (attSortField === field) {
+                    attSortDirection = attSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    attSortField = field;
+                    attSortDirection = 'asc';
+                }
+                renderAttendanceTable();
+            });
+        });
+
+        // Pagination Listeners
+        const attPaginationControls = document.getElementById('att-pagination-controls');
+        if (attPaginationControls) {
+            attPaginationControls.addEventListener('click', (e) => {
+                if (e.target.id === 'att-prev-page' && !e.target.disabled) {
+                    attCurrentPage--;
+                    renderAttendanceTable();
+                } else if (e.target.id === 'att-next-page' && !e.target.disabled) {
+                    attCurrentPage++;
+                    renderAttendanceTable();
+                }
+            });
+            const attRowsPerPageSelect = document.getElementById('att-rows-per-page');
+            if (attRowsPerPageSelect) {
+                attRowsPerPageSelect.addEventListener('change', () => {
+                    attCurrentPage = 1;
+                    renderAttendanceTable();
+                });
+            }
+        }
+
+        // Modal Close
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                if (modal) modal.classList.add('hidden');
+            });
+        });
+        
+        // Set Current Time Button
+        if (attModal) {
+            attModal.addEventListener('click', (e) => {
+                const btn = e.target.closest('.set-current-time');
+                if (btn) {
+                    const targetId = btn.dataset.target;
+                    const targetInput = document.getElementById(targetId);
+                    if (targetInput) {
+                        const now = new Date();
+                        const hours = String(now.getHours()).padStart(2, '0');
+                        const minutes = String(now.getMinutes()).padStart(2, '0');
+                        targetInput.value = `${hours}:${minutes}`;
+                    }
+                }
+            });
+        }
+
+        // Auto Refresh
+        setInterval(() => {
+            const check = document.getElementById('auto-refresh-check');
+            if(check && check.checked) {
+                if(document.querySelector('.modal:not(.hidden)')) return;
+                renderAttendanceTable();
+            }
+        }, 15000);
+
+        // Initial Render
+        renderAttendanceTable();
+    });
+  </script>
+</body>
+</html>
