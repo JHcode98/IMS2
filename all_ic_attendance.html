@@ -1423,6 +1423,38 @@
                     plugins: {
                         legend: { position: 'right' },
                         title: { display: true, text: 'Sub Role Distribution per Shift' }
+                    },
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            const element = elements[0];
+                            const shiftIndex = element.index;
+                            const datasetIndex = element.datasetIndex;
+                            
+                            const selectedShift = shifts[shiftIndex];
+                            const selectedSubRole = subRoleChart.data.datasets[datasetIndex].label;
+                            
+                            // Apply Shift Filter
+                            const shiftTab = document.querySelector(`.att-tab[data-shift="${selectedShift}"]`);
+                            if(shiftTab) shiftTab.click();
+                            
+                            // Apply Sub Role Filter (Multi-select)
+                            const checkboxes = document.querySelectorAll('.att-area-cb');
+                            let matched = false;
+                            checkboxes.forEach(cb => {
+                                cb.checked = (cb.value === selectedSubRole);
+                            });
+                            
+                            // Update Dropdown Text
+                            const areaText = document.getElementById('att-filter-area-text');
+                            if(areaText) areaText.textContent = matched ? selectedSubRole : 'All Sub Roles';
+                            
+                            // Trigger Render
+                            renderAttendanceTable();
+                            
+                            // Flip back to table
+                            const flipContainer = document.getElementById('attendance-flip-container');
+                            if(flipContainer) flipContainer.classList.remove('flipped');
+                        }
                     }
                 }
             });
