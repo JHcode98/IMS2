@@ -697,6 +697,7 @@
             </table>
         </div>
         <div style="text-align:right; margin-top:15px;">
+            <button id="export-req-btn" class="icon-btn" style="background: #fff; color: #333; border: 1px solid #ccc; padding: 8px 16px; margin-right: 5px;">Export CSV</button>
             <button id="save-req-btn" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 16px;">Save Requirements</button>
         </div>
     </div>
@@ -773,6 +774,7 @@
         const reqModal = document.getElementById('req-modal');
         const setReqBtn = document.getElementById('set-requirements-btn');
         const saveReqBtn = document.getElementById('save-req-btn');
+        const exportReqBtn = document.getElementById('export-req-btn');
 
         // Start Area Modal
         const startAreaModal = document.getElementById('start-area-modal');
@@ -1299,6 +1301,32 @@
                 reqModal.classList.add('hidden');
                 updateSummary();
                 showToast('Requirements saved');
+            });
+        }
+
+        if(exportReqBtn) {
+            exportReqBtn.addEventListener('click', () => {
+                const reqs = loadRequirements();
+                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support"];
+                const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+                
+                const headers = ['Sub Role', '1st Shift', '2nd Shift', '3rd Shift'];
+                const rows = [headers.join(',')];
+                
+                subRolesList.forEach(role => {
+                    const row = [`"${role}"`];
+                    shiftsList.forEach(shift => {
+                        const key = `${role}|${shift}`;
+                        row.push(reqs[key] || 0);
+                    });
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'attendance_requirements.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
             });
         }
 
