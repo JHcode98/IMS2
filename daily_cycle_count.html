@@ -989,13 +989,13 @@
                             <thead>
                                 <tr style="position:sticky; top:0;">
                                     <th style="width:30px;"><input type="checkbox" id="ts-select-all"></th>
-                                    <th>User ID</th>
-                                    <th>Name</th>
-                                    <th>Area Type</th>
-                                    <th>Shift</th>
-                                    <th>Start Time</th>
-                                    <th>End Time</th>
-                                    <th>Duration</th>
+                                    <th class="sortable" data-sort="userId">User ID <span class="sort-icon"></span></th>
+                                    <th class="sortable" data-sort="resolvedName">Name <span class="sort-icon"></span></th>
+                                    <th class="sortable" data-sort="resolvedArea">Area Type <span class="sort-icon"></span></th>
+                                    <th class="sortable" data-sort="resolvedShift">Shift <span class="sort-icon"></span></th>
+                                    <th class="sortable" data-sort="startTime">Start Time <span class="sort-icon"></span></th>
+                                    <th class="sortable" data-sort="endTime">End Time <span class="sort-icon"></span></th>
+                                    <th class="sortable" data-sort="durationVal">Duration <span class="sort-icon"></span></th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -1698,6 +1698,8 @@
         let countersItemsPerPage = 7;
         let attSortField = 'date';
         let attSortDirection = 'desc';
+        let tsSortField = 'startTime';
+        let tsSortDirection = 'desc';
 
         // Restore Filters & Button State
         if(uiState.globalStartDate && globalStartDate) globalStartDate.value = uiState.globalStartDate;
@@ -4786,11 +4788,49 @@
                 });
             }
 
-            // Sort descending (newest first)
+            // Pre-calculate fields for sorting and display
+            const now = new Date();
+            filteredSessions.forEach(s => {
+                const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
+                let sessionDate = '';
+                if (ts) {
+                    const d = new Date(ts);
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    sessionDate = `${year}-${month}-${day}`;
+                }
+                let attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
+                if (!attRecord) attRecord = attendance.find(a => a.userId === s.userId);
+                
+                s.resolvedName = attRecord ? attRecord.name : '-';
+                s.resolvedShift = attRecord && attRecord.shift ? attRecord.shift : (s.startLog ? getShiftFromTimestamp(s.startLog.timestamp).shift : '-');
+                s.resolvedArea = s.startLog ? (s.startLog.areaType || '-') : '-';
+                s.startTime = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : '');
+                s.endTime = s.endLog ? s.endLog.timestamp : '';
+                
+                // Duration calculation
+                let durationMins = 0;
+                const totalBreakMins = s.breaks ? s.breaks.reduce((acc, b) => acc + b.duration, 0) : 0;
+                if (s.startLog && s.endLog) {
+                    const diff = new Date(s.endLog.timestamp) - new Date(s.startLog.timestamp);
+                    durationMins = Math.round((diff / 60000) - totalBreakMins);
+                } else if (s.startLog) {
+                    const diff = now - new Date(s.startLog.timestamp);
+                    durationMins = Math.floor(diff / 60000);
+                }
+                s.durationVal = durationMins;
+            });
+
+            // Sort
             filteredSessions.sort((a,b) => {
-                const tA = a.startLog ? a.startLog.timestamp : (a.endLog ? a.endLog.timestamp : '');
-                const tB = b.startLog ? b.startLog.timestamp : (b.endLog ? b.endLog.timestamp : '');
-                return new Date(tB) - new Date(tA);
+                let valA = a[tsSortField];
+                let valB = b[tsSortField];
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                if (valA < valB) return tsSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return tsSortDirection === 'asc' ? 1 : -1;
+                return 0;
             });
 
             // Pagination Logic
@@ -4809,6 +4849,11 @@
                 document.getElementById('ts-next-page').disabled = tsCurrentPage >= totalPages;
             }
             
+            // Update sort icons
+            document.querySelectorAll('#timestamp-table th.sortable .sort-icon').forEach(icon => icon.textContent = '');
+            const activeHeader = document.querySelector(`#timestamp-table th[data-sort="${tsSortField}"]`);
+            if(activeHeader) activeHeader.querySelector('.sort-icon').textContent = tsSortDirection === 'asc' ? '↑' : '↓';
+
             timestampTableBody.innerHTML = '';
             if(filteredSessions.length === 0) {
                 timestampTableBody.innerHTML = '<tr><td colspan="5" style="padding:10px; text-align:center; color:#999;">No logs for today.</td></tr>';
@@ -4817,63 +4862,33 @@
                 const now = new Date();
                 paginatedSessions.forEach(session => {
                     const userId = session.userId;
-                    // Lookup Name
-                    let sessionDate = '';
-                    let areaTypeDisplay = '-';
-                    const ts = session.startLog ? session.startLog.timestamp : (session.endLog ? session.endLog.timestamp : null);
-                    if (ts) {
-                            const d = new Date(ts);
-                            const year = d.getFullYear();
-                            const month = String(d.getMonth() + 1).padStart(2, '0');
-                            const day = String(d.getDate()).padStart(2, '0');
-                            sessionDate = `${year}-${month}-${day}`;
-                    }
-                    let attRecord = attendance.find(a => a.userId === userId && a.date === sessionDate);
-                    if (!attRecord) attRecord = attendance.find(a => a.userId === userId);
-                    const name = attRecord ? attRecord.name : '-';
-                    if (session.startLog && session.startLog.areaType) {
-                        areaTypeDisplay = session.startLog.areaType;
-                    }
+                    const name = session.resolvedName;
+                    const areaTypeDisplay = session.resolvedArea;
+                    const shiftDisplay = session.resolvedShift.split('-')[0];
 
                     const datePrefix = (session.startLog) ? new Date(session.startLog.timestamp).toLocaleDateString() + ' ' : '';
                     const startStr = session.startLog ? `<span class="editable-time" data-log-id="${session.startLog.id}">${datePrefix + new Date(session.startLog.timestamp).toLocaleTimeString()}</span>` : '-';
                     const endStr = session.endLog ? `<span class="editable-time" data-log-id="${session.endLog.id}">${new Date(session.endLog.timestamp).toLocaleTimeString()}</span>` : '-';
                     
-                    // Determine Shift
-                    let shiftDisplay = '-';
-                    if (attRecord && attRecord.shift) {
-                        shiftDisplay = attRecord.shift.split('-')[0];
-                        session.shift = attRecord.shift;
-                    } else {
-                        const shiftInfo = session.startLog ? getShiftFromTimestamp(session.startLog.timestamp) : { shift: '-' };
-                        shiftDisplay = shiftInfo.shift.split('-')[0] || '-';
-                        session.shift = shiftInfo.shift;
-                    }
-
                     let duration = '-';
                     let isHigh = false;
-                    let durationMins = 0;
+                    const durationMins = session.durationVal;
                     
-                    const totalBreakMins = session.breaks ? session.breaks.reduce((acc, b) => acc + b.duration, 0) : 0;
-
-                    if (session.startLog && session.endLog) {
-                        const diff = new Date(session.endLog.timestamp) - new Date(session.startLog.timestamp);
-                        const grossMins = diff / 60000;
-                        durationMins = Math.round(grossMins - totalBreakMins);
+                    if (session.endLog) {
                         duration = `${durationMins} min`;
                         if (durationMins >= 30) isHigh = true;
                     } else if (session.startLog) {
-                        const diff = now - new Date(session.startLog.timestamp);
-                        const runningMins = Math.floor(diff / 60000);
-                        duration = `Active (${runningMins}m)`;
-                        if (runningMins > 60) {
+                        duration = `Active (${durationMins}m)`;
+                        if (durationMins > 60) {
                             duration += ' ⚠️ > 1hr';
                             isHigh = true; 
                         }
                     }
-
+                    
                     // Add duration to session object for chart
                     session.duration = durationMins;
+                    // Ensure shift is set for chart
+                    session.shift = session.resolvedShift;
                     
                     const tr = document.createElement('tr');
                     if ((session.startLog && session.startLog.deleted) || (session.endLog && session.endLog.deleted)) {
@@ -4966,6 +4981,20 @@
         if(timestampTableBody) {
             timestampTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('ts-row-checkbox')) updateTsDeleteButton(); });
         }
+
+        // Timestamp Sorting Listeners
+        document.querySelectorAll('#timestamp-table th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if (tsSortField === field) {
+                    tsSortDirection = tsSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    tsSortField = field;
+                    tsSortDirection = 'asc';
+                }
+                renderTimestamps();
+            });
+        });
 
         function renderTsAnalytics(sessions, date, logs) {
             const container = document.getElementById('ts-analytics-content');
