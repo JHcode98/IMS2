@@ -312,6 +312,34 @@
         45% { height: 0; } 50% { height: 0; } 55% { height: 35px; }
         90% { height: 35px; } 95% { height: 0; } 100% { height: 0; }
     }
+
+    /* Excel-like Report Table */
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px; /* Smaller font */
+        border: 1px solid #ccc;
+    }
+    .report-table th, .report-table td {
+        border: 1px solid #ccc; /* Grid lines */
+        padding: 4px 6px; /* Compact padding */
+        text-align: left;
+    }
+    .report-table th {
+        background-color: #f0f0f0;
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+    }
+    .report-table tbody tr:nth-child(even) { background-color: #fafafa; }
+    .report-table tr:hover { background-color: #eef6ff; }
+    
+    /* Dark mode overrides */
+    body.dark-mode .report-table { border-color: #444; }
+    body.dark-mode .report-table th, body.dark-mode .report-table td { border-color: #444; color: #e0e0e0; }
+    body.dark-mode .report-table th { background-color: #2c2c2c; }
+    body.dark-mode .report-table tbody tr:nth-child(even) { background-color: #1f1f1f; }
+    body.dark-mode .report-table tr:hover { background-color: #333; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -530,23 +558,23 @@
       </div>
       <div class="card-content">
       <div style="overflow-x: auto;">
-          <table id="attendance-table" style="width:100%; border-collapse: collapse;">
+          <table id="attendance-table" class="report-table">
               <thead>
-                  <tr style="background: #f9fbfd; border-bottom: 1px solid #eee;">
-                      <th style="padding: 12px; text-align: left; width: 40px;"><input type="checkbox" id="select-all-att" title="Select All"></th>
-                      <th class="sortable" data-sort="date" style="padding: 12px; text-align: left;">Date <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="userId" style="padding: 12px; text-align: left;">User ID <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="shift" style="padding: 12px; text-align: left;">Shift <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="name" style="padding: 12px; text-align: left;">Name <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="role" style="padding: 12px; text-align: left;">Role <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="area" style="padding: 12px; text-align: left;">Area <span class="sort-icon"></span></th>
-                      <th style="padding: 12px; text-align: left;">Time In</th>
-                      <th style="padding: 12px; text-align: left;">Break Out</th>
-                      <th style="padding: 12px; text-align: left;">Break In</th>
-                      <th style="padding: 12px; text-align: left;">Time Out</th>
-                      <th class="sortable" data-sort="duration" style="padding: 12px; text-align: left;">Duration <span class="sort-icon"></span></th>
-                      <th style="padding: 12px; text-align: left;">Status</th>
-                      <th style="padding: 12px; text-align: left;">Action</th>
+                  <tr>
+                      <th style="width: 40px;"><input type="checkbox" id="select-all-att" title="Select All"></th>
+                      <th class="sortable" data-sort="date">Date <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="userId">User ID <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="shift">Shift <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="area">Area <span class="sort-icon"></span></th>
+                      <th>Time In</th>
+                      <th>Break Out</th>
+                      <th>Break In</th>
+                      <th>Time Out</th>
+                      <th class="sortable" data-sort="duration">Duration <span class="sort-icon"></span></th>
+                      <th>Status</th>
+                      <th>Action</th>
                   </tr>
               </thead>
               <tbody></tbody>
@@ -957,18 +985,18 @@
                     </div>
                     <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee; border-radius:4px;">
-                        <table id="timestamp-table" style="width:100%; border-collapse:collapse; font-size:12px;">
+                        <table id="timestamp-table" class="report-table">
                             <thead>
-                                <tr style="background:#f9f9f9; border-bottom:1px solid #eee; position:sticky; top:0;">
-                                    <th style="padding:8px; text-align:left; width:30px;"><input type="checkbox" id="ts-select-all"></th>
-                                    <th style="padding:8px; text-align:left;">User ID</th>
-                                    <th style="padding:8px; text-align:left;">Name</th>
-                                    <th style="padding:8px; text-align:left;">Area Type</th>
-                                    <th style="padding:8px; text-align:left;">Shift</th>
-                                    <th style="padding:8px; text-align:left;">Start Time</th>
-                                    <th style="padding:8px; text-align:left;">End Time</th>
-                                    <th style="padding:8px; text-align:left;">Duration</th>
-                                    <th style="padding:8px; text-align:left;">Actions</th>
+                                <tr style="position:sticky; top:0;">
+                                    <th style="width:30px;"><input type="checkbox" id="ts-select-all"></th>
+                                    <th>User ID</th>
+                                    <th>Name</th>
+                                    <th>Area Type</th>
+                                    <th>Shift</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -1017,18 +1045,18 @@
                     </div>
                     <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
-                        <table id="break-log-table" style="width:100%; font-size:12px; border-collapse:collapse;">
+                        <table id="break-log-table" class="report-table">
                             <thead>
-                                <tr style="background:#f9f9f9; position:sticky; top:0;">
-                                    <th style="padding:5px; text-align:left; width:30px;"><input type="checkbox" id="break-select-all"></th>
-                                    <th style="padding:5px; text-align:left;">User</th>
-                                    <th style="padding:5px; text-align:left;">Name</th>
-                                    <th style="padding:5px; text-align:left;">Shift</th>
-                                    <th style="padding:5px; text-align:left;">Role</th>
-                                    <th style="padding:5px; text-align:left;">Break Out</th>
-                                    <th style="padding:5px; text-align:left;">Break In</th>
-                                    <th style="padding:5px; text-align:left;">Duration</th>
-                                    <th style="padding:5px; text-align:left;">Action</th>
+                                <tr style="position:sticky; top:0;">
+                                    <th style="width:30px;"><input type="checkbox" id="break-select-all"></th>
+                                    <th>User</th>
+                                    <th>Name</th>
+                                    <th>Shift</th>
+                                    <th>Role</th>
+                                    <th>Break Out</th>
+                                    <th>Break In</th>
+                                    <th>Duration</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -1048,15 +1076,15 @@
                     </div>
                     <div class="section-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
-                        <table id="inactive-users-table" style="width:100%; font-size:12px; border-collapse:collapse;">
+                        <table id="inactive-users-table" class="report-table">
                             <thead>
-                                <tr style="background:#f9f9f9; position:sticky; top:0;">
-                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('userId')">User <span class="sort-icon"></span></th>
-                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('name')">Name <span class="sort-icon"></span></th>
-                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('shift')">Shift <span class="sort-icon"></span></th>
-                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('role')">Role <span class="sort-icon"></span></th>
-                                    <th style="padding:5px; text-align:left; cursor:pointer;" onclick="sortInactiveTable('lastEnd')">Last End Count <span class="sort-icon"></span></th>
-                                    <th style="padding:5px; text-align:center; width:40px;">Action</th>
+                                <tr style="position:sticky; top:0;">
+                                    <th style="cursor:pointer;" onclick="sortInactiveTable('userId')">User <span class="sort-icon"></span></th>
+                                    <th style="cursor:pointer;" onclick="sortInactiveTable('name')">Name <span class="sort-icon"></span></th>
+                                    <th style="cursor:pointer;" onclick="sortInactiveTable('shift')">Shift <span class="sort-icon"></span></th>
+                                    <th style="cursor:pointer;" onclick="sortInactiveTable('role')">Role <span class="sort-icon"></span></th>
+                                    <th style="cursor:pointer;" onclick="sortInactiveTable('lastEnd')">Last End Count <span class="sort-icon"></span></th>
+                                    <th style="text-align:center; width:40px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -3012,20 +3040,20 @@
             paginatedData.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="padding:12px;border-bottom:1px solid #eee"><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.date}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.userId || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.shift}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.name}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.role || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.area || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.timeIn || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.breakOut || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.breakIn || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.timeOut || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee; font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">${item.status || '-'}</td>
-                    <td style="padding:12px;border-bottom:1px solid #eee">
+                    <td><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
+                    <td>${item.date}</td>
+                    <td>${item.userId || '-'}</td>
+                    <td>${item.shift}</td>
+                    <td>${item.name}</td>
+                    <td>${item.role || '-'}</td>
+                    <td>${item.area || '-'}</td>
+                    <td>${item.timeIn || '-'}</td>
+                    <td>${item.breakOut || '-'}</td>
+                    <td>${item.breakIn || '-'}</td>
+                    <td>${item.timeOut || '-'}</td>
+                    <td style="font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
+                    <td>${item.status || '-'}</td>
+                    <td>
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
                         <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
                     </td>
@@ -4873,15 +4901,15 @@
                     }
 
                     tr.innerHTML = `
-                        <td style="padding:8px; border-bottom:1px solid #eee;"><input type="checkbox" class="ts-row-checkbox" data-ids="${rowIds}"></td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${userId}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${name}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${areaTypeDisplay}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">${shiftDisplay}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee; color:#2ecc71; font-weight:bold;">${startStr}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee; color:#e74c3c; font-weight:bold;">${endStr}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee; ${isHigh ? 'color:#e74c3c; font-weight:bold;' : (duration==='Active'?'color:#2ecc71;font-weight:bold':'')}">${duration}</td>
-                        <td style="padding:8px; border-bottom:1px solid #eee;">
+                        <td><input type="checkbox" class="ts-row-checkbox" data-ids="${rowIds}"></td>
+                        <td>${userId}</td>
+                        <td>${name}</td>
+                        <td>${areaTypeDisplay}</td>
+                        <td>${shiftDisplay}</td>
+                        <td style="color:#2ecc71; font-weight:bold;">${startStr}</td>
+                        <td style="color:#e74c3c; font-weight:bold;">${endStr}</td>
+                        <td style="${isHigh ? 'color:#e74c3c; font-weight:bold;' : (duration==='Active'?'color:#2ecc71;font-weight:bold':'')}">${duration}</td>
+                        <td>
                             ${quickAction}
                             ${deleteAction}
                         </td>
@@ -5274,7 +5302,7 @@
 
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left;"><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${b.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${shift}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${role}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${startStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endStr}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${durationDisplay}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left;">${endBreakBtn}${deleteBtn}</td>`;
+                tr.innerHTML = `<td><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td>${b.userId}</td><td>${name}</td><td>${shift}</td><td>${role}</td><td>${startStr}</td><td>${endStr}</td><td>${durationDisplay}</td><td>${endBreakBtn}${deleteBtn}</td>`;
                 
                 tr.onmouseenter = () => { 
                     tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '1'); 
@@ -5404,7 +5432,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
                 </button>`;
 
-                tr.innerHTML = `<td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.userId}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.name}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.shift || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.role || '-'}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:left; color:${color}">${u.lastEnd}</td><td style="padding:5px; border-bottom:1px solid #eee; text-align:center; white-space:nowrap;">${startBtn}${breakBtn}</td>`;
+                tr.innerHTML = `<td style="color:${color}">${u.userId}</td><td style="color:${color}">${u.name}</td><td style="color:${color}">${u.shift || '-'}</td><td style="color:${color}">${u.role || '-'}</td><td style="color:${color}">${u.lastEnd}</td><td style="text-align:center; white-space:nowrap;">${startBtn}${breakBtn}</td>`;
                 
                 tr.onmouseenter = () => { tr.querySelectorAll('.quick-start-btn').forEach(b => b.style.opacity = '1'); };
                 tr.onmouseleave = () => { tr.querySelectorAll('.quick-start-btn').forEach(b => b.style.opacity = '0'); };
