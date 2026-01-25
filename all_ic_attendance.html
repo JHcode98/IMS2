@@ -209,6 +209,7 @@
                 <option value="B1T1 Checker">B1T1 Checker</option>
                 <option value="Validator">Validator</option>
                 <option value="HVI Support">HVI Support</option>
+                <option value="Projects">Projects</option>
             </select>
             <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
             <button id="print-att-btn" class="icon-btn" title="Print List">
@@ -325,6 +326,7 @@
                         <option value="Validator">Validator</option>
                         <option value="HVI Support">HVI Support</option>
                         <option value="Cycle Counter">Cycle Counter</option>
+                        <option value="Projects">Projects</option>
                     </select>
                 </div>
             </div>
@@ -896,7 +898,7 @@
         function updateSummary() {
             const data = getFilteredAttendanceData(true); // Ignore shift tab filter
             const reqs = loadRequirements();
-            const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support"];
+            const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects"];
             const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
 
             const summary = {
@@ -919,10 +921,20 @@
                 });
             });
             
-            document.getElementById('summary-1st').innerHTML = `${summary['1st Shift-(6am-2pm)'].act} <span style="font-size:14px; color:#999;">/ ${summary['1st Shift-(6am-2pm)'].req}</span>`;
-            document.getElementById('summary-2nd').innerHTML = `${summary['2nd Shift-(2pm-10pm)'].act} <span style="font-size:14px; color:#999;">/ ${summary['2nd Shift-(2pm-10pm)'].req}</span>`;
-            document.getElementById('summary-3rd').innerHTML = `${summary['3rd Shift-(10pm-6am)'].act} <span style="font-size:14px; color:#999;">/ ${summary['3rd Shift-(10pm-6am)'].req}</span>`;
-            document.getElementById('summary-total').innerHTML = `${summary.total.act} <span style="font-size:14px; color:#999;">/ ${summary.total.req}</span>`;
+            const getPctHtml = (act, req) => {
+                const pct = req > 0 ? Math.round((act / req) * 100) : 0;
+                let color = '#e74c3c'; // red
+                if (pct >= 100) color = '#2ecc71'; // green
+                else if (pct >= 80) color = '#f1c40f'; // yellow
+                // Only show percentage if there is a requirement
+                if (req === 0 && act === 0) return '';
+                return `<span style="font-size:14px; color:${color}; margin-left:5px;">(${pct}%)</span>`;
+            };
+
+            document.getElementById('summary-1st').innerHTML = `${summary['1st Shift-(6am-2pm)'].act} <span style="font-size:14px; color:#999;">/ ${summary['1st Shift-(6am-2pm)'].req}</span> ${getPctHtml(summary['1st Shift-(6am-2pm)'].act, summary['1st Shift-(6am-2pm)'].req)}`;
+            document.getElementById('summary-2nd').innerHTML = `${summary['2nd Shift-(2pm-10pm)'].act} <span style="font-size:14px; color:#999;">/ ${summary['2nd Shift-(2pm-10pm)'].req}</span> ${getPctHtml(summary['2nd Shift-(2pm-10pm)'].act, summary['2nd Shift-(2pm-10pm)'].req)}`;
+            document.getElementById('summary-3rd').innerHTML = `${summary['3rd Shift-(10pm-6am)'].act} <span style="font-size:14px; color:#999;">/ ${summary['3rd Shift-(10pm-6am)'].req}</span> ${getPctHtml(summary['3rd Shift-(10pm-6am)'].act, summary['3rd Shift-(10pm-6am)'].req)}`;
+            document.getElementById('summary-total').innerHTML = `${summary.total.act} <span style="font-size:14px; color:#999;">/ ${summary.total.req}</span> ${getPctHtml(summary.total.act, summary.total.req)}`;
         }
 
         function renderAttendanceTable() {
@@ -1271,7 +1283,7 @@
             setReqBtn.addEventListener('click', () => {
                 const reqs = loadRequirements();
                 const tbody = document.querySelector('#req-table tbody');
-                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support"];
+                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects"];
                 const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
                 
                 tbody.innerHTML = '';
@@ -1307,7 +1319,7 @@
         if(exportReqBtn) {
             exportReqBtn.addEventListener('click', () => {
                 const reqs = loadRequirements();
-                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support"];
+                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects"];
                 const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
                 
                 const headers = ['Sub Role', '1st Shift', '2nd Shift', '3rd Shift'];
