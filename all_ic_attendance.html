@@ -173,9 +173,17 @@
                 <option value="Other">Other</option>
             </select>
             <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
-                <option value="">All Areas</option>
-                <option value="Pick Bin">Pick Bin</option>
-                <option value="Reserved Bin">Reserved Bin</option>
+                <option value="">All Sub Roles</option>
+                <option value="Cycle Counter">Cycle Counter</option>
+                <option value="TL">TL</option>
+                <option value="OIC">OIC</option>
+                <option value="Encoder">Encoder</option>
+                <option value="SBD Checker">SBD Checker</option>
+                <option value="RTV">RTV</option>
+                <option value="Damaged Checker">Damaged Checker</option>
+                <option value="B1T1 Checker">B1T1 Checker</option>
+                <option value="Validator">Validator</option>
+                <option value="HVI Support">HVI Support</option>
             </select>
             <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
             <button id="print-att-btn" class="icon-btn" title="Print List">
@@ -209,7 +217,7 @@
                       <th class="sortable" data-sort="shift">Shift <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="area">Area <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="area">Sub Role <span class="sort-icon"></span></th>
                       <th>Time In</th>
                       <th>Break Out</th>
                       <th>Break In</th>
@@ -283,10 +291,18 @@
                     </select>
                 </div>
                 <div>
-                    <label for="att-area">Area</label>
+                    <label for="att-area">Sub Role</label>
                     <select id="att-area" style="width:100%">
-                        <option value="Pick Bin">Pick Bin</option>
-                        <option value="Reserved Bin">Reserved Bin</option>
+                        <option value="TL">TL</option>
+                        <option value="OIC">OIC</option>
+                        <option value="Encoder">Encoder</option>
+                        <option value="SBD Checker">SBD Checker</option>
+                        <option value="RTV">RTV</option>
+                        <option value="Damaged Checker">Damaged Checker</option>
+                        <option value="B1T1 Checker">B1T1 Checker</option>
+                        <option value="Validator">Validator</option>
+                        <option value="HVI Support">HVI Support</option>
+                        <option value="Cycle Counter">Cycle Counter</option>
                     </select>
                 </div>
             </div>
@@ -1095,7 +1111,7 @@
             exportAttBtn.addEventListener('click', () => {
                 const data = getFilteredAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
@@ -1130,7 +1146,7 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
