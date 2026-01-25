@@ -3450,6 +3450,12 @@
                     status: document.getElementById('att-status').value
                 };
                 if(!newEntry.name) return;
+                
+                // Restrict to IC Support only for this page
+                if (newEntry.role !== 'IC Support') {
+                    alert('Only "IC Support" role can be added from the Daily Cycle Count page.');
+                    return;
+                }
 
                 // Duplicate check: User ID and Name must be unique for the same shift
                 const attendanceData = getAttendanceData();
