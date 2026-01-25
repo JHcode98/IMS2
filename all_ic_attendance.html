@@ -1442,6 +1442,7 @@
                             let matched = false;
                             checkboxes.forEach(cb => {
                                 cb.checked = (cb.value === selectedSubRole);
+                                if(cb.checked) matched = true;
                             });
                             
                             // Update Dropdown Text
