@@ -159,6 +159,9 @@
       <button id="reports-menu-btn" class="icon-btn" title="Reports" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
       </button>
+      <button id="set-requirements-btn" class="icon-btn" title="Set Requirements" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Requirements
+      </button>
       <div style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #ccc; padding-left:10px;">
           <input type="checkbox" id="auto-refresh-check" title="Auto Refresh every 15s">
           <label for="auto-refresh-check" style="font-size:13px; cursor:pointer;">Auto Refresh</label>
@@ -672,6 +675,33 @@
     </div>
   </div>
 
+  <!-- Requirements Modal -->
+  <div id="req-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 800px; margin: 50px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Set Shift Requirements (Daily)</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="overflow-x:auto; max-height: 60vh;">
+            <table class="report-table" id="req-table">
+                <thead>
+                    <tr>
+                        <th>Sub Role</th>
+                        <th>1st Shift</th>
+                        <th>2nd Shift</th>
+                        <th>3rd Shift</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div style="text-align:right; margin-top:15px;">
+            <button id="save-req-btn" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 16px;">Save Requirements</button>
+        </div>
+    </div>
+  </div>
+
   <!-- Floating Add Button -->
   <button id="fab-add-att" class="fab-btn" title="Add Attendance">+</button>
 
@@ -739,6 +769,11 @@
         const repInactiveBtn = document.getElementById('rep-inactive-btn');
         const repSessionsBtn = document.getElementById('rep-sessions-btn');
         
+        // Requirements
+        const reqModal = document.getElementById('req-modal');
+        const setReqBtn = document.getElementById('set-requirements-btn');
+        const saveReqBtn = document.getElementById('save-req-btn');
+
         // Start Area Modal
         const startAreaModal = document.getElementById('start-area-modal');
         const warehouseAreaModal = document.getElementById('warehouse-area-modal');
@@ -852,24 +887,40 @@
             return data;
         }
 
+        function loadRequirements() {
+            try { return JSON.parse(localStorage.getItem('ims_att_requirements_v1') || '{}'); } catch(e) { return {}; }
+        }
+
         function updateSummary() {
             const data = getFilteredAttendanceData(true); // Ignore shift tab filter
+            const reqs = loadRequirements();
+            const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support"];
+            const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+
             const summary = {
-                '1st Shift-(6am-2pm)': 0,
-                '2nd Shift-(2pm-10pm)': 0,
-                '3rd Shift-(10pm-6am)': 0,
-                'total': 0
+                '1st Shift-(6am-2pm)': { act: 0, req: 0 },
+                '2nd Shift-(2pm-10pm)': { act: 0, req: 0 },
+                '3rd Shift-(10pm-6am)': { act: 0, req: 0 },
+                'total': { act: 0, req: 0 }
             };
             
             data.forEach(item => {
-                if (summary.hasOwnProperty(item.shift)) summary[item.shift]++;
-                summary.total++;
+                if (summary.hasOwnProperty(item.shift)) summary[item.shift].act++;
+                summary.total.act++;
             });
             
-            document.getElementById('summary-1st').textContent = summary['1st Shift-(6am-2pm)'];
-            document.getElementById('summary-2nd').textContent = summary['2nd Shift-(2pm-10pm)'];
-            document.getElementById('summary-3rd').textContent = summary['3rd Shift-(10pm-6am)'];
-            document.getElementById('summary-total').textContent = summary.total;
+            subRolesList.forEach(role => {
+                shiftsList.forEach(shift => {
+                    const val = parseInt(reqs[`${role}|${shift}`] || 0);
+                    if(summary[shift]) summary[shift].req += val;
+                    summary.total.req += val;
+                });
+            });
+            
+            document.getElementById('summary-1st').innerHTML = `${summary['1st Shift-(6am-2pm)'].act} <span style="font-size:14px; color:#999;">/ ${summary['1st Shift-(6am-2pm)'].req}</span>`;
+            document.getElementById('summary-2nd').innerHTML = `${summary['2nd Shift-(2pm-10pm)'].act} <span style="font-size:14px; color:#999;">/ ${summary['2nd Shift-(2pm-10pm)'].req}</span>`;
+            document.getElementById('summary-3rd').innerHTML = `${summary['3rd Shift-(10pm-6am)'].act} <span style="font-size:14px; color:#999;">/ ${summary['3rd Shift-(10pm-6am)'].req}</span>`;
+            document.getElementById('summary-total').innerHTML = `${summary.total.act} <span style="font-size:14px; color:#999;">/ ${summary.total.req}</span>`;
         }
 
         function renderAttendanceTable() {
@@ -1210,6 +1261,44 @@
                 printWindow.document.write('<script>window.onload=function(){window.print();window.close();}<\/script>');
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
+            });
+        }
+
+        // Requirements Modal Logic
+        if(setReqBtn) {
+            setReqBtn.addEventListener('click', () => {
+                const reqs = loadRequirements();
+                const tbody = document.querySelector('#req-table tbody');
+                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support"];
+                const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+                
+                tbody.innerHTML = '';
+                subRolesList.forEach(role => {
+                    const tr = document.createElement('tr');
+                    let html = `<td>${role}</td>`;
+                    shiftsList.forEach(shift => {
+                        const key = `${role}|${shift}`;
+                        const val = reqs[key] || 0;
+                        html += `<td><input type="number" class="req-input" data-key="${key}" value="${val}" style="width:60px; padding:4px; border:1px solid #ccc; border-radius:4px;"></td>`;
+                    });
+                    tr.innerHTML = html;
+                    tbody.appendChild(tr);
+                });
+                reqModal.classList.remove('hidden');
+            });
+        }
+
+        if(saveReqBtn) {
+            saveReqBtn.addEventListener('click', () => {
+                const inputs = document.querySelectorAll('.req-input');
+                const reqs = {};
+                inputs.forEach(inp => {
+                    reqs[inp.dataset.key] = parseInt(inp.value) || 0;
+                });
+                localStorage.setItem('ims_att_requirements_v1', JSON.stringify(reqs));
+                reqModal.classList.add('hidden');
+                updateSummary();
+                showToast('Requirements saved');
             });
         }
 
