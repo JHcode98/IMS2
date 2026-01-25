@@ -78,7 +78,7 @@
     .summary-label { font-size: 12px; color: #6c757d; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* Flip Card Styles */
-    .flip-container { perspective: 1000px; position: relative; margin-top: 20px; min-height: 600px; }
+    .flip-container { perspective: 1000px; position: relative; margin-top: 20px; height: 80vh; min-height: 600px; }
     .flip-inner { transition: transform 0.6s; transform-style: preserve-3d; position: relative; width: 100%; height: 100%; }
     .flip-container.flipped .flip-inner { transform: rotateY(180deg); }
     .flip-front, .flip-back { 
@@ -250,14 +250,14 @@
             </button>
         </div>
       </div>
-      <div class="card-content">
+      <div class="card-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
       <div class="att-tabs">
           <button class="att-tab active" data-shift="">All Shifts</button>
           <button class="att-tab" data-shift="1st Shift-(6am-2pm)">1st Shift</button>
           <button class="att-tab" data-shift="2nd Shift-(2pm-10pm)">2nd Shift</button>
           <button class="att-tab" data-shift="3rd Shift-(10pm-6am)">3rd Shift</button>
       </div>
-      <div style="overflow-x: auto;">
+      <div style="overflow: auto; flex: 1;">
           <table id="attendance-table" class="report-table">
               <thead>
                   <tr>
@@ -1594,6 +1594,12 @@
         // Initial Render
         renderAttendanceTable();
     });
+  </script>
+</body>
+</html>
+  </script>
+</body>
+</html>
   </script>
 </body>
 </html>
