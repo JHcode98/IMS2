@@ -304,14 +304,14 @@
                     </div>
                     </div>
                     <div style="display:flex; gap:5px; margin-bottom:10px;">
-                        <button id="btn-start-count" class="icon-btn" style="flex:1; background:#2ecc71; color:white; padding:10px; font-weight:bold; justify-content:center;">Start Counting</button>
-                        <button id="btn-end-count" class="icon-btn" style="flex:1; background:#e74c3c; color:white; padding:10px; font-weight:bold; justify-content:center;">End Counting</button>
+                        <button id="btn-break-start-main" class="icon-btn" style="flex:1; background:#f1c40f; color:white; padding:10px; font-weight:bold; justify-content:center;">Start Break</button>
+                        <button id="btn-break-end-main" class="icon-btn" style="flex:1; background:#f39c12; color:white; padding:10px; font-weight:bold; justify-content:center;">End Break</button>
                         <button id="btn-time-out" class="icon-btn" style="flex:1; background:#34495e; color:white; padding:10px; font-weight:bold; justify-content:center;">Time Out</button>
                     </div>
                 </div>
 
                 <!-- Table 1: Today's Logs -->
-                <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; max-height:400px;">
+                <div class="card" style="margin:0; padding:10px; display:none; flex-direction:column; max-height:400px;">
                     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                         <div style="display:flex; align-items:center; gap:5px;">
                             <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
@@ -611,11 +611,11 @@
         const timestampBtn = document.getElementById('counter-timestamp-btn');
         const timestampModal = document.getElementById('timestamp-modal');
         const tsUserIdInput = document.getElementById('ts-user-id');
-        const btnStartCount = document.getElementById('btn-start-count');
+        const btnBreakStartMain = document.getElementById('btn-break-start-main');
+        const btnBreakEndMain = document.getElementById('btn-break-end-main');
         const btnBreakStart = document.getElementById('btn-break-start');
         const btnBreakEnd = document.getElementById('btn-break-end');
         const btnTimeOut = document.getElementById('btn-time-out');
-        const btnEndCount = document.getElementById('btn-end-count');
         const timestampTableBody = document.querySelector('#timestamp-table tbody');
         const tsExportBtn = document.getElementById('ts-export-btn');
         const tsFilterUser = document.getElementById('ts-filter-user');
