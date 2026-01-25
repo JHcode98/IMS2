@@ -3420,18 +3420,30 @@
                 };
                 if(!newEntry.name) return;
 
-                // Duplicate check: User ID must be unique per date (across all shifts)
-                const existing = getAttendanceData().find(a => 
+                // Duplicate check: User ID and Name must be unique for the same shift
+                const attendanceData = getAttendanceData();
+                const existingId = attendanceData.find(a => 
                     a.date === newEntry.date && 
+                    a.shift === newEntry.shift &&
                     a.userId === newEntry.userId &&
                     a.id !== newEntry.id
                 );
-                if (existing) {
-                    alert(`User ID ${newEntry.userId} is already assigned to ${existing.shift} on ${newEntry.date}.`);
+                if (existingId) {
+                    alert(`User ID ${newEntry.userId} is already assigned to this shift on ${newEntry.date}.`);
+                    return;
+                }
+                const existingName = attendanceData.find(a => 
+                    a.date === newEntry.date && 
+                    a.shift === newEntry.shift &&
+                    a.name === newEntry.name &&
+                    a.id !== newEntry.id
+                );
+                if (existingName) {
+                    alert(`Name "${newEntry.name}" is already assigned to this shift on ${newEntry.date}.`);
                     return;
                 }
 
-                let data = getAttendanceData();
+                let data = attendanceData;
                 if (editId) {
                     const idx = data.findIndex(x => x.id === editId);
                     if (idx > -1) data[idx] = newEntry;
