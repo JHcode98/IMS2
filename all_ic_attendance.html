@@ -211,10 +211,18 @@
             <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Roles</option>
                 <option value="IC Support">IC Support</option>
+                <option value="Warehouse">Warehouse</option>
+                <option value="Admin">Admin</option>
+                <option value="Management">Management</option>
+            </select>
+            <select id="att-filter-status" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Statuses</option>
+                <option value="Full counter">Full counter</option>
+                <option value="Temporary slide to Other task">Temporary slide to Other task</option>
             </select>
             <div id="att-filter-area-wrapper" style="position:relative; display:inline-block;">
                 <button id="att-filter-area-btn" style="padding:6px; border:1px solid #ccc; border-radius:4px; background:#fff; cursor:pointer; min-width:150px; text-align:left; display:flex; justify-content:space-between; align-items:center;">
-                    <span id="att-filter-area-text">All Sub Roles</span>
+                    <span id="att-filter-area-text">All Job Descriptions</span>
                     <span style="font-size:10px; margin-left:5px;">▼</span>
                 </button>
                 <div id="att-filter-area-dropdown" style="display:none; position:absolute; top:100%; left:0; background:#fff; border:1px solid #ccc; border-radius:4px; padding:10px; z-index:1000; min-width:200px; box-shadow:0 4px 8px rgba(0,0,0,0.1); max-height:300px; overflow-y:auto;">
@@ -267,12 +275,13 @@
                       <th class="sortable" data-sort="shift">Shift <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="area">Sub Role <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="area">Job Description <span class="sort-icon"></span></th>
                       <th>Time In</th>
                       <th>Break Out</th>
                       <th>Break In</th>
                       <th>Time Out</th>
                       <th class="sortable" data-sort="duration">Duration <span class="sort-icon"></span></th>
+                      <th>Status</th>
                       <th>Notes</th>
                       <th>Action</th>
                   </tr>
@@ -280,7 +289,7 @@
               <tbody></tbody>
               <tfoot>
                   <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #eef2f6;">
-                      <td colspan="14" style="text-align: right; padding: 10px;">Total Records: <span id="att-total-count">0</span></td>
+                      <td colspan="15" style="text-align: right; padding: 10px;">Total Records: <span id="att-total-count">0</span></td>
                   </tr>
               </tfoot>
           </table>
@@ -352,10 +361,13 @@
                     <label for="att-role">Role</label>
                     <select id="att-role" style="width:100%">
                         <option value="IC Support">IC Support</option>
+                        <option value="Warehouse">Warehouse</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Management">Management</option>
                     </select>
                 </div>
                 <div>
-                    <label for="att-area">Sub Role</label>
+                    <label for="att-area">Job Description</label>
                     <select id="att-area" style="width:100%">
                         <option value="TL">TL</option>
                         <option value="OIC">OIC</option>
@@ -394,6 +406,13 @@
                     <label for="att-notes">Notes (Optional)</label>
                     <input type="text" id="att-notes" style="width:100%" placeholder="Enter notes">
                 </div>
+            </div>
+            <div>
+                <label for="att-status">Status</label>
+                <select id="att-status" style="width:100%">
+                    <option value="Full counter">Full counter</option>
+                    <option value="Temporary slide to Other task">Temporary slide to Other task</option>
+                </select>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
@@ -929,6 +948,10 @@
             if (selectedAreas.length > 0) {
                 data = data.filter(item => selectedAreas.includes(item.area));
             }
+            const statusFilter = document.getElementById('att-filter-status').value;
+            if (statusFilter) {
+                data = data.filter(item => (item.status || 'Full counter') === statusFilter);
+            }
             if (!ignoreShift && currentShiftFilter) data = data.filter(item => item.shift === currentShiftFilter);
             
             data.sort((a, b) => {
@@ -1017,7 +1040,7 @@
             if(activeHeader) activeHeader.querySelector('.sort-icon').textContent = attSortDirection === 'asc' ? '↑' : '↓';
 
             if (paginatedData.length === 0) {
-                attendanceTableBody.innerHTML = `<tr><td colspan="14" class="muted" style="text-align:center; padding: 20px;">No attendance records found.</td></tr>`;
+                attendanceTableBody.innerHTML = `<tr><td colspan="15" class="muted" style="text-align:center; padding: 20px;">No attendance records found.</td></tr>`;
                 return;
             }
             paginatedData.forEach(item => {
@@ -1035,6 +1058,7 @@
                     <td>${item.breakIn || '-'}</td>
                     <td>${item.timeOut || '-'}</td>
                     <td style="font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
+                    <td>${item.status || '-'}</td>
                     <td>${item.notes || ''}</td>
                     <td>
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
@@ -1134,6 +1158,7 @@
                     breakIn: document.getElementById('att-break-in').value,
                     breakOut: document.getElementById('att-break-out').value,
                     timeOut: document.getElementById('att-time-out').value,
+                    status: document.getElementById('att-status').value,
                     notes: document.getElementById('att-notes').value.trim()
                 };
                 if(!newEntry.name) return;
@@ -1205,6 +1230,7 @@
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
                         document.getElementById('att-time-out').value = item.timeOut || '';
+                        document.getElementById('att-status').value = item.status || 'Full counter';
                         document.getElementById('att-notes').value = item.notes || '';
                         attModal.classList.remove('hidden');
                     }
@@ -1274,13 +1300,13 @@
             exportAttBtn.addEventListener('click', () => {
                 const data = getFilteredAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Notes'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status', 'Notes'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
                     const dur = getDuration(item.breakOut, item.breakIn);
                     const row = [
-                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.notes||''}"`
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`, `"${item.notes||''}"`
                     ];
                     rows.push(row.join(','));
                 });
@@ -1309,7 +1335,7 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Sub Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Notes', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Notes', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
@@ -1320,10 +1346,12 @@
                     printWindow.document.write(`<td>${item.shift}</td>`);
                     printWindow.document.write(`<td>${item.name}</td>`);
                     printWindow.document.write(`<td>${item.role || '-'}</td>`);
+                    printWindow.document.write(`<td>${item.area || '-'}</td>`);
                     printWindow.document.write(`<td>${item.timeIn || ''}</td>`);
                     printWindow.document.write(`<td>${item.breakOut || ''}</td>`);
                     printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
                     printWindow.document.write(`<td>${item.timeOut || ''}</td>`);
+                    printWindow.document.write(`<td>${item.status || ''}</td>`);
                     printWindow.document.write(`<td>${item.notes || ''}</td>`);
                     printWindow.document.write('<td class="sig"></td>');
                     printWindow.document.write('</tr>');
@@ -1496,7 +1524,7 @@
              
              // Update Dropdown Text
              const areaText = document.getElementById('att-filter-area-text');
-             if(areaText) areaText.textContent = matched ? role : 'All Sub Roles';
+             if(areaText) areaText.textContent = matched ? role : 'All Job Descriptions';
              
              // Trigger Render
              renderAttendanceTable();
@@ -1510,6 +1538,7 @@
         if (applyGlobalFilterBtn) applyGlobalFilterBtn.addEventListener('click', renderAttendanceTable);
         if (clearGlobalFilterBtn) clearGlobalFilterBtn.addEventListener('click', () => { globalStartDate.value = ''; globalEndDate.value = ''; renderAttendanceTable(); });
         if (attSearchInput) attSearchInput.addEventListener('input', renderAttendanceTable);
+        if (document.getElementById('att-filter-status')) document.getElementById('att-filter-status').addEventListener('change', renderAttendanceTable);
         if (attFilterRole) attFilterRole.addEventListener('change', renderAttendanceTable);
         
         // Sub Role Multi-Select Logic
@@ -1533,14 +1562,14 @@
 
             areaApplyBtn.addEventListener('click', () => {
                 const checked = Array.from(document.querySelectorAll('.att-area-cb:checked')).map(cb => cb.value);
-                areaText.textContent = checked.length === 0 ? 'All Sub Roles' : (checked.length <= 2 ? checked.join(', ') : `${checked.length} Selected`);
+                areaText.textContent = checked.length === 0 ? 'All Job Descriptions' : (checked.length <= 2 ? checked.join(', ') : `${checked.length} Selected`);
                 areaDropdown.style.display = 'none';
                 renderAttendanceTable();
             });
 
             areaClearBtn.addEventListener('click', () => {
                 document.querySelectorAll('.att-area-cb').forEach(cb => cb.checked = false);
-                areaText.textContent = 'All Sub Roles';
+                areaText.textContent = 'All Job Descriptions';
                 areaDropdown.style.display = 'none';
                 renderAttendanceTable();
             });
