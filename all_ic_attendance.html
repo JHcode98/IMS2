@@ -38,7 +38,7 @@
         width: 100%;
         border-collapse: collapse;
         font-size: 12px; /* Smaller font */
-        border: 1px solid #ccc;
+        border: 1px solid #ccc; table-layout: fixed;
     }
     .report-table th, .report-table td {
         border: 1px solid #ccc; /* Grid lines */
@@ -217,11 +217,11 @@
             </select>
             <select id="att-filter-status" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Statuses</option>
-                <option value="Full counter">Full counter</option>
+                <option value="Full-time">Full-time</option>
                 <option value="Temporary slide to Other task">Temporary slide to Other task</option>
             </select>
             <div id="att-filter-area-wrapper" style="position:relative; display:inline-block;">
-                <button id="att-filter-area-btn" style="padding:6px; border:1px solid #ccc; border-radius:4px; background:#fff; cursor:pointer; min-width:150px; text-align:left; display:flex; justify-content:space-between; align-items:center;">
+                <button id="att-filter-area-btn" style="padding:6px; border:1px solid #ccc; border-radius:4px; background:#fff; color:black; cursor:pointer; min-width:150px; text-align:left; display:flex; justify-content:space-between; align-items:center;">
                     <span id="att-filter-area-text">All Job Descriptions</span>
                     <span style="font-size:10px; margin-left:5px;">▼</span>
                 </button>
@@ -237,6 +237,7 @@
                     <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="Validator"> Validator</label>
                     <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="HVI Support"> HVI Support</label>
                     <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="Projects"> Projects</label>
+                    <label style="display:block; margin-bottom:5px; cursor:pointer;"><input type="checkbox" class="att-area-cb" value="HO-Cancelled"> HO-Cancelled</label>
                     <div style="border-top:1px solid #eee; margin-top:5px; padding-top:5px; text-align:right;">
                         <button id="att-filter-area-clear" style="padding:4px 8px; background:#eee; color:#333; border:none; border-radius:4px; font-size:12px; margin-right:5px;">Clear</button>
                         <button id="att-filter-area-apply" style="padding:4px 8px; background:#2752a7; color:white; border:none; border-radius:4px; font-size:12px;">Apply</button>
@@ -270,20 +271,20 @@
               <thead>
                   <tr>
                       <th style="width: 30px;"><input type="checkbox" id="select-all-att" title="Select All"></th>
-                      <th class="sortable" data-sort="date">Date <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="userId">User ID <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="shift">Shift <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="area">Job Description <span class="sort-icon"></span></th>
-                      <th>Time In</th>
-                      <th>Break Out</th>
-                      <th>Break In</th>
-                      <th>Time Out</th>
-                      <th class="sortable" data-sort="duration">Duration <span class="sort-icon"></span></th>
-                      <th>Status</th>
-                      <th>Notes</th>
-                      <th>Action</th>
+                      <th class="sortable" data-sort="date" style="width: 80px;">Date <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="userId" style="width: 60px;">User ID <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="shift" style="width: 100px;">Shift <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="name" style="width: 120px;">Name <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="role" style="width: 80px;">Role <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="area" style="width: 100px;">Job Description <span class="sort-icon"></span></th>
+                      <th style="width: 60px;">Time In</th>
+                      <th style="width: 60px;">Break Out</th>
+                      <th style="width: 60px;">Break In</th>
+                      <th style="width: 60px;">Time Out</th>
+                      <th class="sortable" data-sort="duration" style="width: 60px;">Duration <span class="sort-icon"></span></th>
+                      <th style="width: 80px;">Status</th>
+                      <th style="width: 100px;">Notes</th>
+                      <th style="width: 60px;">Action</th>
                   </tr>
               </thead>
               <tbody></tbody>
@@ -380,6 +381,7 @@
                         <option value="HVI Support">HVI Support</option>
                         <option value="Cycle Counter">Cycle Counter</option>
                         <option value="Projects">Projects</option>
+                        <option value="HO-Cancelled">HO-Cancelled</option>
                     </select>
                 </div>
             </div>
@@ -410,7 +412,7 @@
             <div>
                 <label for="att-status">Status</label>
                 <select id="att-status" style="width:100%">
-                    <option value="Full counter">Full counter</option>
+                    <option value="Full-time">Full-time</option>
                     <option value="Temporary slide to Other task">Temporary slide to Other task</option>
                 </select>
             </div>
@@ -781,7 +783,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
-        const STORAGE_KEY_TIMESTAMPS = 'ims_counter_timestamps_v1';
+        const STORAGE_KEY_TIMESTAMPS = 'ims_all_ic_timestamps_v1';
         
         let attCurrentPage = 1;
         let attItemsPerPage = 20;
@@ -950,7 +952,7 @@
             }
             const statusFilter = document.getElementById('att-filter-status').value;
             if (statusFilter) {
-                data = data.filter(item => (item.status || 'Full counter') === statusFilter);
+                data = data.filter(item => (item.status || 'Full-time') === statusFilter);
             }
             if (!ignoreShift && currentShiftFilter) data = data.filter(item => item.shift === currentShiftFilter);
             
@@ -975,7 +977,7 @@
         function updateSummary() {
             const data = getFilteredAttendanceData(true); // Ignore shift tab filter
             const reqs = loadRequirements();
-            const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects"];
+            const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects", "HO-Cancelled"];
             const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
 
             const summary = {
@@ -1230,7 +1232,7 @@
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
                         document.getElementById('att-time-out').value = item.timeOut || '';
-                        document.getElementById('att-status').value = item.status || 'Full counter';
+                        document.getElementById('att-status').value = item.status || 'Full-time';
                         document.getElementById('att-notes').value = item.notes || '';
                         attModal.classList.remove('hidden');
                     }
