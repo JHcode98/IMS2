@@ -731,9 +731,9 @@
                 duration: s.duration,
                 end: s.endLog.timestamp
             }));
-            try { renderTimestampChart(chartSessions); } catch(e) { console.error(e); }
-            try { renderTsAnalytics(sessions, analyticsDate, logsToProcess); } catch(e) { console.error(e); }
-            try { renderBreakLogTable(logsToProcess, attendance); } catch(e) { console.error(e); }
+            renderTimestampChart(chartSessions);
+            renderTsAnalytics(sessions, analyticsDate, logsToProcess);
+            renderBreakLogTable(logsToProcess, attendance);
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
         }
