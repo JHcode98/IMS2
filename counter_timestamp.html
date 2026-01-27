@@ -731,9 +731,9 @@
                 duration: s.duration,
                 end: s.endLog.timestamp
             }));
-            renderTimestampChart(chartSessions);
-            renderTsAnalytics(sessions, analyticsDate, logsToProcess);
-            renderBreakLogTable(logsToProcess, attendance);
+            try { renderTimestampChart(chartSessions); } catch(e) { console.error(e); }
+            try { renderTsAnalytics(sessions, analyticsDate, logsToProcess); } catch(e) { console.error(e); }
+            try { renderBreakLogTable(logsToProcess, attendance); } catch(e) { console.error(e); }
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
         }
@@ -1621,20 +1621,6 @@
             historyTableBody.addEventListener('click', handleEditClick);
         }
 
-        // Tab Switching Logic
-        window.openTab = function(evt, tabId) {
-            const card = evt.target.closest('.card');
-            const tabContents = card.querySelectorAll('.tab-content');
-            tabContents.forEach(tc => tc.style.display = 'none');
-
-            const tabBtns = card.querySelectorAll('.tab-btn');
-            tabBtns.forEach(btn => btn.classList.remove('active'));
-
-            const target = document.getElementById(tabId);
-            if(target) target.style.display = 'flex';
-            evt.target.classList.add('active');
-        };
-
         // Toggle Section Logic
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.toggle-section-btn');
@@ -1657,6 +1643,20 @@
         renderTimestamps();
         setTimeout(() => tsUserIdInput.focus(), 100);
     });
+
+        // Tab Switching Logic
+        window.openTab = function(evt, tabId) {
+            const card = evt.target.closest('.card');
+            const tabContents = card.querySelectorAll('.tab-content');
+            tabContents.forEach(tc => tc.style.display = 'none');
+
+            const tabBtns = card.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+
+            const target = document.getElementById(tabId);
+            if(target) target.style.display = 'flex';
+            evt.target.classList.add('active');
+        };
   </script>
 </body>
 </html>
