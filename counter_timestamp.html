@@ -933,6 +933,8 @@
              // Filters
              const filterShift = breakShiftFilter ? breakShiftFilter.value : '';
              const showActive = breakShowActive ? breakShowActive.checked : false;
+             const dateInput = document.getElementById('ts-analytics-date-filter');
+             const filterDate = dateInput && dateInput.value ? dateInput.value : '';
              
              const filteredBreaks = breaks.filter(b => {
                  if (showActive && b.end) return false;
@@ -940,6 +942,14 @@
                      const att = attendanceData.find(a => a.userId === b.userId) || {};
                      const shift = att.shift || '';
                      if (!shift.includes(filterShift)) return false;
+                 }
+                 if (filterDate) {
+                     const d = new Date(b.start);
+                     const year = d.getFullYear();
+                     const month = String(d.getMonth() + 1).padStart(2, '0');
+                     const day = String(d.getDate()).padStart(2, '0');
+                     const localDate = `${year}-${month}-${day}`;
+                     if (localDate !== filterDate) return false;
                  }
                  return true;
              });
@@ -1014,7 +1024,14 @@
              const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
              
              const dateInput = document.getElementById('ts-analytics-date-filter');
-             const filterDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
+             let filterDate = dateInput && dateInput.value ? dateInput.value : '';
+             if (!filterDate) {
+                 const now = new Date();
+                 const year = now.getFullYear();
+                 const month = String(now.getMonth() + 1).padStart(2, '0');
+                 const day = String(now.getDate()).padStart(2, '0');
+                 filterDate = `${year}-${month}-${day}`;
+             }
              
              // Get all Full Counters for the date
              const fullCounters = attendanceData.filter(a => a.date === filterDate && a.status === 'Full counter');
