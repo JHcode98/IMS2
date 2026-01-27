@@ -676,7 +676,7 @@
                 const month = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
                 const localDate = `${year}-${month}-${day}`;
-                return localDate === analyticsDate;
+                return !analyticsDate || localDate === analyticsDate;
             });
 
             // Pagination for History
@@ -731,11 +731,11 @@
                 duration: s.duration,
                 end: s.endLog.timestamp
             }));
-            renderTimestampChart(chartSessions);
-            renderTsAnalytics(sessions, analyticsDate, logsToProcess);
-            renderBreakLogTable(logsToProcess, attendance);
-            cachedInactiveArgs = [sessions, attendance, logsToProcess];
-            renderInactiveUsersTable(sessions, attendance, logsToProcess);
+            try { renderTimestampChart(chartSessions); } catch(e) { console.error(e); }
+            try { renderTsAnalytics(sessions, analyticsDate, logsToProcess); } catch(e) { console.error("Analytics Error", e); }
+            try { renderBreakLogTable(logsToProcess, attendance, analyticsDate); } catch(e) { console.error("Break Log Error", e); }
+            cachedInactiveArgs = [sessions, attendance, logsToProcess, analyticsDate];
+            renderInactiveUsersTable(sessions, attendance, logsToProcess, analyticsDate);
         }
 
         function createSessionRow(session, isHistory) {
@@ -1661,19 +1661,19 @@
         setTimeout(() => tsUserIdInput.focus(), 100);
     });
 
-        // Tab Switching Logic
-        window.openTab = function(evt, tabId) {
-            const card = evt.target.closest('.card');
-            const tabContents = card.querySelectorAll('.tab-content');
-            tabContents.forEach(tc => tc.style.display = 'none');
+    // Tab Switching Logic (Global Scope)
+    window.openTab = function(evt, tabId) {
+        const card = evt.target.closest('.card');
+        const tabContents = card.querySelectorAll('.tab-content');
+        tabContents.forEach(tc => tc.style.display = 'none');
 
-            const tabBtns = card.querySelectorAll('.tab-btn');
-            tabBtns.forEach(btn => btn.classList.remove('active'));
+        const tabBtns = card.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => btn.classList.remove('active'));
 
-            const target = document.getElementById(tabId);
-            if(target) target.style.display = 'flex';
-            evt.target.classList.add('active');
-        };
+        const target = document.getElementById(tabId);
+        if(target) target.style.display = 'flex';
+        evt.target.classList.add('active');
+    };
   </script>
 </body>
 </html>
