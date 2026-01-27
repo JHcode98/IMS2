@@ -97,20 +97,9 @@
 
   <header>
     <h1>Counter Timestamp</h1>
-    <div class="navbar" role="navigation">
-      <div class="nav-left">
-        <button class="nav-btn" onclick="window.location.href='daily_cycle_count.html'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:5px;vertical-align:text-bottom;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          Back to Daily Counters
-        </button>
-      </div>
-      <div class="nav-right">
-        <div class="nav-user" id="nav-user">
-          <a href="profile.html" title="Profile" style="text-decoration:none; margin-right: 4px;"><span id="nav-avatar" class="avatar small"></span></a>
-          <button class="user-btn" id="user-btn"><span id="username-display"></span></button>
-        </div>
-      </div>
-    </div>
+    <button class="icon-btn" onclick="window.location.href='daily_cycle_count.html'" title="Back" style="position:absolute; right:20px; top:15px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    </button>
   </header>
 
   <main>
@@ -839,10 +828,136 @@
         }
 
         function renderTsAnalytics(sessions, date, logs) {
-             // ... (Logic from daily_cycle_count.html) ...
              const container = document.getElementById('ts-analytics-content');
              if(!container) return;
-             container.innerHTML = '<div style="padding:10px; text-align:center; color:#666;">Analytics loaded.</div>';
+             container.innerHTML = '';
+             
+             // 1. Attendance Stats (Full vs Temp)
+             const attendance = getAttendanceData().filter(a => a.date === date);
+             const activeUserIds = new Set(sessions.filter(s => !s.endLog).map(s => s.userId));
+             
+             const shiftData = {
+                 '1st Shift-(6am-2pm)': { full: 0, fullActive: 0, temp: 0, timedOut: 0 },
+                 '2nd Shift-(2pm-10pm)': { full: 0, fullActive: 0, temp: 0, timedOut: 0 },
+                 '3rd Shift-(10pm-6am)': { full: 0, fullActive: 0, temp: 0, timedOut: 0 }
+             };
+             
+             let totalTemp = 0;
+             attendance.forEach(a => {
+                 if (shiftData[a.shift]) {
+                     if (a.status === 'Full counter') {
+                         shiftData[a.shift].full++;
+                         if (activeUserIds.has(a.userId)) shiftData[a.shift].fullActive++;
+                         if (a.timeOut) shiftData[a.shift].timedOut++;
+                     }
+                     if (a.status === 'Temporary slide to Other task') {
+                         shiftData[a.shift].temp++;
+                         totalTemp++;
+                     }
+                 }
+             });
+
+             // Calculate Inactive Users
+             const onBreakUserIds = new Set();
+             const userLastAction = {};
+             logs.forEach(l => { if (!l.deleted) userLastAction[l.userId] = l.action; });
+             Object.entries(userLastAction).forEach(([uid, action]) => {
+                 if (action === 'Start Break') onBreakUserIds.add(uid);
+             });
+
+             let inactiveCount = 0;
+             const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
+             attendance.forEach(a => {
+                 if (a.status === 'Full counter') {
+                     if (filterShift && !a.shift.includes(filterShift)) return;
+                     if (a.timeOut) return;
+                     if (!activeUserIds.has(a.userId) && !onBreakUserIds.has(a.userId)) {
+                         inactiveCount++;
+                     }
+                 }
+             });
+
+             // 2. Session Stats
+             const userStarts = {};
+             let totalDuration = 0;
+             let completedSessions = 0;
+             let activeSessions = 0;
+             let totalBreaks = 0;
+
+             sessions.forEach(s => {
+                 userStarts[s.userId] = (userStarts[s.userId] || 0) + 1;
+                 if (s.duration > 0) {
+                     totalDuration += s.duration;
+                     completedSessions++;
+                 } else if (!s.endLog) {
+                     activeSessions++;
+                 }
+                 if (s.breaks) totalBreaks += s.breaks.length;
+             });
+
+             const usersWithBreaks = new Set();
+             logs.forEach(l => { if (l.action === 'Start Break') usersWithBreaks.add(l.userId); });
+             const uniqueBreakUsers = usersWithBreaks.size;
+             
+             let mostFreqUser = '-'; let mostFreqCount = 0; let mostFreqName = '-';
+             let leastFreqUser = '-'; let leastFreqCount = Infinity; let leastFreqName = '-';
+             
+             Object.entries(userStarts).forEach(([user, count]) => {
+                 if (count > mostFreqCount) { mostFreqCount = count; mostFreqUser = user; const att = attendance.find(a => a.userId === user); if(att) mostFreqName = att.name; }
+                 if (count < leastFreqCount) { leastFreqCount = count; leastFreqUser = user; const att = attendance.find(a => a.userId === user); if(att) leastFreqName = att.name; }
+             });
+             if (leastFreqCount === Infinity) leastFreqCount = 0;
+
+             let userListHtml = '<div style="margin-top:10px; max-height:150px; overflow-y:auto; border:1px solid #eee;"><table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f9f9f9;"><th style="padding:4px; text-align:left;">User</th><th style="padding:4px; text-align:left;">Name</th><th style="padding:4px; text-align:right;">Starts</th></tr></thead><tbody>';
+             const sortedUsers = Object.entries(userStarts).sort((a,b) => b[1] - a[1]);
+             sortedUsers.forEach(([u, c]) => {
+                 const att = attendance.find(a => a.userId === u);
+                 const name = att ? att.name : '-';
+                 userListHtml += `<tr><td style="padding:4px; border-bottom:1px solid #eee;">${u}</td><td style="padding:4px; border-bottom:1px solid #eee;">${name}</td><td style="padding:4px; border-bottom:1px solid #eee; text-align:right;">${c}</td></tr>`;
+             });
+             userListHtml += '</tbody></table></div>';
+
+             const avgDuration = completedSessions > 0 ? Math.round(totalDuration / completedSessions) : 0;
+
+             let html = `
+                 <div style="margin-bottom:15px;">
+                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                         <h5 style="margin:0; color:#2752a7;">Full Counters (Active / Total)</h5>
+                         <span style="font-size:11px; color:#f57c00; font-weight:bold;">Temp Slide: ${totalTemp}</span>
+                     </div>
+                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;">
+                         <div class="card" style="padding:10px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
+                             <div style="font-size:11px; color:#2e7d32;">1st Shift</div>
+                             <div style="font-weight:bold; color:#2ecc71; font-size:20px;">${shiftData['1st Shift-(6am-2pm)'].fullActive} <span style="color:#2e7d32; font-size:14px;">/ ${shiftData['1st Shift-(6am-2pm)'].full}</span></div>
+                         </div>
+                         <div class="card" style="padding:10px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
+                             <div style="font-size:11px; color:#2e7d32;">2nd Shift</div>
+                             <div style="font-weight:bold; color:#2ecc71; font-size:20px;">${shiftData['2nd Shift-(2pm-10pm)'].fullActive} <span style="color:#2e7d32; font-size:14px;">/ ${shiftData['2nd Shift-(2pm-10pm)'].full}</span></div>
+                         </div>
+                         <div class="card" style="padding:10px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin:0;">
+                             <div style="font-size:11px; color:#2e7d32;">3rd Shift</div>
+                             <div style="font-weight:bold; color:#2ecc71; font-size:20px;">${shiftData['3rd Shift-(10pm-6am)'].fullActive} <span style="color:#2e7d32; font-size:14px;">/ ${shiftData['3rd Shift-(10pm-6am)'].full}</span></div>
+                         </div>
+                     </div>
+                 </div>
+                 <div style="background:#f8f9fa; border-radius:6px; padding:12px; margin-bottom:10px; border:1px solid #eee;">
+                     <h5 style="margin:0 0 8px 0; color:#2752a7;">Session Insights</h5>
+                     <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;"><span>Most Frequent:</span><strong>${mostFreqUser} (${mostFreqCount})</strong></div>
+                     <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;"><span>Avg. Duration:</span><strong>${avgDuration} min</strong></div>
+                     <div style="display:flex; justify-content:space-between; font-size:13px;"><span>Active Sessions:</span><strong style="color:${activeSessions > 0 ? '#2ecc71' : '#666'}">${activeSessions}</strong></div>
+                     ${userListHtml}
+                 </div>
+                 <div style="background:#fff; border-radius:6px; padding:12px; border:1px solid #eee;">
+                     <h5 style="margin:0 0 8px 0; color:#666;">Stats</h5>
+                     <ul style="margin:0; padding-left:20px; font-size:12px; color:#555;">
+                         <li>Total Breaks: <strong>${totalBreaks}</strong></li>
+                         <li>Completed Sessions: <strong>${completedSessions}</strong></li>
+                         <li>Total Hours: <strong>${Math.round(totalDuration/60)}h</strong></li>
+                         <li>Inactive Users: <strong style="color:${inactiveCount > 0 ? '#e74c3c' : '#2ecc71'}">${inactiveCount}</strong></li>
+                     </ul>
+                 </div>
+             `;
+             container.innerHTML = html;
         }
 
         function renderTimestampChart(sessions) {
