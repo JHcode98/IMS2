@@ -59,6 +59,59 @@
 
     /* Area Card */
     .area-card:hover { border-color: #2752a7 !important; background-color: #f0f4f8; transform: translateY(-2px); }
+
+    /* Sand Timer Animation */
+    .sand-timer {
+        width: 40px; height: 70px;
+        position: relative;
+        margin: 0 auto;
+        animation: hourglass-rotate 4s ease-in-out infinite;
+    }
+    .sand-timer-top, .sand-timer-bottom {
+        width: 40px; height: 35px;
+        position: absolute; left: 0;
+        overflow: hidden;
+        border: 3px solid #7f8c8d; /* Glass Frame */
+        background: rgba(236, 240, 241, 0.3); /* Glass tint */
+        box-sizing: border-box;
+    }
+    .sand-timer-top { top: 0; border-radius: 5px 5px 20px 20px; border-bottom: none; }
+    .sand-timer-bottom { bottom: 0; border-radius: 20px 20px 5px 5px; border-top: none; }
+    .sand-timer-sand-top {
+        position: absolute; left: 50%; transform: translateX(-50%); bottom: 0;
+        width: 30px; height: 30px; background: #f39c12; border-radius: 50%;
+        animation: sand-drain-top 4s ease-in-out infinite;
+    }
+    .sand-timer-sand-bottom {
+        position: absolute; left: 50%; transform: translateX(-50%); bottom: 0;
+        width: 30px; height: 0; background: #f39c12; border-radius: 50% 50% 0 0;
+        animation: sand-fill-bottom 4s ease-in-out infinite;
+    }
+    .sand-timer-stream {
+        position: absolute; left: 50%; transform: translateX(-50%); top: 34px;
+        width: 2px; height: 0; background: #f39c12;
+        animation: sand-stream 4s ease-in-out infinite; z-index: 1;
+    }
+    @keyframes hourglass-rotate {
+        0% { transform: rotate(0deg); } 40% { transform: rotate(0deg); }
+        50% { transform: rotate(180deg); } 90% { transform: rotate(180deg); }
+        100% { transform: rotate(360deg); }
+    }
+    @keyframes sand-drain-top {
+        0% { height: 30px; width: 30px; } 40% { height: 0; width: 0; }
+        50% { height: 0; width: 0; } 50.1% { height: 30px; width: 30px; }
+        90% { height: 0; width: 0; } 100% { height: 0; width: 0; }
+    }
+    @keyframes sand-fill-bottom {
+        0% { height: 0; width: 0; } 40% { height: 30px; width: 30px; }
+        50% { height: 30px; width: 30px; } 50.1% { height: 0; width: 0; }
+        90% { height: 30px; width: 30px; } 100% { height: 30px; width: 30px; }
+    }
+    @keyframes sand-stream {
+        0% { height: 0; } 5% { height: 35px; } 40% { height: 35px; }
+        45% { height: 0; } 50% { height: 0; } 55% { height: 35px; }
+        90% { height: 35px; } 95% { height: 0; } 100% { height: 0; }
+    }
   </style>
 </head>
 <body class="inventory-mode">
@@ -1153,8 +1206,58 @@
                          <li>Inactive Users: <strong style="color:${inactiveCount > 0 ? '#e74c3c' : '#2ecc71'}">${inactiveCount}</strong></li>
                      </ul>
                  </div>
+                 <div style="text-align:center; margin-top:20px;">
+                    <div class="sand-timer" title="Shift Countdown">
+                        <div class="sand-timer-top"><div class="sand-timer-sand-top"></div></div>
+                        <div class="sand-timer-bottom"><div class="sand-timer-sand-bottom"></div></div>
+                        <div class="sand-timer-stream"></div>
+                    </div>
+                    <div id="shift-countdown-display" style="margin-top:8px; font-weight:bold; color:#e74c3c; font-size:18px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">--h --m --s</div>
+                    <div id="shift-countdown-label" style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:1px;">Shift Remaining</div>
+                </div>
              `;
              container.innerHTML = html;
+             
+             if (!window.shiftTimerInterval) {
+                const updateTimer = () => {
+                    const el = document.getElementById('shift-countdown-display');
+                    const labelEl = document.getElementById('shift-countdown-label');
+                    if (!el) return;
+                    
+                    const now = new Date();
+                    const h = now.getHours();
+                    let end = new Date(now);
+                    let shiftName = '';
+                    
+                    if (h >= 6 && h < 14) {
+                        shiftName = '1st Shift';
+                        end.setHours(14, 0, 0, 0);
+                    } else if (h >= 14 && h < 22) {
+                        shiftName = '2nd Shift';
+                        end.setHours(22, 0, 0, 0);
+                    } else {
+                        shiftName = '3rd Shift';
+                        if (h >= 22) {
+                            end.setDate(end.getDate() + 1);
+                            end.setHours(6, 0, 0, 0);
+                        } else {
+                            end.setHours(6, 0, 0, 0);
+                        }
+                    }
+                    
+                    let diff = end - now;
+                    if (diff < 0) diff = 0;
+                    
+                    const hh = Math.floor(diff / 3600000);
+                    const mm = Math.floor((diff % 3600000) / 60000);
+                    const ss = Math.floor((diff % 60000) / 1000);
+                    
+                    el.textContent = `${hh}h ${mm}m ${ss}s`;
+                    if(labelEl) labelEl.textContent = `${shiftName} Ends`;
+                };
+                window.shiftTimerInterval = setInterval(updateTimer, 1000);
+                updateTimer();
+            }
         }
 
         function renderTimestampChart(sessions) {
