@@ -933,8 +933,6 @@
              // Filters
              const filterShift = breakShiftFilter ? breakShiftFilter.value : '';
              const showActive = breakShowActive ? breakShowActive.checked : false;
-             const dateInput = document.getElementById('ts-analytics-date-filter');
-             const filterDate = dateInput && dateInput.value ? dateInput.value : '';
              
              const filteredBreaks = breaks.filter(b => {
                  if (showActive && b.end) return false;
@@ -1023,15 +1021,6 @@
              tbody.innerHTML = '';
              const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
              
-             const dateInput = document.getElementById('ts-analytics-date-filter');
-             let filterDate = dateInput && dateInput.value ? dateInput.value : '';
-             if (!filterDate) {
-                 const now = new Date();
-                 const year = now.getFullYear();
-                 const month = String(now.getMonth() + 1).padStart(2, '0');
-                 const day = String(now.getDate()).padStart(2, '0');
-                 filterDate = `${year}-${month}-${day}`;
-             }
              
              // Get all Full Counters for the date
              const fullCounters = attendanceData.filter(a => a.date === filterDate && a.status === 'Full counter');
