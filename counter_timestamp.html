@@ -669,7 +669,15 @@
 
             // Split into Active and History
             const activeSessions = filteredSessions.filter(s => !s.endLog);
-            const historySessions = filteredSessions.filter(s => s.endLog);
+            const historySessions = filteredSessions.filter(s => {
+                if (!s.endLog) return false;
+                const d = new Date(s.endLog.timestamp);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const localDate = `${year}-${month}-${day}`;
+                return localDate === analyticsDate;
+            });
 
             // Pagination for History
             const totalItems = historySessions.length;
@@ -717,7 +725,7 @@
             }
             updateTsDeleteButton();
             
-            const chartSessions = sessions.filter(s => s.endLog && s.duration > 0).map(s => ({
+            const chartSessions = historySessions.filter(s => s.duration > 0).map(s => ({
                 user: s.userId,
                 shift: s.shift,
                 duration: s.duration,
