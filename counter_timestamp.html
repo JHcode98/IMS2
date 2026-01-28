@@ -266,7 +266,8 @@
                 <div class="card" style="margin:0; padding:0; display:flex; flex-direction:column; max-height:400px; border:1px solid #eee; box-shadow:none;">
                     <div class="tab-header">
                         <button class="tab-btn active" onclick="openTab(event, 'tab-inactive')">Inactive Users</button>
-                        <button class="tab-btn" onclick="openTab(event, 'tab-breaks')">Break Log</button>
+                        <button class="tab-btn" onclick="openTab(event, 'tab-active-breaks')">Active Breaks</button>
+                        <button class="tab-btn" onclick="openTab(event, 'tab-break-history')">Break History</button>
                     </div>
 
                     <div id="tab-inactive" class="tab-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
@@ -290,24 +291,44 @@
                         </div>
                     </div>
 
-                    <div id="tab-breaks" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
-                        <div style="display:flex; gap:5px;">
+                    <div id="tab-active-breaks" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
+                        <div style="display:flex; gap:5px; align-items:center; margin-bottom:5px;">
                              <select id="break-shift-filter" style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 80px;">
                                 <option value="">All Shifts</option>
                                 <option value="1st Shift">1st Shift</option>
                                 <option value="2nd Shift">2nd Shift</option>
                                 <option value="3rd Shift">3rd Shift</option>
                              </select>
-                             <label style="font-size:12px; cursor:pointer; display:flex; align-items:center;"><input type="checkbox" id="break-show-active"> Active</label>
                              <input type="datetime-local" id="manual-break-time" style="padding:4px; font-size:11px; border:1px solid #ccc; border-radius:4px; width:130px;" title="Manual Break Time">
                              <button id="btn-break-start" class="icon-btn" style="background:#f1c40f; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">Start Break</button>
                              <button id="btn-break-end" class="icon-btn" style="background:#f39c12; color:white; padding:4px 8px; font-size:12px; font-weight:bold;">End Break</button>
+                        </div>
+                        <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
+                            <table id="active-break-table" class="report-table">
+                                <thead>
+                                    <tr style="position:sticky; top:0;">
+                                        <th>User</th>
+                                        <th>Name</th>
+                                        <th>Shift</th>
+                                        <th>Role</th>
+                                        <th>Break Out</th>
+                                        <th>Duration</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="tab-break-history" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
+                        <div style="display:flex; gap:5px; align-items:center; justify-content:flex-end; margin-bottom:5px;">
                              <button id="break-delete-selected-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; display:none;">Del Sel</button>
                              <button id="break-export-btn" class="icon-btn" title="Export CSV" style="padding:4px 8px; font-size:12px; font-weight:bold;">Export</button>
                              <button id="btn-break-delete-all" class="icon-btn" title="Delete All Breaks" style="color:#d9534f; padding:4px 8px; font-size:12px; font-weight:bold; margin-left:5px;">🗑 All</button>
                         </div>
                     <div style="flex:1; overflow-y:auto; border:1px solid #eee;">
-                        <table id="break-log-table" class="report-table">
+                        <table id="history-break-table" class="report-table">
                             <thead>
                                 <tr style="position:sticky; top:0;">
                                     <th style="width:30px;"><input type="checkbox" id="break-select-all"></th>
@@ -478,7 +499,6 @@
         const breakExportBtn = document.getElementById('break-export-btn');
         const breakSelectAll = document.getElementById('break-select-all');
         const breakShiftFilter = document.getElementById('break-shift-filter');
-        const breakShowActive = document.getElementById('break-show-active');
 
         const editTimeModal = document.getElementById('edit-time-modal');
         const cancelEditTimeBtn = document.getElementById('cancel-edit-time-btn');
@@ -904,9 +924,11 @@
         };
 
         function renderBreakLogTable(logs, attendanceData) {
-             const tbody = document.querySelector('#break-log-table tbody');
-             if(!tbody) return;
-             tbody.innerHTML = '';
+             const activeTbody = document.querySelector('#active-break-table tbody');
+             const historyTbody = document.querySelector('#history-break-table tbody');
+             
+             if(activeTbody) activeTbody.innerHTML = '';
+             if(historyTbody) historyTbody.innerHTML = '';
              
              const breaks = [];
              const openBreaks = {};
@@ -932,10 +954,8 @@
              
              // Filters
              const filterShift = breakShiftFilter ? breakShiftFilter.value : '';
-             const showActive = breakShowActive ? breakShowActive.checked : false;
              
              const filteredBreaks = breaks.filter(b => {
-                 if (showActive && b.end) return false;
                  if (filterShift) {
                      const att = attendanceData.find(a => a.userId === b.userId) || {};
                      const shift = att.shift || '';
@@ -954,64 +974,80 @@
 
              filteredBreaks.sort((a,b) => new Date(b.start) - new Date(a.start));
              
-             if(filteredBreaks.length === 0) {
-                 tbody.innerHTML = '<tr><td colspan="9" style="padding:10px; text-align:center; color:#999;">No breaks recorded.</td></tr>';
-                 if(breakSelectAll) breakSelectAll.checked = false;
-                 return;
+             const activeBreaks = filteredBreaks.filter(b => !b.end);
+             const historyBreaks = filteredBreaks.filter(b => b.end);
+
+             // Render Active
+             if(activeTbody) {
+                 if(activeBreaks.length === 0) {
+                     activeTbody.innerHTML = '<tr><td colspan="7" style="padding:10px; text-align:center; color:#999;">No active breaks.</td></tr>';
+                 } else {
+                     activeBreaks.forEach(b => {
+                         const att = attendanceData.find(a => a.userId === b.userId) || {};
+                         const name = att.name || '-';
+                         const shift = att.shift ? att.shift.split('-')[0] : '-';
+                         const role = att.role || '-';
+                         const start = new Date(b.start);
+                         const durationMs = now - start;
+                         const durationMins = Math.floor(durationMs / 60000);
+                         
+                         let durationDisplay = `Running (${durationMins} min)`;
+                         let rowStyle = '';
+                         if (durationMins > 40) {
+                             rowStyle = 'background-color: #ffebee; color: #c0392b; font-weight: bold;';
+                             durationDisplay += ' ⚠️ > 40m';
+                         } else {
+                             durationDisplay = `<span style="color:orange">${durationDisplay}</span>`;
+                         }
+                         
+                         const startStr = `<span class="editable-time" data-log-id="${b.startId}">${start.toLocaleTimeString()}</span>`;
+                         
+                         const endBreakBtn = `<button class="icon-btn end-break-btn" onclick="logTimestamp('End Break', null, '${b.userId}')" title="End Break" style="color:#f39c12; padding:2px 6px; font-size:10px; margin-right:4px;">
+                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                         </button>`;
+                         const deleteBtn = `<button class="icon-btn delete-break-btn" onclick="deleteBreak('${b.startId}', null)" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px;">&times;</button>`;
+
+                         const tr = document.createElement('tr');
+                         if (rowStyle) tr.style.cssText = rowStyle;
+                         tr.innerHTML = `<td>${b.userId}</td><td>${name}</td><td>${shift}</td><td>${role}</td><td>${startStr}</td><td>${durationDisplay}</td><td>${endBreakBtn}${deleteBtn}</td>`;
+                         activeTbody.appendChild(tr);
+                     });
+                 }
              }
 
-             filteredBreaks.forEach(b => {
-                 const att = attendanceData.find(a => a.userId === b.userId) || {};
-                 const name = att.name || '-';
-                 const shift = att.shift ? att.shift.split('-')[0] : '-';
-                 const role = att.role || '-';
-                 
-                 const start = new Date(b.start);
-                 const end = b.end ? new Date(b.end) : now;
-                 const durationMs = end - start;
-                 const durationMins = Math.floor(durationMs / 60000);
-                 
-                 let durationDisplay = `${durationMins} min`;
-                 let rowStyle = '';
-                 
-                 if (!b.end) {
-                     durationDisplay = `Running (${durationMins} min)`;
-                     if (durationMins > 40) {
-                         rowStyle = 'background-color: #ffebee; color: #c0392b; font-weight: bold;';
-                         durationDisplay += ' ⚠️ > 40m';
-                     } else {
-                         durationDisplay = `<span style="color:orange">${durationDisplay}</span>`;
-                     }
+             // Render History
+             if(historyTbody) {
+                 if(historyBreaks.length === 0) {
+                     historyTbody.innerHTML = '<tr><td colspan="9" style="padding:10px; text-align:center; color:#999;">No break history.</td></tr>';
+                     if(breakSelectAll) breakSelectAll.checked = false;
+                 } else {
+                     historyBreaks.forEach(b => {
+                         const att = attendanceData.find(a => a.userId === b.userId) || {};
+                         const name = att.name || '-';
+                         const shift = att.shift ? att.shift.split('-')[0] : '-';
+                         const role = att.role || '-';
+                         const start = new Date(b.start);
+                         const end = new Date(b.end);
+                         const durationMs = end - start;
+                         const durationMins = Math.floor(durationMs / 60000);
+                         const durationDisplay = `${durationMins} min`;
+                         
+                         const startStr = `<span class="editable-time" data-log-id="${b.startId}">${start.toLocaleTimeString()}</span>`;
+                         const endStr = `<span class="editable-time" data-log-id="${b.endId}">${end.toLocaleTimeString()}</span>`;
+                         
+                         const deleteBtn = `<button class="icon-btn delete-break-btn" onclick="deleteBreak('${b.startId}', '${b.endId}')" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px; opacity:0; transition:opacity 0.2s;">&times;</button>`;
+                         const rowIds = [b.startId, b.endId].filter(x=>x).join(',');
+
+                         const tr = document.createElement('tr');
+                         tr.innerHTML = `<td><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td>${b.userId}</td><td>${name}</td><td>${shift}</td><td>${role}</td><td>${startStr}</td><td>${endStr}</td><td>${durationDisplay}</td><td>${deleteBtn}</td>`;
+                         
+                         tr.onmouseenter = () => { tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '1'); };
+                         tr.onmouseleave = () => { tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '0'); };
+                         
+                         historyTbody.appendChild(tr);
+                     });
                  }
-                 
-                 const startStr = `<span class="editable-time" data-log-id="${b.startId}">${start.toLocaleTimeString()}</span>`;
-                 const endStr = b.end ? `<span class="editable-time" data-log-id="${b.endId}">${new Date(b.end).toLocaleTimeString()}</span>` : '-';
-
-                 let endBreakBtn = '';
-                 if (!b.end) {
-                     endBreakBtn = `<button class="icon-btn end-break-btn" onclick="logTimestamp('End Break', null, '${b.userId}')" title="End Break" style="color:#f39c12; padding:2px 6px; font-size:10px; opacity:0; transition:opacity 0.2s; margin-right:4px;">
-                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                     </button>`;
-                 }
-
-                 const deleteBtn = `<button class="icon-btn delete-break-btn" onclick="deleteBreak('${b.startId}', '${b.endId}')" title="Delete Break" style="color:#d9534f; padding:2px 6px; font-size:10px; opacity:0; transition:opacity 0.2s;">&times;</button>`;
-                 const rowIds = [b.startId, b.endId].filter(x=>x).join(',');
-
-                 const tr = document.createElement('tr');
-                 if (rowStyle) tr.style.cssText = rowStyle;
-                 tr.innerHTML = `<td><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td>${b.userId}</td><td>${name}</td><td>${shift}</td><td>${role}</td><td>${startStr}</td><td>${endStr}</td><td>${durationDisplay}</td><td>${endBreakBtn}${deleteBtn}</td>`;
-                 
-                 tr.onmouseenter = () => { 
-                     tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '1'); 
-                     tr.querySelectorAll('.end-break-btn').forEach(b => b.style.opacity = '1');
-                 };
-                 tr.onmouseleave = () => { 
-                     tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '0'); 
-                     tr.querySelectorAll('.end-break-btn').forEach(b => b.style.opacity = '0');
-                 };
-                 
-                 tbody.appendChild(tr);
-             });
+             }
              updateBreakDeleteButton();
         }
         
@@ -1421,7 +1457,7 @@
         if(breakExportBtn) {
             breakExportBtn.addEventListener('click', () => {
                 const rows = [['User', 'Name', 'Shift', 'Role', 'Break Out', 'Break In', 'Duration']];
-                const trs = document.querySelectorAll('#break-log-table tbody tr');
+                const trs = document.querySelectorAll('#history-break-table tbody tr');
                 trs.forEach(tr => {
                     const tds = tr.querySelectorAll('td');
                     if(tds.length > 7) {
