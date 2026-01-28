@@ -1133,6 +1133,18 @@
                 </div>
             </div>
 
+            <!-- Embedded Hourly View -->
+            <div id="embedded-hourly-view" class="card" style="margin:0; padding:10px; display:none; flex-direction:column; border:1px solid #eee; box-shadow:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0;" id="embedded-hourly-title">Hourly Output</h4>
+                    <button id="embedded-save-btn" class="icon-btn" style="background:#2752a7; color:white; font-size:11px; padding:4px 8px;">Save Data</button>
+                </div>
+                <div style="height:250px; position:relative; width:100%;">
+                    <canvas id="embedded-hourly-chart"></canvas>
+                </div>
+                <div id="embedded-hourly-details" style="margin-top:10px; overflow-x:auto;"></div>
+            </div>
+
             
         </div>
 
@@ -4951,6 +4963,7 @@
             renderBreakLogTable(logsToProcess, attendance);
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
+            renderEmbeddedHourly(analyticsDate, filterShift);
         }
 
         function createSessionRow(session, isHistory) {
@@ -6408,6 +6421,149 @@
         if(target) target.style.display = 'flex';
         evt.target.classList.add('active');
     };
+
+    let embeddedHourlyChart = null;
+    function renderEmbeddedHourly(dateStr, shift) {
+        const container = document.getElementById('embedded-hourly-view');
+        if (!container) return;
+        
+        if (!shift || shift === 'All Shifts' || shift === '') {
+            container.style.display = 'none';
+            return;
+        }
+        container.style.display = 'flex';
+        document.getElementById('embedded-hourly-title').textContent = `Hourly Output: ${shift.split('-')[0]}`;
+
+        // Logic adapted from openHourlyModal
+        const counters = getCountersData();
+        const counterEntry = counters.find(c => c.date === dateStr && c.shift === shift);
+        
+        const start = new Date(dateStr);
+        const end = new Date(dateStr);
+        if (shift.includes('1st Shift')) { start.setHours(6,0,0,0); end.setHours(14,0,0,0); }
+        else if (shift.includes('2nd Shift')) { start.setHours(14,0,0,0); end.setHours(22,0,0,0); }
+        else { start.setHours(22,0,0,0); end.setDate(end.getDate() + 1); end.setHours(6,0,0,0); }
+
+        let cycleCounts = [];
+        try { cycleCounts = JSON.parse(localStorage.getItem('ims_cycle_count_v1') || '[]'); } catch(e){}
+        
+        const hourlyData = {};
+        const hourlyTargets = {};
+        const attendance = getAttendanceData();
+        const shiftAtt = attendance.filter(a => a.date === dateStr && a.shift === shift);
+        const act = shiftAtt.length;
+        const rate = (counterEntry && counterEntry.standardRate) || 0;
+        const activeTarget = rate > 0 ? (act * rate) : ((counterEntry && counterEntry.targetOutput) || 0);
+        const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
+        
+        const savedActuals = counterEntry && counterEntry.hourlyActuals ? counterEntry.hourlyActuals : null;
+        const savedPallets = counterEntry && counterEntry.hourlyPallets ? counterEntry.hourlyPallets : {};
+        const savedNotes = counterEntry && counterEntry.hourlyNotes ? counterEntry.hourlyNotes : {};
+
+        for (let d = new Date(start); d < end; d.setHours(d.getHours() + 1)) {
+            const h = d.getHours();
+            const label = `${h}:00 - ${h+1}:00`;
+            hourlyData[label] = (savedActuals && savedActuals[label] !== undefined) ? savedActuals[label] : 0;
+            
+            const savedTarget = counterEntry && counterEntry.hourlyTargets && counterEntry.hourlyTargets[label];
+            let activeCount = 0;
+            if (rate > 0) {
+                shiftAtt.forEach(p => {
+                    if (!p.timeIn) { activeCount++; } 
+                    else {
+                        const [ph, pm] = p.timeIn.split(':').map(Number);
+                        let pDate = new Date(start);
+                        if (shift.includes('3rd') && ph < 12) pDate.setDate(pDate.getDate() + 1);
+                        pDate.setHours(ph, pm, 0, 0);
+                        const nextHour = new Date(d); nextHour.setHours(d.getHours() + 1);
+                        if (pDate < nextHour) activeCount++;
+                    }
+                });
+                hourlyTargets[label] = activeCount * rate;
+            } else {
+                hourlyTargets[label] = savedTarget !== undefined ? savedTarget : defaultHourlyTarget;
+            }
+        }
+
+        if (!savedActuals) {
+            cycleCounts.forEach(c => {
+                const ts = c.createdDate || c.date;
+                if (ts) {
+                    const d = new Date(ts);
+                    if (d >= start && d < end) {
+                        const h = d.getHours();
+                        const label = `${h}:00 - ${h+1}:00`;
+                        if (hourlyData.hasOwnProperty(label)) hourlyData[label]++;
+                    }
+                }
+            });
+        }
+
+        let html = `<table class="excel-table" style="width:100%; font-size:11px;"><thead><tr><th style="text-align:left;">Hour</th><th>Pallet</th><th>Act</th><th>Tgt</th><th>Var</th><th>Notes</th></tr></thead><tbody>`;
+        
+        Object.keys(hourlyData).forEach(label => {
+            const act = hourlyData[label] || 0;
+            const tgt = hourlyTargets[label] || 0;
+            const pallet = savedPallets[label] || 0;
+            const note = savedNotes[label] || '';
+            const variance = act - tgt;
+            const varColor = variance >= 0 ? '#2ecc71' : '#e74c3c';
+            
+            html += `<tr>
+                <td style="text-align:left;">${label}</td>
+                <td><input type="number" class="emb-pallet" data-hour="${label}" value="${pallet}" style="width:40px;"></td>
+                <td><input type="number" class="emb-actual" data-hour="${label}" value="${act}" style="width:40px;"></td>
+                <td><input type="number" class="emb-target" data-hour="${label}" value="${tgt}" style="width:40px;"></td>
+                <td style="color:${varColor}; font-weight:bold;">${(variance > 0 ? '+' : '') + variance}</td>
+                <td><input type="text" class="emb-note" data-hour="${label}" value="${note}" style="width:100%;"></td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        document.getElementById('embedded-hourly-details').innerHTML = html;
+
+        // Chart
+        const ctx = document.getElementById('embedded-hourly-chart');
+        if (embeddedHourlyChart) embeddedHourlyChart.destroy();
+        
+        const labels = Object.keys(hourlyData);
+        const dataAct = Object.values(hourlyData);
+        const dataTgt = Object.values(hourlyTargets);
+        
+        embeddedHourlyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Actual', data: dataAct, backgroundColor: '#36b9cc' },
+                    { label: 'Target', data: dataTgt, type: 'line', borderColor: '#27ae60', borderDash: [5,5], tension: 0.1 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Save Handler
+        const saveBtn = document.getElementById('embedded-save-btn');
+        saveBtn.onclick = () => {
+            const counters = getCountersData();
+            const idx = counters.findIndex(c => c.date === dateStr && c.shift === shift);
+            if (idx > -1) {
+                if (!counters[idx].hourlyTargets) counters[idx].hourlyTargets = {};
+                if (!counters[idx].hourlyActuals) counters[idx].hourlyActuals = {};
+                if (!counters[idx].hourlyPallets) counters[idx].hourlyPallets = {};
+                if (!counters[idx].hourlyNotes) counters[idx].hourlyNotes = {};
+                
+                const container = document.getElementById('embedded-hourly-details');
+                container.querySelectorAll('.emb-target').forEach(i => counters[idx].hourlyTargets[i.dataset.hour] = parseInt(i.value)||0);
+                container.querySelectorAll('.emb-actual').forEach(i => counters[idx].hourlyActuals[i.dataset.hour] = parseInt(i.value)||0);
+                container.querySelectorAll('.emb-pallet').forEach(i => counters[idx].hourlyPallets[i.dataset.hour] = parseInt(i.value)||0);
+                container.querySelectorAll('.emb-note').forEach(i => counters[idx].hourlyNotes[i.dataset.hour] = i.value);
+                
+                saveCountersData(counters);
+                showToast('Hourly data saved!');
+                renderEmbeddedHourly(dateStr, shift); // Refresh
+            }
+        };
+    }
 
     function renderTimestampChart(sessions) {
         const ctx = document.getElementById('timestamp-chart');
