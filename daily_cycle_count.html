@@ -1137,10 +1137,19 @@
             <div id="embedded-hourly-view" class="card" style="margin:0; padding:10px; display:none; flex-direction:column; border:1px solid #eee; box-shadow:none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h4 style="margin:0;" id="embedded-hourly-title">Hourly Output</h4>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button id="toggle-embedded-hourly-btn" class="icon-btn" title="Collapse" style="padding:2px; height:24px; width:24px; border:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                        <h4 style="margin:0;" id="embedded-hourly-title">Hourly Output</h4>
+                    </div>
                     <button id="embedded-save-btn" class="icon-btn" style="background:#2752a7; color:white; font-size:11px; padding:4px 8px;">Save Data</button>
                 </div>
                 <div style="height:250px; position:relative; width:100%;">
                     <canvas id="embedded-hourly-chart"></canvas>
+                <div id="embedded-hourly-content">
+                    <div style="height:250px; position:relative; width:100%;">
+                        <canvas id="embedded-hourly-chart"></canvas>
+                    </div>
+                    <div id="embedded-hourly-details" style="margin-top:10px; overflow-x:auto;"></div>
                 </div>
                 <div id="embedded-hourly-details" style="margin-top:10px; overflow-x:auto;"></div>
             </div>
