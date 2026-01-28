@@ -407,6 +407,9 @@
       <button id="counter-timestamp-btn" class="icon-btn" title="Counter Timestamp" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Timestamp
       </button>
+      <button id="user-master-btn" class="icon-btn" title="User Master Data" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> User Master
+      </button>
       <button id="reports-menu-btn" class="icon-btn" title="Reports" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
       </button>
@@ -1305,6 +1308,58 @@
     </div>
   </div>
 
+  <!-- User Master Modal -->
+  <div id="user-master-modal" class="modal hidden" style="z-index: 10025;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 600px; margin: 50px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">User ID Master Data</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 2fr 1fr auto; gap:10px; align-items:end; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #eee;">
+            <div>
+                <label style="font-size:12px; font-weight:bold;">User ID</label>
+                <input type="text" id="master-user-id" style="width:100%; padding:6px;" placeholder="ID">
+            </div>
+            <div>
+                <label style="font-size:12px; font-weight:bold;">Name</label>
+                <input type="text" id="master-user-name" style="width:100%; padding:6px;" placeholder="Name">
+            </div>
+            <div>
+                <label style="font-size:12px; font-weight:bold;">Role</label>
+                <input type="text" id="master-user-role" style="width:100%; padding:6px;" placeholder="Role">
+            </div>
+            <button id="save-master-user-btn" class="icon-btn" style="background:#2752a7; color:white; height:32px;">Save</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <input type="text" id="master-user-search" placeholder="Search..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+            <div style="display:flex; gap:5px;">
+                <button id="import-master-users-btn" class="icon-btn" title="Import CSV">Import</button>
+                <input type="file" id="import-master-users-file" accept=".csv" style="display:none;">
+                <button id="export-master-users-btn" class="icon-btn" title="Export CSV">Export</button>
+                <button id="delete-selected-master-users-btn" class="icon-btn" style="color:#d9534f; display:none;">Delete</button>
+            </div>
+        </div>
+
+        <div style="max-height:400px; overflow-y:auto; border:1px solid #eee;">
+            <table id="master-users-table" class="report-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th style="width:30px;"><input type="checkbox" id="select-all-master-users"></th>
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th style="width:60px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+  </div>
+
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
   <script>
@@ -1385,6 +1440,156 @@
         const repDailyOutputBtn = document.getElementById('rep-daily-output-btn');
         const repInactiveBtn = document.getElementById('rep-inactive-btn');
         const repSessionsBtn = document.getElementById('rep-sessions-btn');
+
+        // User Master Logic
+        const STORAGE_KEY_MASTER_USERS = 'ims_master_users_v1';
+        const userMasterBtn = document.getElementById('user-master-btn');
+        const userMasterModal = document.getElementById('user-master-modal');
+        const masterUserTableBody = document.querySelector('#master-users-table tbody');
+        const saveMasterUserBtn = document.getElementById('save-master-user-btn');
+        const masterUserIdInput = document.getElementById('master-user-id');
+        const masterUserNameInput = document.getElementById('master-user-name');
+        const masterUserRoleInput = document.getElementById('master-user-role');
+        const masterUserSearch = document.getElementById('master-user-search');
+        const deleteSelectedMasterUsersBtn = document.getElementById('delete-selected-master-users-btn');
+        const selectAllMasterUsers = document.getElementById('select-all-master-users');
+        const importMasterUsersBtn = document.getElementById('import-master-users-btn');
+        const importMasterUsersFile = document.getElementById('import-master-users-file');
+        const exportMasterUsersBtn = document.getElementById('export-master-users-btn');
+
+        function getMasterUsers() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_USERS) || '[]'); } catch(e) { return []; } }
+        function saveMasterUsers(data) { localStorage.setItem(STORAGE_KEY_MASTER_USERS, JSON.stringify(data)); }
+
+        function renderMasterUsers() {
+            if(!masterUserTableBody) return;
+            masterUserTableBody.innerHTML = '';
+            let users = getMasterUsers();
+            const term = masterUserSearch ? masterUserSearch.value.toLowerCase() : '';
+            if(term) {
+                users = users.filter(u => u.userId.toLowerCase().includes(term) || u.name.toLowerCase().includes(term) || (u.role && u.role.toLowerCase().includes(term)));
+            }
+            users.sort((a,b) => a.name.localeCompare(b.name));
+            if(users.length === 0) {
+                masterUserTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#999;">No users found.</td></tr>';
+                return;
+            }
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><input type="checkbox" class="master-user-checkbox" value="${u.userId}"></td><td>${u.userId}</td><td>${u.name}</td><td>${u.role || ''}</td><td><button class="icon-btn edit-master-user-btn" data-id="${u.userId}" title="Edit" style="padding:2px 6px;">✎</button></td>`;
+                masterUserTableBody.appendChild(tr);
+            });
+            updateMasterUserDeleteBtn();
+        }
+
+        function updateMasterUserDeleteBtn() {
+            const count = document.querySelectorAll('.master-user-checkbox:checked').length;
+            if(deleteSelectedMasterUsersBtn) deleteSelectedMasterUsersBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+
+        if(userMasterBtn) {
+            userMasterBtn.addEventListener('click', () => {
+                userMasterModal.classList.remove('hidden');
+                renderMasterUsers();
+            });
+        }
+
+        if(saveMasterUserBtn) {
+            saveMasterUserBtn.addEventListener('click', () => {
+                const id = masterUserIdInput.value.trim();
+                const name = masterUserNameInput.value.trim();
+                const role = masterUserRoleInput.value.trim();
+                if(!id || !name) { alert('User ID and Name are required.'); return; }
+                let users = getMasterUsers();
+                const existingIdx = users.findIndex(u => u.userId === id);
+                if(existingIdx > -1) { users[existingIdx] = { userId: id, name, role }; showToast('User updated'); }
+                else { users.push({ userId: id, name, role }); showToast('User added'); }
+                saveMasterUsers(users);
+                renderMasterUsers();
+                masterUserIdInput.value = ''; masterUserNameInput.value = ''; masterUserRoleInput.value = '';
+            });
+        }
+
+        if(masterUserTableBody) {
+            masterUserTableBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('.edit-master-user-btn');
+                if(btn) {
+                    const id = btn.dataset.id;
+                    const users = getMasterUsers();
+                    const user = users.find(u => u.userId === id);
+                    if(user) { masterUserIdInput.value = user.userId; masterUserNameInput.value = user.name; masterUserRoleInput.value = user.role || ''; }
+                }
+            });
+            masterUserTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('master-user-checkbox')) updateMasterUserDeleteBtn(); });
+        }
+
+        if(selectAllMasterUsers) {
+            selectAllMasterUsers.addEventListener('change', (e) => {
+                document.querySelectorAll('.master-user-checkbox').forEach(cb => cb.checked = e.target.checked);
+                updateMasterUserDeleteBtn();
+            });
+        }
+
+        if(deleteSelectedMasterUsersBtn) {
+            deleteSelectedMasterUsersBtn.addEventListener('click', () => {
+                if(!confirm('Delete selected users?')) return;
+                const selected = Array.from(document.querySelectorAll('.master-user-checkbox:checked')).map(cb => cb.value);
+                let users = getMasterUsers();
+                users = users.filter(u => !selected.includes(u.userId));
+                saveMasterUsers(users);
+                renderMasterUsers();
+                showToast(`${selected.length} users deleted`);
+            });
+        }
+
+        if(masterUserSearch) masterUserSearch.addEventListener('input', renderMasterUsers);
+
+        if(exportMasterUsersBtn) {
+            exportMasterUsersBtn.addEventListener('click', () => {
+                const users = getMasterUsers();
+                if(users.length === 0) { alert('No users to export'); return; }
+                const rows = [['User ID', 'Name', 'Role']];
+                users.forEach(u => rows.push([`"${u.userId}"`, `"${u.name}"`, `"${u.role||''}"`].join(',')));
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'master_users.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            });
+        }
+
+        if(importMasterUsersBtn) importMasterUsersBtn.addEventListener('click', () => importMasterUsersFile.click());
+
+        if(importMasterUsersFile) {
+            importMasterUsersFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const text = ev.target.result;
+                    const lines = text.split(/\r?\n/);
+                    if(lines.length < 2) { alert('Invalid CSV'); return; }
+                    let users = getMasterUsers();
+                    let count = 0;
+                    for(let i=1; i<lines.length; i++) {
+                        const line = lines[i].trim();
+                        if(!line) continue;
+                        const parts = line.split(',').map(p => p.replace(/^"|"$/g, '').trim());
+                        if(parts.length >= 2) {
+                            const id = parts[0]; const name = parts[1]; const role = parts[2] || '';
+                            if(id && name) {
+                                const idx = users.findIndex(u => u.userId === id);
+                                if(idx > -1) users[idx] = { userId: id, name, role };
+                                else users.push({ userId: id, name, role });
+                                count++;
+                            }
+                        }
+                    }
+                    saveMasterUsers(users);
+                    renderMasterUsers();
+                    alert(`Imported/Updated ${count} users.`);
+                    importMasterUsersFile.value = '';
+                };
+                reader.readAsText(file);
+            });
+        }
 
         // Timestamp Modal
         let cachedInactiveArgs = null;
@@ -6614,7 +6819,18 @@
                     if(uid) {
                         const attData = getAttendanceData();
                         const userRecord = attData.find(a => a.userId === uid);
-                        nameDisplay.value = userRecord ? `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}` : '';
+                        if (userRecord) {
+                            nameDisplay.value = `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}`;
+                        } else {
+                            // Check Master Data
+                            const masterUsers = getMasterUsers();
+                            const masterUser = masterUsers.find(u => u.userId === uid);
+                            if (masterUser) {
+                                nameDisplay.value = `Name: ${masterUser.name} | Role: ${masterUser.role || '-'}`;
+                            } else {
+                                nameDisplay.value = '';
+                            }
+                        }
                     } else {
                         nameDisplay.value = '';
                     }
