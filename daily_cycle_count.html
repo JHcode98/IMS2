@@ -340,6 +340,13 @@
     body.dark-mode .report-table th { background-color: #2c2c2c; }
     body.dark-mode .report-table tbody tr:nth-child(even) { background-color: #1f1f1f; }
     body.dark-mode .report-table tr:hover { background-color: #333; }
+
+    /* Tab Styles */
+    .tab-header { display: flex; background: #f9f9f9; border-bottom: 1px solid #eee; border-radius: 8px 8px 0 0; }
+    .tab-btn { padding: 10px 15px; border: none; background: #f9f9f9; border-right: 1px solid #eee; cursor: pointer; color: #666; font-size: 13px; font-weight: 600; transition: all 0.2s; outline: none; }
+    .tab-btn:first-child { border-radius: 8px 0 0 0; }
+    .tab-btn.active { background: #fff; color: #2752a7; border-bottom: 2px solid #2752a7; margin-bottom: -1px; }
+    .tab-btn:hover:not(.active) { background: #eee; color: #333; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -1349,7 +1356,8 @@
         const btnBreakEnd = document.getElementById('btn-break-end');
         const btnTimeOut = document.getElementById('btn-time-out');
         const btnEndCount = document.getElementById('btn-end-count');
-        const timestampTableBody = document.querySelector('#timestamp-table tbody');
+        const activeSessionTableBody = document.querySelector('#active-session-table tbody');
+        const sessionHistoryTableBody = document.querySelector('#session-history-table tbody');
         const tsExportBtn = document.getElementById('ts-export-btn');
         const tsFilterUser = document.getElementById('ts-filter-user');
         const tsShiftFilter = document.getElementById('ts-shift-filter');
@@ -1357,7 +1365,6 @@
         const tsPurgeAllBtn = document.getElementById('ts-purge-all-btn');
         const tsDeleteSelectedBtn = document.getElementById('ts-delete-selected-btn');
         const tsSelectAll = document.getElementById('ts-select-all');
-        const tsShowActive = document.getElementById('ts-show-active');
         const tsShowLongActive = document.getElementById('ts-show-long-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
         
@@ -1399,14 +1406,30 @@
             });
         }
 
-        if (timestampTableBody) {
-            timestampTableBody.addEventListener('click', (e) => {
+        const handleEditClick = (e) => {
                 const target = e.target;
                 if (target.classList.contains('editable-time')) {
                     openEditTimeModal(target.dataset.logId);
                 }
-            });
+        };
+
+        if (activeSessionTableBody) activeSessionTableBody.addEventListener('click', handleEditClick);
+        if (sessionHistoryTableBody) sessionHistoryTableBody.addEventListener('click', handleEditClick);
+
+        // Tab Switching Logic
+        window.openTab = function(evt, tabId) {
+            const card = evt.target.closest('.card');
+            const tabContents = card.querySelectorAll('.tab-content');
+            tabContents.forEach(tc => tc.style.display = 'none');
+
+            const tabBtns = card.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+
+            const target = document.getElementById(tabId);
+            if(target) target.style.display = 'flex';
+            evt.target.classList.add('active');
         }
+
         // Start Area Modal Logic
         const startAreaModal = document.getElementById('start-area-modal');
         const warehouseAreaModal = document.getElementById('warehouse-area-modal');
@@ -4686,7 +4709,6 @@
             const attendance = getAttendanceData();
             const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
-            const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
             const showLongActive = tsShowLongActive ? tsShowLongActive.checked : false;
             
             // Analytics Date
@@ -4775,10 +4797,6 @@
                 });
             }
 
-            if (showActiveOnly) {
-                filteredSessions = filteredSessions.filter(s => !s.endLog);
-            }
-            
             if (showLongActive) {
                 const now = new Date();
                 filteredSessions = filteredSessions.filter(s => {
@@ -4822,6 +4840,10 @@
                 s.durationVal = durationMins;
             });
 
+            // Split into Active and History
+            const activeSessions = filteredSessions.filter(s => !s.endLog);
+            const historySessions = filteredSessions.filter(s => s.endLog);
+
             // Sort
             filteredSessions.sort((a,b) => {
                 let valA = a[tsSortField];
@@ -4833,13 +4855,13 @@
                 return 0;
             });
 
-            // Pagination Logic
-            const totalItems = filteredSessions.length;
+            // Pagination Logic (Only for History)
+            const totalItems = historySessions.length;
             const totalPages = Math.ceil(totalItems / tsItemsPerPage) || 1;
             if (tsCurrentPage > totalPages) tsCurrentPage = totalPages;
             if (tsCurrentPage < 1) tsCurrentPage = 1;
             
-            const paginatedSessions = filteredSessions.slice((tsCurrentPage - 1) * tsItemsPerPage, tsCurrentPage * tsItemsPerPage);
+            const paginatedHistory = historySessions.slice((tsCurrentPage - 1) * tsItemsPerPage, tsCurrentPage * tsItemsPerPage);
             
             // Update Controls
             const tsPageInfo = document.getElementById('ts-page-info');
@@ -4965,6 +4987,58 @@
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
         }
+
+        function createSessionRow(session, isHistory) {
+            const userId = session.userId;
+            const name = session.resolvedName;
+            const areaTypeDisplay = session.resolvedArea;
+            const shiftDisplay = session.resolvedShift.split('-')[0];
+            const datePrefix = (session.startLog) ? new Date(session.startLog.timestamp).toLocaleDateString() + ' ' : '';
+            const startStr = session.startLog ? `<span class="editable-time" data-log-id="${session.startLog.id}">${datePrefix + new Date(session.startLog.timestamp).toLocaleTimeString()}</span>` : '-';
+            const endStr = session.endLog ? `<span class="editable-time" data-log-id="${session.endLog.id}">${new Date(session.endLog.timestamp).toLocaleTimeString()}</span>` : '-';
+            
+            let duration = '-';
+            let isHigh = false;
+            const durationMins = session.durationVal;
+            
+            if (session.endLog) {
+                duration = `${durationMins} min`;
+                if (durationMins >= 30) isHigh = true;
+            } else if (session.startLog) {
+                duration = `Active (${durationMins}m)`;
+                if (durationMins > 60) {
+                    duration += ' ⚠️ > 1hr';
+                    isHigh = true; 
+                }
+            }
+            
+            const tr = document.createElement('tr');
+            if ((session.startLog && session.startLog.deleted) || (session.endLog && session.endLog.deleted)) {
+                tr.style.opacity = '0.5';
+                tr.style.background = '#f9f9f9';
+            }
+            
+            const idsToDelete = [session.startLog?.id, session.endLog?.id, ...(session.breaks || []).flatMap(b => [b.start.id, b.end.id])].filter(x=>x).join(',');
+            const deleteAction = `<button class="icon-btn delete-action-btn" onclick="deleteSession('${idsToDelete}')" title="Permanently Delete Session" style="color:#d9534f; opacity:0; transition:opacity 0.2s;">&times;</button>`;
+            const rowIds = idsToDelete;
+            
+            let quickAction = '';
+            if (!session.endLog) {
+                if (session.currentBreakStart) {
+                    quickAction = `<button class="icon-btn quick-action-btn" onclick="logTimestamp('End Break', null, '${userId}')" title="End Break" style="color:#f39c12; margin-right:4px; opacity:0; transition:opacity 0.2s;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>`;
+                } else {
+                    quickAction = `<button class="icon-btn quick-action-btn" onclick="logTimestamp('End', null, '${userId}')" title="End Counting" style="color:#e74c3c; margin-right:4px; opacity:0; transition:opacity 0.2s;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg></button>`;
+                }
+            }
+
+            let checkboxHtml = isHistory ? `<td><input type="checkbox" class="ts-row-checkbox" data-ids="${rowIds}"></td>` : '';
+            
+            tr.innerHTML = `${checkboxHtml}<td>${userId}</td><td>${name}</td><td>${areaTypeDisplay}</td><td>${shiftDisplay}</td><td style="color:#2ecc71; font-weight:bold;">${startStr}</td>${isHistory ? `<td style="color:#e74c3c; font-weight:bold;">${endStr}</td>` : ''}<td style="${isHigh ? 'color:#e74c3c; font-weight:bold;' : (duration.includes('Active')?'color:#2ecc71;font-weight:bold':'')}">${duration}</td><td>${quickAction}${deleteAction}</td>`;
+            
+            tr.onmouseenter = () => { tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '1'); tr.querySelectorAll('.delete-action-btn').forEach(b => b.style.opacity = '1'); };
+            tr.onmouseleave = () => { tr.querySelectorAll('.quick-action-btn').forEach(b => b.style.opacity = '0'); tr.querySelectorAll('.delete-action-btn').forEach(b => b.style.opacity = '0'); };
+            return tr;
+        }
         
         function updateTsDeleteButton() {
             const count = document.querySelectorAll('.ts-row-checkbox:checked').length;
@@ -4978,12 +5052,12 @@
             });
         }
         
-        if(timestampTableBody) {
-            timestampTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('ts-row-checkbox')) updateTsDeleteButton(); });
+        if(sessionHistoryTableBody) {
+            sessionHistoryTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('ts-row-checkbox')) updateTsDeleteButton(); });
         }
 
         // Timestamp Sorting Listeners
-        document.querySelectorAll('#timestamp-table th.sortable').forEach(th => {
+        document.querySelectorAll('#session-history-table th.sortable, #active-session-table th.sortable').forEach(th => {
             th.addEventListener('click', () => {
                 const field = th.dataset.sort;
                 if (tsSortField === field) {
@@ -5244,9 +5318,11 @@
         }
 
         function renderBreakLogTable(logs, attendanceData) {
-            const tbody = document.querySelector('#break-log-table tbody');
-            if(!tbody) return;
-            tbody.innerHTML = '';
+            const activeTbody = document.querySelector('#active-break-table tbody');
+            const historyTbody = document.querySelector('#break-history-table tbody');
+            
+            if(activeTbody) activeTbody.innerHTML = '';
+            if(historyTbody) historyTbody.innerHTML = '';
             
             const breaks = [];
             const openBreaks = {};
@@ -5272,7 +5348,6 @@
             
             // Filters
             const filterShift = breakShiftFilter ? breakShiftFilter.value : '';
-            const showActive = breakShowActive ? breakShowActive.checked : false;
             
             const filteredBreaks = breaks.filter(b => {
                 if (showActive && b.end) return false;
@@ -5286,13 +5361,18 @@
 
             filteredBreaks.sort((a,b) => new Date(b.start) - new Date(a.start));
             
-            if(filteredBreaks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="padding:10px; text-align:center; color:#999;">No breaks recorded.</td></tr>';
+            const activeBreaks = filteredBreaks.filter(b => !b.end);
+            const historyBreaks = filteredBreaks.filter(b => b.end);
+            
+            if(historyBreaks.length === 0 && historyTbody) {
+                historyTbody.innerHTML = '<tr><td colspan="9" style="padding:10px; text-align:center; color:#999;">No break history.</td></tr>';
                 if(breakSelectAll) breakSelectAll.checked = false;
-                return;
+            }
+            if(activeBreaks.length === 0 && activeTbody) {
+                activeTbody.innerHTML = '<tr><td colspan="7" style="padding:10px; text-align:center; color:#999;">No active breaks.</td></tr>';
             }
 
-            filteredBreaks.forEach(b => {
+            const renderRow = (b, isHistory) => {
                 const att = attendanceData.find(a => a.userId === b.userId) || {};
                 const name = att.name || '-';
                 const shift = att.shift ? att.shift.split('-')[0] : '-';
@@ -5331,7 +5411,12 @@
 
                 const tr = document.createElement('tr');
                 if (rowStyle) tr.style.cssText = rowStyle;
-                tr.innerHTML = `<td><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td>${b.userId}</td><td>${name}</td><td>${shift}</td><td>${role}</td><td>${startStr}</td><td>${endStr}</td><td>${durationDisplay}</td><td>${endBreakBtn}${deleteBtn}</td>`;
+                
+                if (isHistory) {
+                    tr.innerHTML = `<td><input type="checkbox" class="break-row-checkbox" data-ids="${rowIds}"></td><td>${b.userId}</td><td>${name}</td><td>${shift}</td><td>${role}</td><td>${startStr}</td><td>${endStr}</td><td>${durationDisplay}</td><td>${deleteBtn}</td>`;
+                } else {
+                    tr.innerHTML = `<td>${b.userId}</td><td>${name}</td><td>${shift}</td><td>${role}</td><td>${startStr}</td><td>${durationDisplay}</td><td>${endBreakBtn}</td>`;
+                }
                 
                 tr.onmouseenter = () => { 
                     tr.querySelectorAll('.delete-break-btn').forEach(b => b.style.opacity = '1'); 
@@ -5342,8 +5427,12 @@
                     tr.querySelectorAll('.end-break-btn').forEach(b => b.style.opacity = '0');
                 };
                 
-                tbody.appendChild(tr);
-            });
+                return tr;
+            };
+
+            activeBreaks.forEach(b => activeTbody.appendChild(renderRow(b, false)));
+            historyBreaks.forEach(b => historyTbody.appendChild(renderRow(b, true)));
+
             updateBreakDeleteButton();
         }
         
@@ -5359,12 +5448,12 @@
             });
         }
         
-        if(document.getElementById('break-log-table')) {
-            document.getElementById('break-log-table').addEventListener('change', (e) => { if(e.target.classList.contains('break-row-checkbox')) updateBreakDeleteButton(); });
+        if(document.getElementById('break-history-table')) {
+            document.getElementById('break-history-table').addEventListener('change', (e) => { if(e.target.classList.contains('break-row-checkbox')) updateBreakDeleteButton(); });
         }
 
         function renderInactiveUsersTable(sessions, attendanceData, logs) {
-            const tbody = document.querySelector('#inactive-users-table tbody');
+            const tbody = document.querySelector('#inactive-counters-table tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
             const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
@@ -5470,8 +5559,8 @@
             });
             
             // Update sort icons
-            document.querySelectorAll('#inactive-users-table th .sort-icon').forEach(el => el.textContent = '');
-            const activeTh = document.querySelector(`#inactive-users-table th[onclick*="'${inactiveSort.field}'"] .sort-icon`);
+            document.querySelectorAll('#inactive-counters-table th .sort-icon').forEach(el => el.textContent = '');
+            const activeTh = document.querySelector(`#inactive-counters-table th[onclick*="'${inactiveSort.field}'"] .sort-icon`);
             if(activeTh) activeTh.textContent = inactiveSort.dir === 'asc' ? '↑' : '↓';
         }
 
@@ -6299,7 +6388,6 @@
         if(btnTimeOut) btnTimeOut.addEventListener('click', () => logTimestamp('Time Out'));
         if(tsFilterUser) tsFilterUser.addEventListener('input', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShiftFilter) tsShiftFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
-        if(tsShowActive) tsShowActive.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShowLongActive) tsShowLongActive.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         
@@ -6322,18 +6410,7 @@
             });
         }
         
-        const breakLogTable = document.getElementById('break-log-table');
-        if (breakLogTable) {
-            breakLogTable.addEventListener('click', (e) => {
-                const target = e.target;
-                if (target.classList.contains('editable-time')) {
-                    openEditTimeModal(target.dataset.logId);
-                }
-            });
-        }
-        
         if(breakShiftFilter) breakShiftFilter.addEventListener('change', () => renderTimestamps());
-        if(breakShowActive) breakShowActive.addEventListener('change', () => renderTimestamps());
 
         if(tsUserIdInput) {
             tsUserIdInput.addEventListener('input', () => {
@@ -6374,4 +6451,3 @@
   </script>
 </body>
 </html>             
-
