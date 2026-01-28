@@ -6353,7 +6353,6 @@
                 }
             });
         }
-    });
 
     // Tab Switching Logic (Global Scope)
     window.openTsTab = function(evt, tabId) {
@@ -6368,6 +6367,40 @@
         if(target) target.style.display = 'flex';
         evt.target.classList.add('active');
     };
+
+    function renderTimestampChart(sessions) {
+        const ctx = document.getElementById('timestamp-chart');
+        if (!ctx || typeof Chart === 'undefined') return;
+        
+        if (timestampChart) timestampChart.destroy();
+        
+        const labels = sessions.map(s => {
+            const time = new Date(s.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            return `${s.user} (${time})`;
+        });
+        const data = sessions.map(s => s.duration);
+        
+        timestampChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Duration (Minutes)',
+                    data: data,
+                    backgroundColor: '#3498db',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Minutes' } },
+                    x: { ticks: { maxRotation: 45, minRotation: 45 } }
+                }
+            }
+        });
+    }
         
         if(breakShiftFilter) breakShiftFilter.addEventListener('change', () => renderTimestamps());
         if(breakShowActive) breakShowActive.addEventListener('change', () => renderTimestamps());
