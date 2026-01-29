@@ -547,7 +547,11 @@
                 <option value="IC Support">IC Support</option>
                 <option value="IC Back up">IC Back up</option>
             </select>
-        
+            <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">All Areas</option>
+                <option value="Pick Bin">Pick Bin</option>
+                <option value="Reserved Bin">Reserved Bin</option>
+            </select>
             <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
             <button id="print-att-btn" class="icon-btn" title="Print List">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -574,7 +578,7 @@
                       <th class="sortable" data-sort="shift">Shift <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
-        
+                      <th class="sortable" data-sort="area">Area <span class="sort-icon"></span></th>
                       <th>Time In</th>
                       <th>Break Out</th>
                       <th>Break In</th>
