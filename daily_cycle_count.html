@@ -1988,6 +1988,7 @@
         const STORAGE_KEY_ATTENDANCE = 'ims_daily_counters_attendance_v1';
         const STORAGE_KEY_CC = 'ims_cycle_count_v1';
         const STORAGE_KEY_TIMESTAMPS = 'ims_counter_timestamps_v1';
+        const STORAGE_KEY_MASTER_USERS = 'ims_master_users_v1';
         
         // State Persistence: Load saved state or defaults
         const UI_STATE_KEY = 'ims_daily_counters_ui_state_v1';
@@ -2143,6 +2144,10 @@
             } catch (e) {
                 return [];
             }
+        }
+
+        function getMasterUsers() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_USERS) || '[]'); } catch(e) { return []; }
         }
 
         function saveAttendanceData(data) {
@@ -3662,11 +3667,26 @@
             attUserIdInput.addEventListener('input', () => {
                 const val = attUserIdInput.value.trim();
                 if (!val) return;
-                const data = getAttendanceData();
-                const user = data.slice().reverse().find(d => d.userId && d.userId.toLowerCase() === val.toLowerCase());
-                if (user) {
-                    if (user.name) document.getElementById('att-name').value = user.name;
-                    if (user.role) document.getElementById('att-role').value = user.role;
+
+                // First, try to find the user in the master data
+                const masterUsers = getMasterUsers();
+                const masterUser = masterUsers.find(u => u.userId && u.userId.toLowerCase() === val.toLowerCase());
+
+                if (masterUser) {
+                    if (masterUser.name) document.getElementById('att-name').value = masterUser.name;
+                    if (masterUser.role) {
+                        const roleSelect = document.getElementById('att-role');
+                        const optionExists = Array.from(roleSelect.options).some(opt => opt.value === masterUser.role);
+                        if (optionExists) roleSelect.value = masterUser.role;
+                    }
+                } else {
+                    // Fallback to searching in existing attendance data if not in master
+                    const data = getAttendanceData();
+                    const user = data.slice().reverse().find(d => d.userId && d.userId.toLowerCase() === val.toLowerCase());
+                    if (user) {
+                        if (user.name) document.getElementById('att-name').value = user.name;
+                        if (user.role) document.getElementById('att-role').value = user.role;
+                    }
                 }
             });
         }
@@ -7001,6 +7021,26 @@
         // Toggle Section Logic for Timestamp Modal Tables
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.toggle-section-btn');
+            if (btn) {
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
             if (btn) {
                 const card = btn.closest('.card');
                 const content = card.querySelector('.section-content');
