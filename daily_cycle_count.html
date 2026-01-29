@@ -547,11 +547,7 @@
                 <option value="IC Support">IC Support</option>
                 <option value="IC Back up">IC Back up</option>
             </select>
-            <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
-                <option value="">All Areas</option>
-                <option value="Pick Bin">Pick Bin</option>
-                <option value="Reserved Bin">Reserved Bin</option>
-            </select>
+        
             <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
             <button id="print-att-btn" class="icon-btn" title="Print List">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -578,7 +574,7 @@
                       <th class="sortable" data-sort="shift">Shift <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
-                      <th class="sortable" data-sort="area">Area <span class="sort-icon"></span></th>
+        
                       <th>Time In</th>
                       <th>Break Out</th>
                       <th>Break In</th>
@@ -649,13 +645,7 @@
                         <option value="IC Back up">IC Back up</option>
                     </select>
                 </div>
-                <div>
-                    <label for="att-area">Area</label>
-                    <select id="att-area" style="width:100%">
-                        <option value="Pick Bin">Pick Bin</option>
-                        <option value="Reserved Bin">Reserved Bin</option>
-                    </select>
-                </div>
+                
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
@@ -1136,23 +1126,7 @@
                 </div>
             </div>
 
-            <!-- Embedded Hourly View -->
-            <div id="embedded-hourly-view" class="card" style="margin:0; padding:10px; display:none; flex-direction:column; border:1px solid #eee; box-shadow:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <button id="toggle-embedded-hourly-btn" class="icon-btn" title="Collapse" style="padding:2px; height:24px; width:24px; border:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-                        <h4 style="margin:0;" id="embedded-hourly-title">Hourly Output</h4>
-                    </div>
-                    <button id="embedded-save-btn" class="icon-btn" style="background:#2752a7; color:white; font-size:11px; padding:4px 8px;">Save Data</button>
-                </div>
-                <div id="embedded-hourly-content">
-                    <div style="height:250px; position:relative; width:100%;">
-                        <canvas id="embedded-hourly-chart"></canvas>
-                    </div>
-                    <div id="embedded-hourly-details" style="margin-top:10px; overflow-x:auto;"></div>
-                </div>
-            </div>
-
+           
             
         </div>
 
