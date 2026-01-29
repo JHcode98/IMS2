@@ -1489,7 +1489,9 @@
         if(userMasterBtn) {
             userMasterBtn.addEventListener('click', () => {
                 userMasterModal.classList.remove('hidden');
-                setTimeout(renderMasterUsers, 50);
+                requestAnimationFrame(() => {
+                    setTimeout(renderMasterUsers, 10);
+                });
             });
         }
 
@@ -1721,15 +1723,17 @@
         if(reportsMenuBtn) {
             reportsMenuBtn.addEventListener('click', () => {
                 reportsModal.classList.remove('hidden');
-                setTimeout(() => {
-                    // Set default dates if empty
-                    if(!document.getElementById('rep-start-date').value) {
-                        document.getElementById('rep-start-date').value = new Date().toISOString().split('T')[0];
-                    }
-                    if(!document.getElementById('rep-end-date').value) {
-                        document.getElementById('rep-end-date').value = new Date().toISOString().split('T')[0];
-                    }
-                }, 50);
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        // Set default dates if empty
+                        if(!document.getElementById('rep-start-date').value) {
+                            document.getElementById('rep-start-date').value = new Date().toISOString().split('T')[0];
+                        }
+                        if(!document.getElementById('rep-end-date').value) {
+                            document.getElementById('rep-end-date').value = new Date().toISOString().split('T')[0];
+                        }
+                    }, 10);
+                });
             });
         }
         
