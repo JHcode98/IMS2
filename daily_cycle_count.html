@@ -1489,7 +1489,7 @@
         if(userMasterBtn) {
             userMasterBtn.addEventListener('click', () => {
                 userMasterModal.classList.remove('hidden');
-                renderMasterUsers();
+                setTimeout(renderMasterUsers, 50);
             });
         }
 
@@ -1720,14 +1720,16 @@
         // Reports Modal Logic
         if(reportsMenuBtn) {
             reportsMenuBtn.addEventListener('click', () => {
-                // Set default dates if empty
-                if(!document.getElementById('rep-start-date').value) {
-                    document.getElementById('rep-start-date').value = new Date().toISOString().split('T')[0];
-                }
-                if(!document.getElementById('rep-end-date').value) {
-                    document.getElementById('rep-end-date').value = new Date().toISOString().split('T')[0];
-                }
                 reportsModal.classList.remove('hidden');
+                setTimeout(() => {
+                    // Set default dates if empty
+                    if(!document.getElementById('rep-start-date').value) {
+                        document.getElementById('rep-start-date').value = new Date().toISOString().split('T')[0];
+                    }
+                    if(!document.getElementById('rep-end-date').value) {
+                        document.getElementById('rep-end-date').value = new Date().toISOString().split('T')[0];
+                    }
+                }, 50);
             });
         }
         
@@ -1954,7 +1956,7 @@
         }
 
         const STORAGE_KEY_COUNTERS = 'ims_daily_counters_v1';
-        const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
+        const STORAGE_KEY_ATTENDANCE = 'ims_daily_counters_attendance_v1';
         const STORAGE_KEY_CC = 'ims_cycle_count_v1';
         const STORAGE_KEY_TIMESTAMPS = 'ims_counter_timestamps_v1';
         
