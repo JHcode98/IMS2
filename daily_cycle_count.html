@@ -1136,9 +1136,21 @@
                 </div>
             </div>
 
-            <!-- Right Column: Analytics & Hourly -->
+            <!-- Right Column: Hourly Output Chart + Analytics -->
             <div style="width: 40%; display:flex; flex-direction:column; border-left:1px solid #eee; padding-left:20px; gap: 15px; overflow-y: auto;">
-                <!-- Embedded Hourly View -->
+                
+                <!-- Hourly Output Chart Section -->
+                <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; border:1px solid #eee; box-shadow:none; flex-shrink: 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="margin:0;" id="ts-hourly-chart-title">Hourly Output (Today)</h4>
+                        <button id="ts-view-hourly-full-btn" class="icon-btn" title="View Full Report" style="background:#2752a7; color:white; font-size:11px; padding:4px 8px;">Full Report</button>
+                    </div>
+                    <div style="height:280px; position:relative; width:100%; border:1px solid #eee; border-radius:4px; padding:5px; background:#fff;">
+                        <canvas id="ts-hourly-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Embedded Hourly View (Hidden by default) -->
                 <div id="embedded-hourly-view" class="card" style="margin:0; padding:10px; display:none; flex-direction:column; border:1px solid #eee; box-shadow:none; flex-shrink: 0;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <div style="display:flex; align-items:center; gap:5px;">
@@ -1156,12 +1168,12 @@
                 </div>
 
                 <!-- Analytics Overview -->
-                <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; flex-direction: column; flex: 1;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <h4 style="margin:0;">Analytics Overview</h4>
                         <input type="date" id="ts-analytics-date-filter" style="padding:2px 5px; border:1px solid #ccc; border-radius:4px; font-size:12px; color:#333;" title="Filter Analytics Date">
                     </div>
-                    <div id="ts-analytics-content"></div>
+                    <div id="ts-analytics-content" style="overflow-y: auto;"></div>
                 </div>
             </div>
         </div>
@@ -1624,6 +1636,14 @@
         const tsSelectAll = document.getElementById('ts-select-all');
         const tsShowLongActive = document.getElementById('ts-show-long-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
+
+        const tsViewHourlyFullBtn = document.getElementById('ts-view-hourly-full-btn');
+        if (tsViewHourlyFullBtn) {
+            tsViewHourlyFullBtn.addEventListener('click', () => {
+                const date = document.getElementById('ts-analytics-date-filter').value || new Date().toISOString().split('T')[0];
+                openHourlyModal(date, "1st Shift-(6am-2pm)");
+            });
+        }
         
         // End Count Modal Elements
         const endCountModal = document.getElementById('end-count-modal');
@@ -5176,6 +5196,7 @@
             }));
             renderTimestampChart(chartSessions);
             renderTsAnalytics(sessions, analyticsDate, logsToProcess);
+            renderTsHourlyChart(analyticsDate);
             renderBreakLogTable(logsToProcess, attendance);
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
@@ -5649,7 +5670,82 @@
             document.getElementById('history-break-table').addEventListener('change', (e) => { if(e.target.classList.contains('break-row-checkbox')) updateBreakDeleteButton(); });
         }
 
-        function renderInactiveUsersTable(sessions, attendanceData, logs) {
+
+        function renderTsHourlyChart(date) {
+            const ctx = document.getElementById('ts-hourly-chart');
+            if (!ctx || typeof Chart === 'undefined') return;
+            
+            const counters = getCountersData();
+            const attendance = getAttendanceData();
+            const todayCounters = counters.filter(c => c.date === date);
+            
+            if (todayCounters.length === 0) {
+                if(ctx.parentElement) ctx.parentElement.innerHTML = '<div style="text-align:center; padding:20px; color:#999; height:280px; display:flex; align-items:center; justify-content:center;">No data for ' + date + '</div>';
+                return;
+            }
+            
+            const hourlyData = {}, hourlyTargets = {};
+            
+            for (let h = 6; h < 22; h++) {
+                const label = `${h}:00 - ${h+1}:00`;
+                hourlyData[label] = 0;
+                hourlyTargets[label] = 0;
+            }
+            
+            todayCounters.forEach(counter => {
+                if (counter.hourlyActuals) {
+                    Object.keys(counter.hourlyActuals).forEach(label => {
+                        if (hourlyData.hasOwnProperty(label)) {
+                            hourlyData[label] += Number(counter.hourlyActuals[label]) || 0;
+                        }
+                    });
+                }
+                
+                if (counter.hourlyTargets) {
+                    Object.keys(counter.hourlyTargets).forEach(label => {
+                        if (hourlyTargets.hasOwnProperty(label)) {
+                            hourlyTargets[label] += Number(counter.hourlyTargets[label]) || 0;
+                        }
+                    });
+                } else {
+                    const shiftAtt = attendance.filter(a => a.date === date && a.shift === counter.shift);
+                    const headcount = shiftAtt.length, rate = Number(counter.standardRate) || 0;
+                    const activeTarget = rate > 0 ? (headcount * rate) : (Number(counter.targetOutput) || 0);
+                    const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
+                    
+                    if (counter.shift === "1st Shift-(6am-2pm)") {
+                        for (let h = 6; h < 14; h++) hourlyTargets[`${h}:00 - ${h+1}:00`] += defaultHourlyTarget;
+                    } else if (counter.shift === "2nd Shift-(2pm-10pm)") {
+                        for (let h = 14; h < 22; h++) hourlyTargets[`${h}:00 - ${h+1}:00`] += defaultHourlyTarget;
+                    }
+                }
+            });
+            
+            const labels = Object.keys(hourlyData), values = Object.values(hourlyData);
+            const cumulativeData = [], targetValues = Object.values(hourlyTargets);
+            let sum = 0;
+            for (const val of values) { sum += val; cumulativeData.push(sum); }
+            
+            if (window.tsHourlyChart) window.tsHourlyChart.destroy();
+            window.tsHourlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Hourly Output', data: values, backgroundColor: '#36b9cc', borderColor: '#117a8b', borderWidth: 1, order: 2 },
+                        { label: 'Cumulative', data: cumulativeData, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', order: 1, borderWidth: 2 },
+                        { label: 'Target', data: targetValues, type: 'line', borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [5, 5], order: 0, borderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'top', labels: { font: { size: 11 } } } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Count' } } }
+                }
+            });
+        }
+
+                function renderInactiveUsersTable(sessions, attendanceData, logs) {
             const tbody = document.querySelector('#inactive-users-table tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
