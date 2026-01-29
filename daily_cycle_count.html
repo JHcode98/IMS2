@@ -1647,14 +1647,7 @@
             });
         }
         
-        const tsViewHourlyFullBtn = document.getElementById('ts-view-hourly-full-btn');
-        if (tsViewHourlyFullBtn) {
-            tsViewHourlyFullBtn.addEventListener('click', () => {
-                const date = document.getElementById('ts-analytics-date-filter').value || new Date().toISOString().split('T')[0];
-                const currentShift = "1st Shift-(6am-2pm)";
-                openHourlyModal(date, currentShift);
-            });
-        }
+       
 
         // End Count Modal Elements
         const endCountModal = document.getElementById('end-count-modal');
