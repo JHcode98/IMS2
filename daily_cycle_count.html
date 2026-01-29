@@ -1638,6 +1638,14 @@
         const tsSelectAll = document.getElementById('ts-select-all');
         const tsShowLongActive = document.getElementById('ts-show-long-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
+
+        const tsViewHourlyFullBtn = document.getElementById('ts-view-hourly-full-btn');
+        if (tsViewHourlyFullBtn) {
+            tsViewHourlyFullBtn.addEventListener('click', () => {
+                const date = document.getElementById('ts-analytics-date-filter').value || new Date().toISOString().split('T')[0];
+                openHourlyModal(date, "1st Shift-(6am-2pm)");
+            });
+        }
         
         const tsViewHourlyFullBtn = document.getElementById('ts-view-hourly-full-btn');
         if (tsViewHourlyFullBtn) {
@@ -5200,6 +5208,7 @@
             }));
             renderTimestampChart(chartSessions);
             renderTsAnalytics(sessions, analyticsDate, logsToProcess);
+            renderTsHourlyChart(analyticsDate);
             renderBreakLogTable(logsToProcess, attendance);
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
@@ -5673,7 +5682,135 @@
             document.getElementById('history-break-table').addEventListener('change', (e) => { if(e.target.classList.contains('break-row-checkbox')) updateBreakDeleteButton(); });
         }
 
-        function renderInactiveUsersTable(sessions, attendanceData, logs) {
+
+        function renderTsHourlyChart(date) {
+            const ctx = document.getElementById('ts-hourly-chart');
+            if (!ctx || typeof Chart === 'undefined') return;
+            
+            const counters = getCountersData();
+            const attendance = getAttendanceData();
+            const todayCounters = counters.filter(c => c.date === date);
+            
+            if (todayCounters.length === 0) {
+                if(ctx.parentElement) {
+                    ctx.parentElement.innerHTML = '<div style="text-align:center; padding:40px; color:#999; font-size:13px;">No data for ' + date + '</div>';
+                }
+                return;
+            }
+            
+            const hourlyData = {}, hourlyTargets = {};
+            
+            // Initialize hours 6-22
+            for (let h = 6; h < 22; h++) {
+                const label = `${h}:00 - ${h+1}:00`;
+                hourlyData[label] = 0;
+                hourlyTargets[label] = 0;
+            }
+            
+            // Aggregate data from all shifts
+            todayCounters.forEach(counter => {
+                if (counter.hourlyActuals) {
+                    Object.keys(counter.hourlyActuals).forEach(label => {
+                        if (hourlyData.hasOwnProperty(label)) {
+                            hourlyData[label] += Number(counter.hourlyActuals[label]) || 0;
+                        }
+                    });
+                }
+                
+                if (counter.hourlyTargets) {
+                    Object.keys(counter.hourlyTargets).forEach(label => {
+                        if (hourlyTargets.hasOwnProperty(label)) {
+                            hourlyTargets[label] += Number(counter.hourlyTargets[label]) || 0;
+                        }
+                    });
+                } else {
+                    const shiftAtt = attendance.filter(a => a.date === date && a.shift === counter.shift);
+                    const headcount = shiftAtt.length;
+                    const rate = Number(counter.standardRate) || 0;
+                    const activeTarget = rate > 0 ? (headcount * rate) : (Number(counter.targetOutput) || 0);
+                    const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
+                    
+                    if (counter.shift === "1st Shift-(6am-2pm)") {
+                        for (let h = 6; h < 14; h++) {
+                            hourlyTargets[`${h}:00 - ${h+1}:00`] += defaultHourlyTarget;
+                        }
+                    } else if (counter.shift === "2nd Shift-(2pm-10pm)") {
+                        for (let h = 14; h < 22; h++) {
+                            hourlyTargets[`${h}:00 - ${h+1}:00`] += defaultHourlyTarget;
+                        }
+                    }
+                }
+            });
+            
+            const labels = Object.keys(hourlyData);
+            const values = Object.values(hourlyData);
+            const targetValues = Object.values(hourlyTargets);
+            
+            // Calculate cumulative
+            const cumulativeData = [];
+            let sum = 0;
+            for (const val of values) {
+                sum += val;
+                cumulativeData.push(sum);
+            }
+            
+            if (window.tsHourlyChart) window.tsHourlyChart.destroy();
+            
+            try {
+                window.tsHourlyChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { 
+                                label: 'Hourly Output', 
+                                data: values, 
+                                backgroundColor: '#36b9cc', 
+                                borderColor: '#117a8b',
+                                borderWidth: 1,
+                                order: 2 
+                            },
+                            { 
+                                label: 'Cumulative', 
+                                data: cumulativeData, 
+                                type: 'line',
+                                borderColor: '#e74c3c', 
+                                backgroundColor: 'transparent', 
+                                tension: 0.2,
+                                borderWidth: 2,
+                                order: 1 
+                            },
+                            { 
+                                label: 'Target', 
+                                data: targetValues, 
+                                type: 'line',
+                                borderColor: '#27ae60', 
+                                backgroundColor: 'transparent', 
+                                tension: 0.2,
+                                borderDash: [5, 5],
+                                borderWidth: 2,
+                                order: 0 
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true, position: 'top', labels: { font: { size: 10 }, padding: 8 } },
+                            tooltip: { enabled: true }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } catch(e) {
+                console.error('Chart error:', e);
+            }
+        }
+
+                function renderInactiveUsersTable(sessions, attendanceData, logs) {
             const tbody = document.querySelector('#inactive-users-table tbody');
             if(!tbody) return;
             tbody.innerHTML = '';
