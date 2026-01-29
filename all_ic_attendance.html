@@ -841,6 +841,17 @@
         const tsShowActive = document.getElementById('ts-show-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
         
+        // Timestamp Button Handler
+        if (timestampBtn) {
+            timestampBtn.addEventListener('click', () => {
+                timestampModal.classList.remove('hidden');
+                renderTimestampTable();
+                renderBreakLogTable();
+                renderInactiveUsersTable();
+                renderTimestampAnalytics();
+            });
+        }
+        
         // Reports
         const reportsMenuBtn = document.getElementById('reports-menu-btn');
         const reportsModal = document.getElementById('reports-modal');
