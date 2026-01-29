@@ -1686,6 +1686,283 @@
             }
         }, 15000);
 
+        // Timestamp Functions
+        function renderTimestampTable() {
+            const timestamps = getTimestamps();
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Filter for today only
+            const todayTimestamps = timestamps.filter(t => t.startTime && t.startTime.split(' ')[0] === today && !t.endTime);
+            
+            // Apply filters
+            const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
+            const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
+            const showActiveOnly = tsShowActive ? tsShowActive.checked : false;
+            
+            const filtered = todayTimestamps.filter(t => {
+                if (filterUser && !((t.userId || '') + (t.resolvedName || '')).toLowerCase().includes(filterUser)) return false;
+                if (filterShift && !(t.resolvedShift || '').includes(filterShift)) return false;
+                return true;
+            });
+            
+            if (timestampTableBody) {
+                timestampTableBody.innerHTML = '';
+                filtered.forEach(ts => {
+                    const startDate = new Date(ts.startTime);
+                    const endDate = ts.endTime ? new Date(ts.endTime) : new Date();
+                    const durationMs = endDate - startDate;
+                    const hours = Math.floor(durationMs / 3600000);
+                    const minutes = Math.floor((durationMs % 3600000) / 60000);
+                    const duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding:8px;"><input type="checkbox" class="ts-row-checkbox" data-id="${ts.id}" value="${ts.id}"></td>
+                        <td style="padding:8px;">${ts.userId || '-'}</td>
+                        <td style="padding:8px;">${ts.resolvedName || '-'}</td>
+                        <td style="padding:8px;">${ts.resolvedArea || '-'}</td>
+                        <td style="padding:8px;">${ts.resolvedShift || '-'}</td>
+                        <td style="padding:8px;"><span class="editable-time" onclick="editTimestamp('${ts.id}')">${ts.startTime || '-'}</span></td>
+                        <td style="padding:8px;">${ts.endTime || '-'}</td>
+                        <td style="padding:8px;">${duration}</td>
+                        <td style="padding:8px;">
+                            <button class="icon-btn ts-end-btn" data-id="${ts.id}" title="End Session" style="padding:2px 4px; font-size:11px; background:#e74c3c; color:white;">End</button>
+                        </td>
+                    `;
+                    timestampTableBody.appendChild(tr);
+                });
+            }
+        }
+
+        function renderBreakLogTable() {
+            const timestamps = getTimestamps();
+            const today = new Date().toISOString().split('T')[0];
+            const breakLogs = timestamps.filter(t => t.type === 'break' && t.breakOut && t.breakOut.split(' ')[0] === today);
+            
+            const breakLogTable = document.querySelector('#break-log-table tbody');
+            if (breakLogTable) {
+                breakLogTable.innerHTML = '';
+                breakLogs.forEach(log => {
+                    const breakOutDate = new Date(log.breakOut);
+                    const breakInDate = log.breakIn ? new Date(log.breakIn) : new Date();
+                    const breakDurationMs = breakInDate - breakOutDate;
+                    const breakMinutes = Math.floor(breakDurationMs / 60000);
+                    const breakDuration = breakMinutes > 0 ? `${breakMinutes}m` : '-';
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding:5px;"><input type="checkbox" class="break-row-checkbox" data-id="${log.id}" value="${log.id}"></td>
+                        <td style="padding:5px;">${log.userId || '-'}</td>
+                        <td style="padding:5px;">${log.resolvedName || '-'}</td>
+                        <td style="padding:5px;">${log.resolvedShift || '-'}</td>
+                        <td style="padding:5px;">${log.role || '-'}</td>
+                        <td style="padding:5px;">${log.breakOut || '-'}</td>
+                        <td style="padding:5px;">${log.breakIn || '-'}</td>
+                        <td style="padding:5px;">${breakDuration}</td>
+                        <td style="padding:5px;">
+                            <button class="icon-btn break-delete-btn" data-id="${log.id}" title="Delete" style="padding:2px 4px; font-size:11px; color:#d9534f;">Del</button>
+                        </td>
+                    `;
+                    breakLogTable.appendChild(tr);
+                });
+            }
+        }
+
+        function renderInactiveUsersTable() {
+            const attendanceData = getAttendanceData();
+            const inactiveTable = document.querySelector('#inactive-users-table tbody');
+            if (inactiveTable) {
+                inactiveTable.innerHTML = '';
+                // Show attendees who don't have active timestamp sessions
+                const uniqueUsers = [...new Set(attendanceData.map(d => d.userId))];
+                const timestamps = getTimestamps();
+                const activeSessions = timestamps.filter(t => !t.endTime).map(t => t.userId);
+                
+                const inactiveUsers = attendanceData.filter(a => !activeSessions.includes(a.userId));
+                inactiveUsers.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding:5px;">${user.userId || '-'}</td>
+                        <td style="padding:5px;">${user.name || '-'}</td>
+                        <td style="padding:5px;">${user.shift || '-'}</td>
+                        <td style="padding:5px;">${user.role || '-'}</td>
+                        <td style="padding:5px;">${user.timeOut || '-'}</td>
+                        <td style="padding:5px; text-align:center;">
+                            <button class="icon-btn activate-user-btn" data-user-id="${user.userId}" title="Activate" style="padding:2px 4px; font-size:11px; background:#2ecc71; color:white;">+</button>
+                        </td>
+                    `;
+                    inactiveTable.appendChild(tr);
+                });
+            }
+        }
+
+        function renderTimestampAnalytics() {
+            const timestamps = getTimestamps();
+            const container = document.getElementById('ts-analytics-content');
+            if (!container) return;
+            
+            const today = new Date().toISOString().split('T')[0];
+            const todayTimestamps = timestamps.filter(t => t.startTime && t.startTime.split(' ')[0] === today);
+            
+            const activeSessions = todayTimestamps.filter(t => !t.endTime).length;
+            const completedSessions = todayTimestamps.filter(t => t.endTime).length;
+            const totalDuration = todayTimestamps.reduce((sum, t) => {
+                if (!t.startTime) return sum;
+                const end = t.endTime ? new Date(t.endTime) : new Date();
+                const start = new Date(t.startTime);
+                return sum + (end - start);
+            }, 0);
+            const totalHours = Math.floor(totalDuration / 3600000);
+            const totalMinutes = Math.floor((totalDuration % 3600000) / 60000);
+            
+            container.innerHTML = `
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-value" style="color:#2ecc71;">${activeSessions}</div>
+                        <div class="summary-label">Active Sessions</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-value" style="color:#3498db;">${completedSessions}</div>
+                        <div class="summary-label">Completed</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-value">${totalHours}h ${totalMinutes}m</div>
+                        <div class="summary-label">Total Duration</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-value">${todayTimestamps.length}</div>
+                        <div class="summary-label">Total Sessions</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function editTimestamp(id) {
+            const editTimeModal = document.getElementById('edit-time-modal');
+            if (!editTimeModal) return;
+            const ts = getTimestamps().find(t => t.id === id);
+            if (!ts) return;
+            document.getElementById('edit-time-log-id').value = id;
+            document.getElementById('edit-time-input').value = ts.startTime ? ts.startTime.replace(' ', 'T') : '';
+            editTimeModal.classList.remove('hidden');
+        }
+
+        // Timestamp Action Handlers
+        if (btnStartCount) {
+            btnStartCount.addEventListener('click', () => {
+                const userId = tsUserIdInput ? tsUserIdInput.value.trim() : '';
+                if (!userId) { alert('Enter User ID'); return; }
+                
+                const timestamps = getTimestamps();
+                const newSession = {
+                    id: Date.now().toString(),
+                    userId: userId,
+                    resolvedName: userId,
+                    resolvedArea: 'Counting',
+                    resolvedShift: new Date().getHours() < 14 ? '1st Shift' : (new Date().getHours() < 22 ? '2nd Shift' : '3rd Shift'),
+                    startTime: new Date().toLocaleString(),
+                    type: 'counting'
+                };
+                timestamps.push(newSession);
+                saveTimestamps(timestamps);
+                showToast('Counting session started');
+                renderTimestampTable();
+                if (tsUserIdInput) tsUserIdInput.value = '';
+            });
+        }
+
+        // Timestamp Export
+        if (tsExportBtn) {
+            tsExportBtn.addEventListener('click', () => {
+                const timestamps = getTimestamps();
+                if (timestamps.length === 0) { alert('No timestamp records'); return; }
+                
+                const headers = ['User ID', 'Name', 'Area', 'Shift', 'Start Time', 'End Time', 'Duration (minutes)'];
+                const rows = [headers.join(',')];
+                
+                timestamps.forEach(ts => {
+                    if (!ts.startTime) return;
+                    const end = ts.endTime ? new Date(ts.endTime) : new Date();
+                    const start = new Date(ts.startTime);
+                    const durationMin = Math.round((end - start) / 60000);
+                    const row = [
+                        `"${ts.userId||''}"`,
+                        `"${ts.resolvedName||''}"`,
+                        `"${ts.resolvedArea||''}"`,
+                        `"${ts.resolvedShift||''}"`,
+                        `"${ts.startTime||''}"`,
+                        `"${ts.endTime||''}"`,
+                        durationMin
+                    ];
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'timestamps.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            });
+        }
+
+        // Timestamp Filters
+        if (tsFilterUser) tsFilterUser.addEventListener('input', renderTimestampTable);
+        if (tsShiftFilter) tsShiftFilter.addEventListener('change', renderTimestampTable);
+        if (tsShowActive) tsShowActive.addEventListener('change', renderTimestampTable);
+
+        // Break Log Export
+        if (breakExportBtn = document.getElementById('break-export-btn')) {
+            breakExportBtn.addEventListener('click', () => {
+                const timestamps = getTimestamps();
+                const breakLogs = timestamps.filter(t => t.type === 'break' && t.breakOut);
+                if (breakLogs.length === 0) { alert('No break logs'); return; }
+                
+                const headers = ['User ID', 'Name', 'Shift', 'Role', 'Break Out', 'Break In', 'Duration (minutes)'];
+                const rows = [headers.join(',')];
+                
+                breakLogs.forEach(log => {
+                    const breakIn = log.breakIn ? new Date(log.breakIn) : new Date();
+                    const breakOut = new Date(log.breakOut);
+                    const durationMin = Math.round((breakIn - breakOut) / 60000);
+                    const row = [
+                        `"${log.userId||''}"`,
+                        `"${log.resolvedName||''}"`,
+                        `"${log.resolvedShift||''}"`,
+                        `"${log.role||''}"`,
+                        `"${log.breakOut||''}"`,
+                        `"${log.breakIn||''}"`,
+                        durationMin
+                    ];
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'break_logs.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            });
+        }
+
+        // Save Edit Time
+        if (saveEditTimeBtn) {
+            saveEditTimeBtn.addEventListener('click', () => {
+                const logId = document.getElementById('edit-time-log-id').value;
+                const newTime = document.getElementById('edit-time-input').value;
+                if (!logId || !newTime) return;
+                
+                const timestamps = getTimestamps();
+                const idx = timestamps.findIndex(t => t.id === logId);
+                if (idx > -1) {
+                    timestamps[idx].startTime = newTime.replace('T', ' ');
+                    saveTimestamps(timestamps);
+                    editTimeModal.classList.add('hidden');
+                    renderTimestampTable();
+                    showToast('Timestamp updated');
+                }
+            });
+        }
+
         // Initial Render
         renderAttendanceTable();
     });
