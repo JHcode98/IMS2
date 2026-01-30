@@ -5677,12 +5677,15 @@
             }
             
             const hourlyData = {}, hourlyTargets = {};
+            const hoursOrder = [];
             
-            // Initialize hours 6-22
-            for (let h = 6; h < 22; h++) {
+            // Initialize hours 6am to 6am (24h)
+            for (let i = 0; i < 24; i++) {
+                const h = (6 + i) % 24;
                 const label = `${h}:00 - ${h+1}:00`;
                 hourlyData[label] = 0;
                 hourlyTargets[label] = 0;
+                hoursOrder.push(label);
             }
             
             // Aggregate data from all shifts
@@ -5716,13 +5719,18 @@
                         for (let h = 14; h < 22; h++) {
                             hourlyTargets[`${h}:00 - ${h+1}:00`] += defaultHourlyTarget;
                         }
+                    } else if (counter.shift === "3rd Shift-(10pm-6am)") {
+                        const hours = [22, 23, 0, 1, 2, 3, 4, 5];
+                        hours.forEach(h => {
+                            hourlyTargets[`${h}:00 - ${h+1}:00`] += defaultHourlyTarget;
+                        });
                     }
                 }
             });
             
-            const labels = Object.keys(hourlyData);
-            const values = Object.values(hourlyData);
-            const targetValues = Object.values(hourlyTargets);
+            const labels = hoursOrder;
+            const values = labels.map(l => hourlyData[l]);
+            const targetValues = labels.map(l => hourlyTargets[l]);
             
             // Calculate cumulative
             const cumulativeData = [];
