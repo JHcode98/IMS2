@@ -5678,6 +5678,8 @@
             
             const hourlyData = {}, hourlyTargets = {};
             const hoursOrder = [];
+            const backgroundColors = [];
+            const borderColors = [];
             
             // Initialize hours 6am to 6am (24h)
             for (let i = 0; i < 24; i++) {
@@ -5686,6 +5688,18 @@
                 hourlyData[label] = 0;
                 hourlyTargets[label] = 0;
                 hoursOrder.push(label);
+                
+                // Set colors based on shift
+                if (h >= 6 && h < 14) { // 1st Shift
+                    backgroundColors.push('rgba(54, 185, 204, 0.8)'); // Cyan
+                    borderColors.push('#36b9cc');
+                } else if (h >= 14 && h < 22) { // 2nd Shift
+                    backgroundColors.push('rgba(246, 194, 62, 0.8)'); // Yellow
+                    borderColors.push('#f6c23e');
+                } else { // 3rd Shift
+                    backgroundColors.push('rgba(78, 115, 223, 0.8)'); // Blue
+                    borderColors.push('#4e73df');
+                }
             }
             
             // Aggregate data from all shifts
@@ -5751,8 +5765,8 @@
                             { 
                                 label: 'Hourly Output', 
                                 data: values, 
-                                backgroundColor: '#36b9cc', 
-                                borderColor: '#117a8b',
+                                backgroundColor: backgroundColors, 
+                                borderColor: borderColors,
                                 borderWidth: 1,
                                 order: 2 
                             },
@@ -6892,12 +6906,16 @@
         const dataAct = Object.values(hourlyData);
         const dataTgt = Object.values(hourlyTargets);
         
+        let barColor = '#36b9cc'; // 1st Shift default
+        if (shift.includes('2nd Shift')) barColor = '#f6c23e';
+        else if (shift.includes('3rd Shift')) barColor = '#4e73df';
+        
         embeddedHourlyChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
-                    { label: 'Actual', data: dataAct, backgroundColor: '#36b9cc' },
+                    { label: 'Actual', data: dataAct, backgroundColor: barColor },
                     { label: 'Target', data: dataTgt, type: 'line', borderColor: '#27ae60', borderDash: [5,5], tension: 0.1 }
                 ]
             },
@@ -6993,6 +7011,45 @@
 
         // Toggle Section Logic for Timestamp Modal Tables
         document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-section-btn');
+            if (btn) {
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
             const btn = e.target.closest('.toggle-section-btn');
             if (btn) {
                 const card = btn.closest('.card');
