@@ -25,6 +25,10 @@
     }
     .flip-front { z-index: 2; transform: rotateY(0deg); position: relative; }
     .flip-back { transform: rotateY(180deg); position: absolute; height: 100%; top: 0; overflow-y: auto; }
+    
+    /* Sticky Header for Attendance Table */
+    .sticky-table-container { overflow: auto; max-height: 500px; border: 1px solid #ccc; border-top: none; }
+    .sticky-table-container thead th { position: sticky; top: 0; z-index: 10; background-color: #f0f0f0; box-shadow: 0 1px 0 #ccc; }
   </style>
   <style>
     /* Tab Styles */
@@ -536,12 +540,6 @@
             <button class="icon-btn expand-toggle-btn" title="Collapse" style="padding:4px; border:none; background:transparent; color:var(--muted);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <select id="att-filter-shift" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
-                <option value="">All Shifts</option>
-                <option value="1st Shift-(6am-2pm)">1st Shift</option>
-                <option value="2nd Shift-(2pm-10pm)">2nd Shift</option>
-                <option value="3rd Shift-(10pm-6am)">3rd Shift</option>
-            </select>
             <select id="att-filter-role" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Roles</option>
                 <option value="IC Support">IC Support</option>
@@ -563,7 +561,12 @@
         </div>
       </div>
       <div class="card-content">
-      <div style="overflow-x: auto;">
+      <div class="tab-header">
+          <button class="tab-btn active att-shift-tab" data-shift="1st Shift-(6am-2pm)">1st Shift</button>
+          <button class="tab-btn att-shift-tab" data-shift="2nd Shift-(2pm-10pm)">2nd Shift</button>
+          <button class="tab-btn att-shift-tab" data-shift="3rd Shift-(10pm-6am)">3rd Shift</button>
+      </div>
+      <div class="sticky-table-container">
           <table id="attendance-table" class="report-table">
               <thead>
                   <tr>
@@ -1133,6 +1136,11 @@
                         <h4 style="margin:0; font-size:13px; color:#2752a7;" id="ts-hourly-chart-title">Hourly Output (Today)</h4>
                         <button id="ts-view-hourly-full-btn" class="icon-btn" title="View Full Report" style="background:#2752a7; color:white; font-size:10px; padding:3px 6px; border-radius:3px; cursor:pointer;">Full Report</button>
                     </div>
+                    <div style="display:flex; justify-content:center; gap:10px; margin-bottom:5px; font-size:10px;">
+                        <div style="display:flex; align-items:center;"><span style="width:8px; height:8px; background:rgba(54, 185, 204, 0.8); display:inline-block; margin-right:3px;"></span> 1st Shift</div>
+                        <div style="display:flex; align-items:center;"><span style="width:8px; height:8px; background:rgba(246, 194, 62, 0.8); display:inline-block; margin-right:3px;"></span> 2nd Shift</div>
+                        <div style="display:flex; align-items:center;"><span style="width:8px; height:8px; background:rgba(78, 115, 223, 0.8); display:inline-block; margin-right:3px;"></span> 3rd Shift</div>
+                    </div>
                     <div style="flex:1; position:relative; width:100%; min-height:240px; border:1px solid #ddd; border-radius:4px; padding:5px; background:#fff; overflow:hidden;">
                         <canvas id="ts-hourly-chart" style="max-width:100%; max-height:100%;"></canvas>
                     </div>
@@ -1373,7 +1381,6 @@
         const attSearchInput = document.getElementById('att-search');
         const attFilterRole = document.getElementById('att-filter-role');
         const attFilterArea = document.getElementById('att-filter-area');
-        const attFilterShift = document.getElementById('att-filter-shift');
         const countersSearchInput = document.getElementById('counters-search');
         const deleteSelectedCountersBtn = document.getElementById('delete-selected-counters-btn');
         const clearCountersFiltersBtn = document.getElementById('clear-counters-filters-btn');
@@ -3254,7 +3261,9 @@
             if (areaFilter) {
                 data = data.filter(item => item.area === areaFilter);
             }
-            const shiftFilter = attFilterShift ? attFilterShift.value : '';
+            // Use active tab for shift filter
+            const activeTab = document.querySelector('.att-shift-tab.active');
+            const shiftFilter = activeTab ? activeTab.dataset.shift : '1st Shift-(6am-2pm)'; // Default to 1st if none active
             if (shiftFilter) {
                 data = data.filter(item => item.shift === shiftFilter);
             }
@@ -3484,9 +3493,19 @@
             });
         });
 
+        // Attendance Shift Tabs Logic
+        const attShiftTabs = document.querySelectorAll('.att-shift-tab');
+        attShiftTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                attShiftTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                attCurrentPage = 1;
+                renderAttendanceTable();
+            });
+        });
+
         if (attFilterRole) attFilterRole.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
         if (attFilterArea) attFilterArea.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
-        if (attFilterShift) attFilterShift.addEventListener('change', () => { attCurrentPage = 1; renderAttendanceTable(); });
 
         const attPaginationControls = document.getElementById('att-pagination-controls');
         if (attPaginationControls) {
@@ -7032,6 +7051,7 @@
   </script>
 </body>
 </html>             
+                const card = btn.closest('.card');
                 const content = card.querySelector('.section-content');
                 if (content) {
                     content.classList.toggle('hidden');
@@ -7050,6 +7070,90 @@
   </script>
 </body>
 </html>             
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+
+        // Toggle Section Logic for Timestamp Modal Tables
+        document.addEventListener('click', (e) => {
             const btn = e.target.closest('.toggle-section-btn');
             if (btn) {
                 const card = btn.closest('.card');
