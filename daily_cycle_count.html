@@ -943,7 +943,31 @@
     <div class="modal-overlay"></div>
     <div class="modal-content card" style="width: 100%; height: 100%; max-width: none; margin: 0; border-radius: 0; display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="margin:0">Counter Timestamp</h3>
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <h3 style="margin:0">Counter Timestamp</h3>
+                <div style="display:flex; gap:10px;">
+                    <div class="ts-stat-card" onclick="activateTsTab('tab-active'); document.getElementById('ts-show-long-active').checked = false; renderTimestamps();" style="cursor:pointer; background:#e8f5e9; padding:5px 10px; border-radius:4px; border:1px solid #c8e6c9; text-align:center; min-width: 80px;">
+                        <div style="font-size:10px; color:#2e7d32;">Active Session</div>
+                        <div style="font-weight:bold; color:#2ecc71; font-size:14px;" id="card-active-sessions">0</div>
+                    </div>
+                    <div class="ts-stat-card" onclick="activateTsTab('tab-active'); document.getElementById('ts-show-long-active').checked = true; renderTimestamps();" style="cursor:pointer; background:#ffebee; padding:5px 10px; border-radius:4px; border:1px solid #ffcdd2; text-align:center; min-width: 80px;">
+                        <div style="font-size:10px; color:#c62828;">Active > 1hr</div>
+                        <div style="font-weight:bold; color:#e74c3c; font-size:14px;" id="card-long-sessions">0</div>
+                    </div>
+                    <div class="ts-stat-card" onclick="activateTsTab('tab-inactive');" style="cursor:pointer; background:#f3e5f5; padding:5px 10px; border-radius:4px; border:1px solid #e1bee7; text-align:center; min-width: 80px;">
+                        <div style="font-size:10px; color:#6a1b9a;">Inactive User</div>
+                        <div style="font-weight:bold; color:#8e24aa; font-size:14px;" id="card-inactive-users">0</div>
+                    </div>
+                    <div class="ts-stat-card" onclick="activateTsTab('tab-active-breaks');" style="cursor:pointer; background:#fff3e0; padding:5px 10px; border-radius:4px; border:1px solid #ffe0b2; text-align:center; min-width: 80px;">
+                        <div style="font-size:10px; color:#ef6c00;">Active Breaks</div>
+                        <div style="font-weight:bold; color:#f57c00; font-size:14px;" id="card-active-breaks">0</div>
+                    </div>
+                    <div class="ts-stat-card" onclick="activateTsTab('tab-active-breaks');" style="cursor:pointer; background:#fff8e1; padding:5px 10px; border-radius:4px; border:1px solid #ffecb3; text-align:center; min-width: 80px;">
+                        <div style="font-size:10px; color:#f57f17;">Breaks > 40m</div>
+                        <div style="font-weight:bold; color:#ffb300; font-size:14px;" id="card-long-breaks">0</div>
+                    </div>
+                </div>
+            </div>
             <button class="icon-btn close-modal">&times;</button>
         </div>
         
@@ -5148,6 +5172,23 @@
             const activeSessions = filteredSessions.filter(s => !s.endLog);
             const historySessions = filteredSessions.filter(s => s.endLog);
 
+            // Update Header Cards (Active Sessions)
+            let statsActiveSessions = sessions.filter(s => !s.endLog);
+            if (filterShift) {
+                statsActiveSessions = statsActiveSessions.filter(s => s.resolvedShift.includes(filterShift));
+            }
+            const statsActiveCount = statsActiveSessions.length;
+            const statsLongActiveCount = statsActiveSessions.filter(s => {
+                const diff = new Date() - new Date(s.startLog.timestamp);
+                return (diff / 60000) > 60;
+            }).length;
+
+            const cardActive = document.getElementById('card-active-sessions');
+            if(cardActive) cardActive.textContent = statsActiveCount;
+            
+            const cardLong = document.getElementById('card-long-sessions');
+            if(cardLong) cardLong.textContent = statsLongActiveCount;
+
             // Pagination Logic
             const totalItems = historySessions.length;
             const totalPages = Math.ceil(totalItems / tsItemsPerPage) || 1;
@@ -5360,6 +5401,9 @@
                     }
                 }
             });
+
+            const cardInactive = document.getElementById('card-inactive-users');
+            if(cardInactive) cardInactive.textContent = inactiveCount;
 
             // 2. Session Stats
             const userStarts = {};
@@ -5597,6 +5641,20 @@
             
             const activeBreaks = filteredBreaks.filter(b => !b.end);
             const historyBreaks = filteredBreaks.filter(b => b.end);
+
+            // Update Header Cards (Breaks)
+            let longBreakCount = 0;
+            activeBreaks.forEach(b => {
+                const start = new Date(b.start);
+                const durationMs = new Date() - start;
+                if (durationMs / 60000 > 40) longBreakCount++;
+            });
+            
+            const cardBreaks = document.getElementById('card-active-breaks');
+            if(cardBreaks) cardBreaks.textContent = activeBreaks.length;
+            
+            const cardLongBreaks = document.getElementById('card-long-breaks');
+            if(cardLongBreaks) cardLongBreaks.textContent = longBreakCount;
 
             // Render Active
             if(activeTbody) {
@@ -6825,6 +6883,26 @@
         const target = document.getElementById(tabId);
         if(target) target.style.display = 'flex';
         evt.target.classList.add('active');
+    };
+
+    // Helper to switch tabs from header cards
+    window.activateTsTab = function(tabId) {
+        const target = document.getElementById(tabId);
+        if(!target) return;
+        const card = target.parentElement;
+        if(card) {
+            const tabContents = card.querySelectorAll('.tab-content');
+            tabContents.forEach(tc => tc.style.display = 'none');
+            target.style.display = 'flex';
+            
+            const tabBtns = card.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabId)) {
+                    btn.classList.add('active');
+                }
+            });
+        }
     };
 
     let embeddedHourlyChart = null;
