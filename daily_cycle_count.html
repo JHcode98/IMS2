@@ -29,6 +29,13 @@
     /* Sticky Header for Attendance Table */
     .sticky-table-container { overflow: auto; max-height: 500px; border: 1px solid #ccc; border-top: none; }
     .sticky-table-container thead th { position: sticky; top: 0; z-index: 10; background-color: #f0f0f0; box-shadow: 0 1px 0 #ccc; }
+
+    @keyframes blink-red {
+        0% { background-color: #ffebee; border-color: #ffcdd2; }
+        50% { background-color: #ffcdd2; border-color: #e57373; box-shadow: 0 0 8px rgba(229, 115, 115, 0.6); }
+        100% { background-color: #ffebee; border-color: #ffcdd2; }
+    }
+    .blink-red-card { animation: blink-red 1s infinite ease-in-out; }
   </style>
   <style>
     /* Tab Styles */
@@ -5187,7 +5194,14 @@
             if(cardActive) cardActive.textContent = statsActiveCount;
             
             const cardLong = document.getElementById('card-long-sessions');
-            if(cardLong) cardLong.textContent = statsLongActiveCount;
+            if(cardLong) {
+                cardLong.textContent = statsLongActiveCount;
+                if (statsLongActiveCount > 0) {
+                    cardLong.parentElement.classList.add('blink-red-card');
+                } else {
+                    cardLong.parentElement.classList.remove('blink-red-card');
+                }
+            }
 
             // Pagination Logic
             const totalItems = historySessions.length;
