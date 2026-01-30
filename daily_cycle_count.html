@@ -565,6 +565,7 @@
           <button class="tab-btn active att-shift-tab" data-shift="1st Shift-(6am-2pm)">1st Shift</button>
           <button class="tab-btn att-shift-tab" data-shift="2nd Shift-(2pm-10pm)">2nd Shift</button>
           <button class="tab-btn att-shift-tab" data-shift="3rd Shift-(10pm-6am)">3rd Shift</button>
+          <button class="tab-btn att-shift-tab" data-shift="">All Shifts</button>
       </div>
       <div class="sticky-table-container">
           <table id="attendance-table" class="report-table">
@@ -586,6 +587,11 @@
                   </tr>
               </thead>
               <tbody></tbody>
+              <tfoot>
+                  <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #eef2f6;">
+                      <td colspan="13" style="text-align: right; padding: 10px;">Total People: <span id="att-total-count">0</span></td>
+                  </tr>
+              </tfoot>
           </table>
       </div>
       <div id="att-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-top: 1px solid #eee;">
@@ -3292,6 +3298,9 @@
             if (attRowsPerPageSelect) attItemsPerPage = parseInt(attRowsPerPageSelect.value, 10);
 
             let data = getFilteredAttendanceData();
+
+            const totalCountSpan = document.getElementById('att-total-count');
+            if (totalCountSpan) totalCountSpan.textContent = data.length;
 
             // Pagination
             const totalItems = data.length;
@@ -7042,6 +7051,33 @@
                         : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
                     
                     // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
                     card.style.flex = isHidden ? '0 0 auto' : '';
                     card.style.minHeight = isHidden ? 'auto' : '';
                 }
