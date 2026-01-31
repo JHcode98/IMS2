@@ -1192,6 +1192,22 @@
                     </div>
                 </div>
 
+                <!-- Quick Navigation & Actions -->
+                <div style="display:flex; gap:5px; margin-bottom:0; flex-wrap:wrap;">
+                    <button id="ts-nav-monitor-btn" class="icon-btn" title="Sub Area Monitor" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #ccc; padding:6px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Monitor
+                    </button>
+                    <button id="ts-nav-users-btn" class="icon-btn" title="User Master" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #ccc; padding:6px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Users
+                    </button>
+                    <button id="ts-nav-reports-btn" class="icon-btn" title="Reports" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #ccc; padding:6px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
+                    </button>
+                    <button id="ts-clear-logs-btn" class="icon-btn" title="Clear All Logs" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #e74c3c; color:#e74c3c; padding:6px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Clear Logs
+                    </button>
+                </div>
+
                 <!-- Analytics Overview -->
                 <div style="display:flex; flex-direction:column; flex:1; min-height:150px; padding:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:6px; overflow:hidden;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-shrink:0;">
@@ -7164,6 +7180,45 @@
                 }
             }
         });
+
+        // Timestamp Modal Navigation Buttons Logic
+        const tsNavMonitorBtn = document.getElementById('ts-nav-monitor-btn');
+        const tsNavUsersBtn = document.getElementById('ts-nav-users-btn');
+        const tsNavReportsBtn = document.getElementById('ts-nav-reports-btn');
+        const tsClearLogsBtn = document.getElementById('ts-clear-logs-btn');
+
+        if (tsNavMonitorBtn) {
+            tsNavMonitorBtn.addEventListener('click', () => {
+                const modal = document.getElementById('sub-area-monitor-modal');
+                if (modal) {
+                    modal.style.zIndex = '10030'; // Ensure it appears above timestamp modal
+                    modal.classList.remove('hidden');
+                    renderMonitorGrid();
+                }
+            });
+        }
+
+        if (tsNavUsersBtn) {
+            tsNavUsersBtn.addEventListener('click', () => {
+                if (userMasterBtn) userMasterBtn.click();
+            });
+        }
+
+        if (tsNavReportsBtn) {
+            tsNavReportsBtn.addEventListener('click', () => {
+                if (reportsMenuBtn) reportsMenuBtn.click();
+            });
+        }
+
+        if (tsClearLogsBtn) {
+            tsClearLogsBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear ALL timestamp logs? This will NOT delete attendance records.')) {
+                    saveTimestamps([]);
+                    renderTimestamps();
+                    showToast('All logs cleared.');
+                }
+            });
+        }
     });
   </script>
 </body>
