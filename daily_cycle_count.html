@@ -1027,6 +1027,7 @@
                             </select>
                             <input type="text" id="ts-filter-user" placeholder="Search User..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                             <label style="font-size:12px; cursor:pointer; margin-left:5px;"><input type="checkbox" id="ts-show-long-active"> > 1hr</label>
+                            <button id="ts-clear-area-filter-btn" class="icon-btn" style="display:none; font-size:11px; background:#e74c3c; color:white; padding:2px 6px; border:none; border-radius:4px; margin-left:5px;" title="Clear Area Filter">Clear Area</button>
                         </div>
                         <div style="flex:1; overflow-y:auto; border:1px solid #eee; border-radius:4px; margin-top:5px;">
                             <table id="active-table" class="report-table">
@@ -1092,15 +1093,15 @@
                     
                     <h5 style="margin:0 0 10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">Reserved Bin</h5>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:15px; margin-bottom:20px;">
-                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #3498db;">
+                        <div class="card" onclick="filterActiveByArea('Reserved - Coldroom')" style="padding:15px; text-align:center; border-left:4px solid #3498db; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <div style="font-size:12px; color:#666;">Coldroom</div>
                             <div id="dash-count-reserved-coldroom" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
-                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #3498db;">
+                        <div class="card" onclick="filterActiveByArea('Reserved - Ecom 2')" style="padding:15px; text-align:center; border-left:4px solid #3498db; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <div style="font-size:12px; color:#666;">Ecom 2</div>
                             <div id="dash-count-reserved-ecom-2" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
-                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #3498db;">
+                        <div class="card" onclick="filterActiveByArea('Reserved - Storage')" style="padding:15px; text-align:center; border-left:4px solid #3498db; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <div style="font-size:12px; color:#666;">Storage</div>
                             <div id="dash-count-reserved-storage" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
@@ -1108,19 +1109,19 @@
 
                     <h5 style="margin:0 0 10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">Pick Bin</h5>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:15px;">
-                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                        <div class="card" onclick="filterActiveByArea('Pick Bin - Coldroom')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <div style="font-size:12px; color:#666;">Coldroom</div>
                             <div id="dash-count-pick-bin-coldroom" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
-                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                        <div class="card" onclick="filterActiveByArea('Pick Bin - Ecom 2')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <div style="font-size:12px; color:#666;">Ecom 2</div>
                             <div id="dash-count-pick-bin-ecom-2" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
-                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                        <div class="card" onclick="filterActiveByArea('Pick Bin - Storage')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <div style="font-size:12px; color:#666;">Storage</div>
                             <div id="dash-count-pick-bin-storage" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
-                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                        <div class="card" onclick="filterActiveByArea('Pick Bin - Pallet Picking')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <div style="font-size:12px; color:#666;">Pallet Picking</div>
                             <div id="dash-count-pick-bin-pallet-picking" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
@@ -1810,6 +1811,7 @@
         const tsDeleteSelectedBtn = document.getElementById('ts-delete-selected-btn');
         const tsSelectAll = document.getElementById('ts-select-all');
         const tsShowLongActive = document.getElementById('ts-show-long-active');
+        const tsClearAreaFilterBtn = document.getElementById('ts-clear-area-filter-btn');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
 
         const tsViewHourlyFullBtn = document.getElementById('ts-view-hourly-full-btn');
@@ -2177,6 +2179,7 @@
         let attSortDirection = 'desc';
         let tsSortField = 'startTime';
         let tsSortDirection = 'desc';
+        let tsAreaFilter = '';
 
         // Restore Filters & Button State
         if(uiState.globalStartDate && globalStartDate) globalStartDate.value = uiState.globalStartDate;
@@ -5196,6 +5199,16 @@
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             const showLongActive = tsShowLongActive ? tsShowLongActive.checked : false;
             
+            // Update Area Filter Button
+            if (tsClearAreaFilterBtn) {
+                if (tsAreaFilter) {
+                    tsClearAreaFilterBtn.style.display = 'inline-block';
+                    tsClearAreaFilterBtn.textContent = `Clear: ${tsAreaFilter}`;
+                } else {
+                    tsClearAreaFilterBtn.style.display = 'none';
+                }
+            }
+            
             // Analytics Date
             let analyticsDate = tsAnalyticsDateFilter ? tsAnalyticsDateFilter.value : '';
             if (!analyticsDate) {
@@ -5289,6 +5302,11 @@
                     const diff = now - new Date(s.startLog.timestamp);
                     return (diff / 60000) > 60; // Greater than 60 mins
                 });
+            }
+
+            // Area Filter
+            if (tsAreaFilter) {
+                filteredSessions = filteredSessions.filter(s => s.resolvedArea === tsAreaFilter);
             }
 
             // Pre-calculate fields for sorting and display
@@ -7022,13 +7040,25 @@
             });
         }
 
-        if(timestampBtn) {
+        if (timestampBtn) {
             timestampBtn.addEventListener('click', () => {
                 timestampModal.classList.remove('hidden');
+                sessionStorage.setItem('ts_modal_open', 'true');
                 renderTimestamps();
                 setTimeout(() => tsUserIdInput.focus(), 100);
             });
         }
+
+        // Restore Timestamp Modal State
+        if (sessionStorage.getItem('ts_modal_open') === 'true') {
+            timestampModal.classList.remove('hidden');
+            renderTimestamps();
+        }
+        
+        // Add listener to close button to update state
+        const tsCloseBtn = timestampModal.querySelector('.close-modal');
+        if(tsCloseBtn) tsCloseBtn.addEventListener('click', () => sessionStorage.setItem('ts_modal_open', 'false'));
+
         if(btnStartCount) btnStartCount.addEventListener('click', () => logTimestamp('Start'));
         if(btnBreakStart) btnBreakStart.addEventListener('click', () => {
             const uid = tsUserIdInput.value.trim();
@@ -7043,6 +7073,12 @@
         if(tsFilterUser) tsFilterUser.addEventListener('input', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShiftFilter) tsShiftFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShowLongActive) tsShowLongActive.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
+        if(tsClearAreaFilterBtn) {
+            tsClearAreaFilterBtn.addEventListener('click', () => {
+                tsAreaFilter = '';
+                renderTimestamps();
+            });
+        }
         if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         
         // Pagination Listeners for Timestamp Table
@@ -7116,6 +7152,12 @@
                 }
             });
         }
+    };
+
+    window.filterActiveByArea = function(area) {
+        tsAreaFilter = area;
+        activateTsTab('tab-active');
+        renderTimestamps();
     };
 
     let embeddedHourlyChart = null;
