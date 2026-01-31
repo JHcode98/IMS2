@@ -1014,6 +1014,7 @@
                     <div class="tab-header">
                         <button class="tab-btn active" onclick="openTsTab(event, 'tab-active')">Active Sessions</button>
                         <button class="tab-btn" onclick="openTsTab(event, 'tab-history')">Session History</button>
+                        <button class="tab-btn" onclick="openTsTab(event, 'tab-dashboard')">Dashboard</button>
                     </div>
                     
                     <div id="tab-active" class="tab-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
@@ -1082,6 +1083,46 @@
                         <div style="display:flex; gap:5px;">
                             <button id="ts-prev-page" class="icon-btn" title="Previous" style="padding:2px 6px; font-size:12px;">‹</button>
                             <button id="ts-next-page" class="icon-btn" title="Next" style="padding:2px 6px; font-size:12px;">›</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-dashboard" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:15px;">
+                    <h4 style="margin-top:0; margin-bottom:15px; color:#2752a7;">Active Sessions by Area</h4>
+                    
+                    <h5 style="margin:0 0 10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">Reserved Bin</h5>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:15px; margin-bottom:20px;">
+                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #3498db;">
+                            <div style="font-size:12px; color:#666;">Coldroom</div>
+                            <div id="dash-count-reserved-coldroom" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
+                        </div>
+                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #3498db;">
+                            <div style="font-size:12px; color:#666;">Ecom 2</div>
+                            <div id="dash-count-reserved-ecom-2" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
+                        </div>
+                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #3498db;">
+                            <div style="font-size:12px; color:#666;">Storage</div>
+                            <div id="dash-count-reserved-storage" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
+                        </div>
+                    </div>
+
+                    <h5 style="margin:0 0 10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">Pick Bin</h5>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:15px;">
+                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                            <div style="font-size:12px; color:#666;">Coldroom</div>
+                            <div id="dash-count-pick-bin-coldroom" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
+                        </div>
+                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                            <div style="font-size:12px; color:#666;">Ecom 2</div>
+                            <div id="dash-count-pick-bin-ecom-2" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
+                        </div>
+                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                            <div style="font-size:12px; color:#666;">Storage</div>
+                            <div id="dash-count-pick-bin-storage" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
+                        </div>
+                        <div class="card" style="padding:15px; text-align:center; border-left:4px solid #e67e22;">
+                            <div style="font-size:12px; color:#666;">Pallet Picking</div>
+                            <div id="dash-count-pick-bin-pallet-picking" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
                     </div>
                 </div>
@@ -5298,6 +5339,7 @@
             // Split into Active and History
             const activeSessions = filteredSessions.filter(s => !s.endLog);
             const historySessions = filteredSessions.filter(s => s.endLog);
+            updateTsDashboard(activeSessions);
 
             // Update Header Cards (Active Sessions)
             let statsActiveSessions = sessions.filter(s => !s.endLog);
@@ -5394,6 +5436,29 @@
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
             renderInactiveUsersTable(sessions, attendance, logsToProcess);
             renderEmbeddedHourly(analyticsDate, filterShift);
+        }
+
+        function updateTsDashboard(activeSessions) {
+            const counts = {
+                'Reserved - Coldroom': 0,
+                'Reserved - Ecom 2': 0,
+                'Reserved - Storage': 0,
+                'Pick Bin - Coldroom': 0,
+                'Pick Bin - Ecom 2': 0,
+                'Pick Bin - Storage': 0,
+                'Pick Bin - Pallet Picking': 0
+            };
+
+            activeSessions.forEach(s => {
+                const area = s.resolvedArea;
+                if (counts.hasOwnProperty(area)) counts[area]++;
+            });
+
+            for (const [area, count] of Object.entries(counts)) {
+                const id = 'dash-count-' + area.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+                const el = document.getElementById(id);
+                if (el) el.textContent = count;
+            }
         }
 
         function createSessionRow(session, isHistory) {
