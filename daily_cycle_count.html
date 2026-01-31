@@ -430,6 +430,9 @@
       <button id="user-master-btn" class="icon-btn" title="User Master Data" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> User Master
       </button>
+      <button id="quick-time-in-btn" class="icon-btn" title="Quick Time In" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"></path></svg> Quick Time In
+      </button>
       <button id="reports-menu-btn" class="icon-btn" title="Reports" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
       </button>
@@ -1381,7 +1384,10 @@
             </div>
             <div>
                 <label style="font-size:12px; font-weight:bold;">Role</label>
-                <input type="text" id="master-user-role" style="width:100%; padding:6px;" placeholder="Role">
+                <select id="master-user-role" style="width:100%; padding:6px;">
+                    <option value="IC Support">IC Support</option>
+                    <option value="IC Back up">IC Back up</option>
+                </select>
             </div>
             <button id="save-master-user-btn" class="icon-btn" style="background:#2752a7; color:white; height:32px;">Save</button>
         </div>
@@ -7242,6 +7248,7 @@
 
         // Quick Time In Logic
         const fabQuickBtn = document.getElementById('fab-quick-time-in');
+        const quickTimeInBtn = document.getElementById('quick-time-in-btn');
         const quickModal = document.getElementById('quick-time-in-modal');
         const quickInput = document.getElementById('quick-user-id');
         const quickInfo = document.getElementById('quick-user-info');
@@ -7250,6 +7257,15 @@
 
         if(fabQuickBtn) {
             fabQuickBtn.addEventListener('click', () => {
+                quickModal.classList.remove('hidden');
+                quickInput.value = '';
+                quickInfo.textContent = '';
+                setTimeout(() => quickInput.focus(), 100);
+            });
+        }
+
+        if(quickTimeInBtn) {
+            quickTimeInBtn.addEventListener('click', () => {
                 quickModal.classList.remove('hidden');
                 quickInput.value = '';
                 quickInfo.textContent = '';
@@ -7297,7 +7313,7 @@
                 const attData = getAttendanceData();
                 if(attData.find(a => a.userId === user.userId && a.date === dateVal && a.shift === shiftVal)) { alert(`User ${user.name} already in attendance.`); return; }
 
-                attData.push({ id: Date.now().toString(), date: dateVal, shift: shiftVal, userId: user.userId, name: user.name, role: user.role || 'IC Support', timeIn: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}), status: 'Full counter' });
+                attData.push({ id: Date.now().toString(), date: dateVal, shift: shiftVal, userId: user.userId, name: (user.name||'').toUpperCase(), role: user.role || 'IC Support', timeIn: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}), status: 'Full counter' });
                 saveAttendanceData(attData); renderAttendanceTable(); renderCountersTable();
                 showToast(`Time In: ${user.name}`); quickModal.classList.add('hidden');
             });
