@@ -1413,6 +1413,25 @@
     </div>
   </div>
 
+  <!-- Floating Quick Time In Button -->
+  <button id="fab-quick-time-in" class="fab-btn" title="Quick Time In" style="position:fixed; bottom:30px; right:30px; width:56px; height:56px; border-radius:50%; background:#2752a7; color:white; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.3); font-size:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:9999;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M12 2v20M2 12h20"></path></svg>
+  </button>
+
+  <!-- Quick Time In Modal -->
+  <div id="quick-time-in-modal" class="modal hidden" style="z-index:10050;">
+      <div class="modal-overlay"></div>
+      <div class="modal-content card" style="max-width:300px; margin:150px auto; text-align:center;">
+          <h3 style="margin-top:0;">Quick Time In</h3>
+          <input type="text" id="quick-user-id" placeholder="Scan/Enter User ID" style="width:100%; padding:10px; font-size:16px; margin-bottom:15px; text-align:center; border:1px solid #ccc; border-radius:4px;">
+          <div id="quick-user-info" style="margin-bottom:15px; font-size:13px; color:#666; min-height:20px;"></div>
+          <div style="display:flex; gap:10px; justify-content:center;">
+              <button id="btn-quick-submit" class="icon-btn" style="background:#2752a7; color:white; padding:8px 16px;">Time In</button>
+              <button id="btn-quick-cancel" class="icon-btn" style="border:1px solid #ccc; padding:8px 16px;">Cancel</button>
+          </div>
+      </div>
+  </div>
+
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
   <script>
@@ -7218,6 +7237,69 @@
                     renderTimestamps();
                     showToast('All logs cleared.');
                 }
+            });
+        }
+
+        // Quick Time In Logic
+        const fabQuickBtn = document.getElementById('fab-quick-time-in');
+        const quickModal = document.getElementById('quick-time-in-modal');
+        const quickInput = document.getElementById('quick-user-id');
+        const quickInfo = document.getElementById('quick-user-info');
+        const btnQuickSubmit = document.getElementById('btn-quick-submit');
+        const btnQuickCancel = document.getElementById('btn-quick-cancel');
+
+        if(fabQuickBtn) {
+            fabQuickBtn.addEventListener('click', () => {
+                quickModal.classList.remove('hidden');
+                quickInput.value = '';
+                quickInfo.textContent = '';
+                setTimeout(() => quickInput.focus(), 100);
+            });
+        }
+
+        if(btnQuickCancel) {
+            btnQuickCancel.addEventListener('click', () => quickModal.classList.add('hidden'));
+        }
+
+        if(quickInput) {
+            quickInput.addEventListener('input', () => {
+                const uid = quickInput.value.trim();
+                if(!uid) { quickInfo.textContent = ''; return; }
+                const masters = getMasterUsers();
+                const user = masters.find(u => u.userId.toLowerCase() === uid.toLowerCase());
+                if(user) {
+                    quickInfo.textContent = `${user.name} (${user.role || '-'})`;
+                    quickInfo.style.color = '#2752a7';
+                } else {
+                    quickInfo.textContent = 'User not found in Master';
+                    quickInfo.style.color = '#e74c3c';
+                }
+            });
+            quickInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') btnQuickSubmit.click(); });
+        }
+
+        if(btnQuickSubmit) {
+            btnQuickSubmit.addEventListener('click', () => {
+                const uid = quickInput.value.trim();
+                if(!uid) return;
+                const masters = getMasterUsers();
+                const user = masters.find(u => u.userId.toLowerCase() === uid.toLowerCase());
+                if(!user) { alert('User ID not found in Master Data.'); return; }
+
+                const now = new Date();
+                const h = now.getHours();
+                let shiftVal = '3rd Shift-(10pm-6am)';
+                let dateVal = now.toISOString().split('T')[0];
+                if (h >= 6 && h < 14) shiftVal = '1st Shift-(6am-2pm)';
+                else if (h >= 14 && h < 22) shiftVal = '2nd Shift-(2pm-10pm)';
+                else if (h < 6) { const prev = new Date(now); prev.setDate(prev.getDate() - 1); dateVal = prev.toISOString().split('T')[0]; }
+
+                const attData = getAttendanceData();
+                if(attData.find(a => a.userId === user.userId && a.date === dateVal && a.shift === shiftVal)) { alert(`User ${user.name} already in attendance.`); return; }
+
+                attData.push({ id: Date.now().toString(), date: dateVal, shift: shiftVal, userId: user.userId, name: user.name, role: user.role || 'IC Support', timeIn: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}), status: 'Full counter' });
+                saveAttendanceData(attData); renderAttendanceTable(); renderCountersTable();
+                showToast(`Time In: ${user.name}`); quickModal.classList.add('hidden');
             });
         }
     });
