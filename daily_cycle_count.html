@@ -1378,6 +1378,7 @@
                 <label style="font-size:12px; font-weight:bold;">User ID</label>
                 <input type="text" id="master-user-id" style="width:100%; padding:6px;" placeholder="ID">
             </div>
+            <input type="hidden" id="master-user-original-id">
             <div>
                 <label style="font-size:12px; font-weight:bold;">Name</label>
                 <input type="text" id="master-user-name" style="width:100%; padding:6px;" placeholder="Name">
@@ -1402,15 +1403,19 @@
             </div>
         </div>
 
+        <div class="tab-header" style="margin-bottom:0; border-bottom:1px solid #eee; background:#f9f9f9;">
+            <button class="tab-btn active master-user-tab" data-role="IC Support">IC Support</button>
+            <button class="tab-btn master-user-tab" data-role="IC Back up">IC Back up</button>
+        </div>
         <div style="max-height:400px; overflow-y:auto; border:1px solid #eee;">
             <table id="master-users-table" class="report-table" style="width:100%;">
                 <thead>
                     <tr>
-                        <th style="width:30px;"><input type="checkbox" id="select-all-master-users"></th>
-                        <th>User ID</th>
-                        <th>Name</th>
-                        <th>Role</th>
-                        <th style="width:60px;">Action</th>
+                        <th style="width:30px; position:sticky; top:0; z-index:10; background:#f0f0f0;"><input type="checkbox" id="select-all-master-users"></th>
+                        <th class="sortable" data-sort="userId" style="position:sticky; top:0; z-index:10; background:#f0f0f0;">User ID <span class="sort-icon"></span></th>
+                        <th class="sortable" data-sort="name" style="position:sticky; top:0; z-index:10; background:#f0f0f0;">Name <span class="sort-icon"></span></th>
+                        <th class="sortable" data-sort="role" style="position:sticky; top:0; z-index:10; background:#f0f0f0;">Role <span class="sort-icon"></span></th>
+                        <th style="width:60px; position:sticky; top:0; z-index:10; background:#f0f0f0;">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -1533,6 +1538,10 @@
         const importMasterUsersBtn = document.getElementById('import-master-users-btn');
         const importMasterUsersFile = document.getElementById('import-master-users-file');
         const exportMasterUsersBtn = document.getElementById('export-master-users-btn');
+        const masterUserOriginalId = document.getElementById('master-user-original-id');
+        let masterSortField = 'name';
+        let masterSortDirection = 'asc';
+        let masterActiveTab = 'IC Support';
 
         function getMasterUsers() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_USERS) || '[]'); } catch(e) { return []; } }
         function saveMasterUsers(data) { localStorage.setItem(STORAGE_KEY_MASTER_USERS, JSON.stringify(data)); }
@@ -1545,7 +1554,21 @@
             if(term) {
                 users = users.filter(u => u.userId.toLowerCase().includes(term) || u.name.toLowerCase().includes(term) || (u.role && u.role.toLowerCase().includes(term)));
             }
-            users.sort((a,b) => a.name.localeCompare(b.name));
+            
+            // Filter by Tab
+            if (masterActiveTab) {
+                users = users.filter(u => u.role === masterActiveTab);
+            }
+
+            // Sort
+            users.sort((a,b) => {
+                let valA = a[masterSortField] || '';
+                let valB = b[masterSortField] || '';
+                if (valA < valB) return masterSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return masterSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
             if(users.length === 0) {
                 masterUserTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#999;">No users found.</td></tr>';
                 return;
@@ -1555,6 +1578,12 @@
                 tr.innerHTML = `<td><input type="checkbox" class="master-user-checkbox" value="${u.userId}"></td><td>${u.userId}</td><td>${u.name}</td><td>${u.role || ''}</td><td><button class="icon-btn edit-master-user-btn" data-id="${u.userId}" title="Edit" style="padding:2px 6px;">✎</button></td>`;
                 masterUserTableBody.appendChild(tr);
             });
+            
+            // Update sort icons
+            document.querySelectorAll('#master-users-table th.sortable .sort-icon').forEach(icon => icon.textContent = '');
+            const activeHeader = document.querySelector(`#master-users-table th[data-sort="${masterSortField}"]`);
+            if(activeHeader) activeHeader.querySelector('.sort-icon').textContent = masterSortDirection === 'asc' ? '↑' : '↓';
+
             updateMasterUserDeleteBtn();
         }
 
@@ -1577,14 +1606,30 @@
                 const id = masterUserIdInput.value.trim();
                 const name = masterUserNameInput.value.trim();
                 const role = masterUserRoleInput.value.trim();
+                const originalId = masterUserOriginalId.value;
+
                 if(!id || !name) { alert('User ID and Name are required.'); return; }
                 let users = getMasterUsers();
-                const existingIdx = users.findIndex(u => u.userId === id);
-                if(existingIdx > -1) { users[existingIdx] = { userId: id, name, role }; showToast('User updated'); }
-                else { users.push({ userId: id, name, role }); showToast('User added'); }
+                
+                // Validation: Unique ID
+                const exists = users.some(u => u.userId === id);
+                if (originalId) {
+                    // Edit mode
+                    if (id !== originalId && exists) { alert('User ID already exists. Please choose a unique ID.'); return; }
+                    // Remove old record if ID changed, or just update
+                    users = users.filter(u => u.userId !== originalId);
+                    users.push({ userId: id, name, role });
+                    showToast('User updated');
+                } else {
+                    // Add mode
+                    if (exists) { alert('User ID already exists.'); return; }
+                    users.push({ userId: id, name, role });
+                    showToast('User added');
+                }
+
                 saveMasterUsers(users);
                 renderMasterUsers();
-                masterUserIdInput.value = ''; masterUserNameInput.value = ''; masterUserRoleInput.value = '';
+                masterUserIdInput.value = ''; masterUserNameInput.value = ''; masterUserRoleInput.value = ''; masterUserOriginalId.value = '';
             });
         }
 
@@ -1595,7 +1640,7 @@
                     const id = btn.dataset.id;
                     const users = getMasterUsers();
                     const user = users.find(u => u.userId === id);
-                    if(user) { masterUserIdInput.value = user.userId; masterUserNameInput.value = user.name; masterUserRoleInput.value = user.role || ''; }
+                    if(user) { masterUserIdInput.value = user.userId; masterUserOriginalId.value = user.userId; masterUserNameInput.value = user.name; masterUserRoleInput.value = user.role || ''; }
                 }
             });
             masterUserTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('master-user-checkbox')) updateMasterUserDeleteBtn(); });
@@ -1669,6 +1714,30 @@
                 reader.readAsText(file);
             });
         }
+
+        // Master User Tabs
+        document.querySelectorAll('.master-user-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.master-user-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                masterActiveTab = tab.dataset.role;
+                renderMasterUsers();
+            });
+        });
+
+        // Master User Sorting
+        document.querySelectorAll('#master-users-table th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if (masterSortField === field) {
+                    masterSortDirection = masterSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    masterSortField = field;
+                    masterSortDirection = 'asc';
+                }
+                renderMasterUsers();
+            });
+        });
 
         // Timestamp Modal
         let cachedInactiveArgs = null;
@@ -6270,6 +6339,13 @@
                 const userExists = attData.some(a => a.userId === userId);
                 if (!userExists) {
                     alert(`User ID ${userId} not found in attendance list.`);
+                    return;
+                }
+                
+                // Check if user is Full Counter
+                const attRecord = attData.find(a => a.userId === userId);
+                if (attRecord && action === 'Start' && attRecord.status !== 'Full counter') {
+                    alert(`User ${userId} is not a Full Counter (Status: ${attRecord.status}). Cannot start counting.`);
                     return;
                 }
 
