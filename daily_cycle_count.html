@@ -6805,6 +6805,9 @@
                 if (filterUser) {
                     const terms = filterUser.split(' ').filter(t => t);
                     filteredSessions = sessions.filter(s => {
+                    const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
+                    let sessionDate = '';
+                    if(ts) sessionDate = new Date(ts).toISOString().split('T')[0];
                     let attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
                     if (!attRecord) attRecord = attendance.find(a => a.userId === s.userId);
                     const name = attRecord ? attRecord.name : '';
@@ -7312,40 +7315,6 @@
         };
     }
 
-    function renderTimestampChart(sessions) {
-        const ctx = document.getElementById('timestamp-chart');
-        if (!ctx || typeof Chart === 'undefined') return;
-        
-        if (timestampChart) timestampChart.destroy();
-        
-        const labels = sessions.map(s => {
-            const time = new Date(s.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            return `${s.user} (${time})`;
-        });
-        const data = sessions.map(s => s.duration);
-        
-        timestampChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Duration (Minutes)',
-                    data: data,
-                    backgroundColor: '#3498db',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Minutes' } },
-                    x: { ticks: { maxRotation: 45, minRotation: 45 } }
-                }
-            }
-        });
-    }
-        
         if(breakShiftFilter) breakShiftFilter.addEventListener('change', () => renderTimestamps());
 
         if(tsUserIdInput) {
