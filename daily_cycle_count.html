@@ -2165,6 +2165,7 @@
         let attSortDirection = 'desc';
         let tsSortField = 'startTime';
         let tsSortDirection = 'desc';
+        let tsFilterArea = null;
 
         // Restore Filters & Button State
         if(uiState.globalStartDate && globalStartDate) globalStartDate.value = uiState.globalStartDate;
@@ -5351,6 +5352,14 @@
             localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
         }
 
+        window.filterTsByArea = function(area) {
+            tsFilterArea = area;
+            // Switch to Active Sessions tab
+            const tabBtn = document.querySelector('button[onclick*="tab-active"]');
+            if(tabBtn) tabBtn.click();
+            renderTimestamps();
+        };
+
         function renderAreaDashboard(activeSessions) {
             const container = document.getElementById('area-dashboard-grid');
             if (!container) return;
@@ -5381,6 +5390,13 @@
             
             let html = '';
             
+            // Total Active Card
+            const totalActive = activeSessions.length;
+            html += `<div class="card" onclick="filterTsByArea(null)" style="padding:15px; text-align:center; background:#e8f5e9; border:1px solid #c8e6c9; margin-bottom:5px; cursor:pointer; display:flex; flex-direction:column; justify-content:center; min-height:100px; box-shadow:none;" title="Click to Show All">
+                <div style="font-size:12px; color:#2e7d32; margin-bottom:5px; font-weight:600;">Total Active Users</div>
+                <div style="font-size:32px; font-weight:bold; color:#2ecc71;">${totalActive}</div>
+            </div>`;
+
             const renderSection = (title, items) => {
                 let sectionHtml = `<div style="margin-bottom:5px;"><h5 style="margin:0; color:#2752a7; border-bottom:1px solid #eee; padding-bottom:5px;">${title}</h5></div>`;
                 sectionHtml += `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">`;
@@ -5393,8 +5409,9 @@
                     const text = isZero ? '#999' : '#1565c0';
                     const valColor = isZero ? '#ccc' : '#1e88e5';
                     const userList = users.length > 0 ? users.join('<br>') : 'No active users';
+                    const filterKey = `${title} - ${subArea}`;
                     
-                    sectionHtml += `<div class="card area-dash-card" style="padding:15px; text-align:center; background:${bg}; border:1px solid ${border}; margin:0; display:flex; flex-direction:column; justify-content:center; min-height:100px; box-shadow:none; position:relative; cursor:help;">
+                    sectionHtml += `<div class="card area-dash-card" onclick="filterTsByArea('${filterKey}')" style="padding:15px; text-align:center; background:${bg}; border:1px solid ${border}; margin:0; display:flex; flex-direction:column; justify-content:center; min-height:100px; box-shadow:none; position:relative; cursor:pointer;">
                         <div style="font-size:12px; color:${text}; margin-bottom:5px; font-weight:600;">${subArea}</div>
                         <div style="font-size:28px; font-weight:bold; color:${valColor};">${count}</div>
                         <div class="hover-tooltip" style="display:none; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:8px; border-radius:4px; font-size:11px; width:160px; z-index:100; pointer-events:none; white-space:normal; box-shadow:0 4px 8px rgba(0,0,0,0.2); line-height:1.4;">
@@ -5525,7 +5542,7 @@
                 });
             }
 
-            // Pre-calculate fields for sorting and display
+            // Pre-calculate fields for all sessions to support dashboard and filtering
             const now = new Date();
             filteredSessions.forEach(s => {
                 const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
@@ -5558,6 +5575,14 @@
                 }
                 s.durationVal = durationMins;
             });
+
+            // Capture active sessions for dashboard BEFORE applying area filter
+            const dashboardActiveSessions = filteredSessions.filter(s => !s.endLog);
+
+            // Apply Area Filter (if selected from dashboard)
+            if (tsFilterArea) {
+                filteredSessions = filteredSessions.filter(s => s.resolvedArea === tsFilterArea);
+            }
 
             // Sort
             filteredSessions.sort((a,b) => {
@@ -5647,7 +5672,7 @@
             }
             updateTsDeleteButton();
             
-            renderAreaDashboard(activeSessions);
+            renderAreaDashboard(dashboardActiveSessions);
 
             // Calculate Total Duration
             const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
@@ -8385,64 +8410,6 @@
             if (tm) {
                 tm.classList.remove('hidden');
                 renderTimestamps();
-            }
-        }
-    });
-  </script>
-</body>
-</html>             
-                    card.style.flex = isHidden ? '0 0 auto' : '';
-                    card.style.minHeight = isHidden ? 'auto' : '';
-                }
-            }
-        });
-    });
-  </script>
-</body>
-</html>             
-                    content.classList.toggle('hidden');
-                    const isHidden = content.classList.contains('hidden');
-                    btn.innerHTML = isHidden 
-                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
-                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                    
-                    // Adjust card flex/height when collapsed
-                    card.style.flex = isHidden ? '0 0 auto' : '';
-                    card.style.minHeight = isHidden ? 'auto' : '';
-                }
-            }
-        });
-    });
-  </script>
-</body>
-</html>             
-                const content = card.querySelector('.section-content');
-                if (content) {
-                    content.classList.toggle('hidden');
-                    const isHidden = content.classList.contains('hidden');
-                    btn.innerHTML = isHidden 
-                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
-                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                    
-                    // Adjust card flex/height when collapsed
-                    card.style.flex = isHidden ? '0 0 auto' : '';
-                    card.style.minHeight = isHidden ? 'auto' : '';
-                }
-            }
-        });
-
-        // Restore Timestamp Modal State
-        if (sessionStorage.getItem('ims_timestamp_modal_open') === 'true') {
-            const tm = document.getElementById('timestamp-modal');
-            if (tm) {
-                tm.classList.remove('hidden');
-                renderTimestamps();
-            }
-        }
-    });
-  </script>
-</body>
-</html>             
             }
         }
     });
