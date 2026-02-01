@@ -795,6 +795,26 @@
             <h3 style="margin:0">IC User ID Master (IC Support)</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
+        <div style="display:grid; grid-template-columns: 1fr 1.5fr 1fr 1fr auto; gap:5px; align-items:end; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #eee;">
+            <div>
+                <label style="font-size:11px; font-weight:bold;">User ID</label>
+                <input type="text" id="ic-master-id" style="width:100%; padding:5px; text-transform:uppercase;" placeholder="ID">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold;">Name</label>
+                <input type="text" id="ic-master-name" style="width:100%; padding:5px; text-transform:uppercase;" placeholder="Name">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold;">Role</label>
+                <select id="ic-master-role" style="width:100%; padding:5px;"><option value="IC Support">IC Support</option><option value="IC Back up">IC Back up</option><option value="Warehouse">Warehouse</option><option value="Admin">Admin</option><option value="Management">Management</option></select>
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold;">Job Desc</label>
+                <select id="ic-master-job" style="width:100%; padding:5px;"><option value="">-</option></select>
+            </div>
+            <button id="save-ic-master-btn" class="icon-btn" style="background:#2752a7; color:white; height:28px; padding:0 10px;">Save</button>
+        </div>
+
         <div style="margin-bottom:10px;">
             <input type="text" id="ic-master-search" placeholder="Search..." style="padding:6px; border:1px solid #ccc; border-radius:4px; width: 100%;">
         </div>
@@ -806,6 +826,7 @@
                         <th>Name</th>
                         <th>Role</th>
                         <th>Job Description</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -1583,7 +1604,21 @@
         // IC Master Logic
         function renderIcMaster() {
             const tbody = document.querySelector('#ic-master-table tbody');
+            const jobSelect = document.getElementById('ic-master-job');
+            
             if(!tbody) return;
+            
+            // Populate Job Desc dropdown if needed
+            if(jobSelect && jobSelect.options.length <= 1) {
+                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects", "HO-Cancelled"];
+                subRolesList.sort().forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = r;
+                    jobSelect.appendChild(opt);
+                });
+            }
+
             tbody.innerHTML = '';
             let users = [];
             try { users = JSON.parse(localStorage.getItem('ims_master_users_v1') || '[]'); } catch(e) {}
@@ -1599,14 +1634,71 @@
             users.sort((a,b) => (a.name || '').localeCompare(b.name || ''));
             
             if(users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:10px; color:#999;">No IC Support users found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#999;">No IC Support users found.</td></tr>';
                 return;
             }
             
             users.forEach(u => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.jobDescription || ''}</td>`;
+                tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.jobDescription || ''}</td><td><button class="icon-btn edit-ic-master-btn" data-id="${u.userId}" title="Edit" style="padding:2px 6px;">✎</button></td>`;
                 tbody.appendChild(tr);
+            });
+        }
+
+        const saveIcMasterBtn = document.getElementById('save-ic-master-btn');
+        if(saveIcMasterBtn) {
+            saveIcMasterBtn.addEventListener('click', () => {
+                const idInput = document.getElementById('ic-master-id');
+                const nameInput = document.getElementById('ic-master-name');
+                const roleInput = document.getElementById('ic-master-role');
+                const jobInput = document.getElementById('ic-master-job');
+                
+                const id = idInput.value.trim().toUpperCase();
+                const name = nameInput.value.trim().toUpperCase();
+                const role = roleInput.value;
+                const job = jobInput.value;
+                
+                if(!id || !name) { alert('User ID and Name are required.'); return; }
+                
+                let users = [];
+                try { users = JSON.parse(localStorage.getItem('ims_master_users_v1') || '[]'); } catch(e) {}
+                
+                const existingIdx = users.findIndex(u => u.userId === id);
+                if(existingIdx > -1) {
+                    users[existingIdx] = { userId: id, name, role, jobDescription: job };
+                    showToast('User updated');
+                } else {
+                    users.push({ userId: id, name, role, jobDescription: job });
+                    showToast('User added');
+                }
+                
+                localStorage.setItem('ims_master_users_v1', JSON.stringify(users));
+                renderIcMaster();
+                
+                // Clear inputs
+                idInput.value = '';
+                nameInput.value = '';
+                jobInput.value = '';
+                roleInput.value = 'IC Support';
+            });
+        }
+
+        const icMasterTable = document.getElementById('ic-master-table');
+        if(icMasterTable) {
+            icMasterTable.addEventListener('click', (e) => {
+                const btn = e.target.closest('.edit-ic-master-btn');
+                if(btn) {
+                    const id = btn.dataset.id;
+                    let users = [];
+                    try { users = JSON.parse(localStorage.getItem('ims_master_users_v1') || '[]'); } catch(e) {}
+                    const user = users.find(u => u.userId === id);
+                    if(user) {
+                        document.getElementById('ic-master-id').value = user.userId;
+                        document.getElementById('ic-master-name').value = user.name;
+                        document.getElementById('ic-master-role').value = user.role || 'IC Support';
+                        document.getElementById('ic-master-job').value = user.jobDescription || '';
+                    }
+                }
             });
         }
 
