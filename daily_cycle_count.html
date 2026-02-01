@@ -1012,6 +1012,7 @@
                     <div class="tab-header">
                         <button class="tab-btn active" onclick="openTsTab(event, 'tab-active')">Active Sessions</button>
                         <button class="tab-btn" onclick="openTsTab(event, 'tab-history')">Session History</button>
+                        <button class="tab-btn" onclick="openTsTab(event, 'tab-area-dashboard')">Area Dashboard</button>
                     </div>
                     
                     <div id="tab-active" class="tab-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
@@ -1081,6 +1082,12 @@
                             <button id="ts-prev-page" class="icon-btn" title="Previous" style="padding:2px 6px; font-size:12px;">‹</button>
                             <button id="ts-next-page" class="icon-btn" title="Next" style="padding:2px 6px; font-size:12px;">›</button>
                         </div>
+                    </div>
+                </div>
+
+                <div id="tab-area-dashboard" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
+                    <div id="area-dashboard-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; overflow-y:auto; align-content: start;">
+                        <!-- Cards will be injected here -->
                     </div>
                 </div>
 
@@ -5343,6 +5350,43 @@
         function saveTimestamps(data) {
             localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
         }
+
+        function renderAreaDashboard(activeSessions) {
+            const container = document.getElementById('area-dashboard-grid');
+            if (!container) return;
+            
+            const counts = {
+                'Pick Bin - Coldroom': 0,
+                'Pick Bin - Ecom 2': 0,
+                'Pick Bin - Storage': 0,
+                'Pick Bin - Pallet Picking': 0,
+                'Reserved - Coldroom': 0,
+                'Reserved - Ecom 2': 0,
+                'Reserved - Storage': 0
+            };
+            
+            activeSessions.forEach(s => {
+                if (counts.hasOwnProperty(s.resolvedArea)) {
+                    counts[s.resolvedArea]++;
+                }
+            });
+            
+            let html = '';
+            Object.entries(counts).forEach(([area, count]) => {
+                const isZero = count === 0;
+                const bg = isZero ? '#f9f9f9' : '#e3f2fd';
+                const border = isZero ? '#eee' : '#90caf9';
+                const text = isZero ? '#999' : '#1565c0';
+                const valColor = isZero ? '#ccc' : '#1e88e5';
+                
+                html += `<div class="card" style="padding:15px; text-align:center; background:${bg}; border:1px solid ${border}; margin:0; display:flex; flex-direction:column; justify-content:center; min-height:100px; box-shadow:none;">
+                    <div style="font-size:12px; color:${text}; margin-bottom:5px; font-weight:600;">${area}</div>
+                    <div style="font-size:28px; font-weight:bold; color:${valColor};">${count}</div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
         function renderTimestamps() {
             const data = getTimestamps();
             const attendance = getAttendanceData();
@@ -5567,6 +5611,8 @@
             }
             updateTsDeleteButton();
             
+            renderAreaDashboard(activeSessions);
+
             // Calculate Total Duration
             const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
             const h = Math.floor(totalMinutes / 60);
@@ -8315,6 +8361,52 @@
             }
         });
     });
+  </script>
+</body>
+</html>             
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+
+        // Restore Timestamp Modal State
+        if (sessionStorage.getItem('ims_timestamp_modal_open') === 'true') {
+            const tm = document.getElementById('timestamp-modal');
+            if (tm) {
+                tm.classList.remove('hidden');
+                renderTimestamps();
+            }
+        }
+    });
+  </script>
+</body>
+</html>             
   </script>
 </body>
 </html>             
