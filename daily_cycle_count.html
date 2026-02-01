@@ -961,6 +961,9 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <div style="display:flex; align-items:center; gap: 15px;">
                 <h3 style="margin:0">Counter Timestamp</h3>
+                <button id="ts-open-user-master-btn" class="icon-btn" title="User Master" style="margin-left:10px; font-size:12px; padding:4px 8px; background:#f0f4f8; border:1px solid #ccc;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;vertical-align:text-bottom;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> User Master
+                </button>
                 <div style="display:flex; gap:20px; margin-left: 20px;">
                     <div class="ts-stat-card" onclick="activateTsTab('tab-active'); document.getElementById('ts-show-long-active').checked = false; renderTimestamps();" style="cursor:pointer; background:#e8f5e9; padding:8px 15px; border-radius:4px; border:1px solid #c8e6c9; text-align:center; min-width: 100px;">
                         <div style="font-size:12px; color:#2e7d32;">Active Session</div>
@@ -1347,24 +1350,32 @@
   <!-- User Master Modal -->
   <div id="user-master-modal" class="modal hidden" style="z-index: 10025;">
     <div class="modal-overlay"></div>
-    <div class="modal-content card" style="max-width: 600px; margin: 50px auto;">
+    <div class="modal-content card" style="max-width: 700px; margin: 50px auto; display:flex; flex-direction:column; max-height:85vh;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">User ID Master Data</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
         
+        <div class="tab-header" style="margin-bottom:15px;">
+            <button class="tab-btn active master-role-tab" data-role="IC Support">IC Support</button>
+            <button class="tab-btn master-role-tab" data-role="IC Back up">IC Back up</button>
+        </div>
+
         <div style="display:grid; grid-template-columns: 1fr 2fr 1fr auto; gap:10px; align-items:end; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #eee;">
             <div>
                 <label style="font-size:12px; font-weight:bold;">User ID</label>
-                <input type="text" id="master-user-id" style="width:100%; padding:6px;" placeholder="ID">
+                <input type="text" id="master-user-id" style="width:100%; padding:6px; text-transform:uppercase;" placeholder="ID">
             </div>
             <div>
                 <label style="font-size:12px; font-weight:bold;">Name</label>
-                <input type="text" id="master-user-name" style="width:100%; padding:6px;" placeholder="Name">
+                <input type="text" id="master-user-name" style="width:100%; padding:6px; text-transform:uppercase;" placeholder="Name">
             </div>
             <div>
                 <label style="font-size:12px; font-weight:bold;">Role</label>
-                <input type="text" id="master-user-role" style="width:100%; padding:6px;" placeholder="Role">
+                <select id="master-user-role" style="width:100%; padding:6px;">
+                    <option value="IC Support">IC Support</option>
+                    <option value="IC Back up">IC Back up</option>
+                </select>
             </div>
             <button id="save-master-user-btn" class="icon-btn" style="background:#2752a7; color:white; height:32px;">Save</button>
         </div>
@@ -1379,14 +1390,14 @@
             </div>
         </div>
 
-        <div style="max-height:400px; overflow-y:auto; border:1px solid #eee;">
+        <div class="sticky-table-container" style="flex:1; min-height:0;">
             <table id="master-users-table" class="report-table" style="width:100%;">
                 <thead>
                     <tr>
                         <th style="width:30px;"><input type="checkbox" id="select-all-master-users"></th>
-                        <th>User ID</th>
-                        <th>Name</th>
-                        <th>Role</th>
+                        <th class="sortable" data-sort="userId">User ID <span class="sort-icon"></span></th>
+                        <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
+                        <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
                         <th style="width:60px;">Action</th>
                     </tr>
                 </thead>
@@ -1491,6 +1502,10 @@
         const importMasterUsersBtn = document.getElementById('import-master-users-btn');
         const importMasterUsersFile = document.getElementById('import-master-users-file');
         const exportMasterUsersBtn = document.getElementById('export-master-users-btn');
+        
+        let currentMasterRole = 'IC Support';
+        let masterSortField = 'name';
+        let masterSortDir = 'asc';
 
         function getMasterUsers() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_USERS) || '[]'); } catch(e) { return []; } }
         function saveMasterUsers(data) { localStorage.setItem(STORAGE_KEY_MASTER_USERS, JSON.stringify(data)); }
@@ -1499,11 +1514,24 @@
             if(!masterUserTableBody) return;
             masterUserTableBody.innerHTML = '';
             let users = getMasterUsers();
+            
+            // Filter by Role Tab
+            users = users.filter(u => u.role === currentMasterRole);
+
             const term = masterUserSearch ? masterUserSearch.value.toLowerCase() : '';
             if(term) {
                 users = users.filter(u => u.userId.toLowerCase().includes(term) || u.name.toLowerCase().includes(term) || (u.role && u.role.toLowerCase().includes(term)));
             }
-            users.sort((a,b) => a.name.localeCompare(b.name));
+            
+            // Sort
+            users.sort((a,b) => {
+                let valA = (a[masterSortField] || '').toLowerCase();
+                let valB = (b[masterSortField] || '').toLowerCase();
+                if (valA < valB) return masterSortDir === 'asc' ? -1 : 1;
+                if (valA > valB) return masterSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
             if(users.length === 0) {
                 masterUserTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#999;">No users found.</td></tr>';
                 return;
@@ -1514,6 +1542,13 @@
                 masterUserTableBody.appendChild(tr);
             });
             updateMasterUserDeleteBtn();
+            
+            // Update sort icons
+            document.querySelectorAll('#master-users-table th.sortable .sort-icon').forEach(icon => icon.textContent = '');
+            const activeHeader = document.querySelector(`#master-users-table th[data-sort="${masterSortField}"]`);
+            if(activeHeader) {
+                activeHeader.querySelector('.sort-icon').textContent = masterSortDir === 'asc' ? '↑' : '↓';
+            }
         }
 
         function updateMasterUserDeleteBtn() {
@@ -1532,9 +1567,9 @@
 
         if(saveMasterUserBtn) {
             saveMasterUserBtn.addEventListener('click', () => {
-                const id = masterUserIdInput.value.trim();
-                const name = masterUserNameInput.value.trim();
-                const role = masterUserRoleInput.value.trim();
+                const id = masterUserIdInput.value.trim().toUpperCase();
+                const name = masterUserNameInput.value.trim().toUpperCase();
+                const role = masterUserRoleInput.value;
                 if(!id || !name) { alert('User ID and Name are required.'); return; }
                 let users = getMasterUsers();
                 const existingIdx = users.findIndex(u => u.userId === id);
@@ -1542,7 +1577,7 @@
                 else { users.push({ userId: id, name, role }); showToast('User added'); }
                 saveMasterUsers(users);
                 renderMasterUsers();
-                masterUserIdInput.value = ''; masterUserNameInput.value = ''; masterUserRoleInput.value = '';
+                masterUserIdInput.value = ''; masterUserNameInput.value = '';
             });
         }
 
@@ -1553,7 +1588,7 @@
                     const id = btn.dataset.id;
                     const users = getMasterUsers();
                     const user = users.find(u => u.userId === id);
-                    if(user) { masterUserIdInput.value = user.userId; masterUserNameInput.value = user.name; masterUserRoleInput.value = user.role || ''; }
+                    if(user) { masterUserIdInput.value = user.userId; masterUserNameInput.value = user.name; masterUserRoleInput.value = user.role || 'IC Support'; }
                 }
             });
             masterUserTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('master-user-checkbox')) updateMasterUserDeleteBtn(); });
@@ -1628,6 +1663,30 @@
             });
         }
 
+        // User Master Tabs
+        document.querySelectorAll('.master-role-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.master-role-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentMasterRole = tab.dataset.role;
+                renderMasterUsers();
+            });
+        });
+
+        // Master User Sorting
+        document.querySelectorAll('#master-users-table th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if (masterSortField === field) {
+                    masterSortDir = masterSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    masterSortField = field;
+                    masterSortDir = 'asc';
+                }
+                renderMasterUsers();
+            });
+        });
+
         // Timestamp Modal
         let cachedInactiveArgs = null;
         let inactiveSort = { field: 'status', dir: 'asc' };
@@ -1659,6 +1718,14 @@
         const tsSelectAll = document.getElementById('ts-select-all');
         const tsShowLongActive = document.getElementById('ts-show-long-active');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
+
+        const tsOpenUserMasterBtn = document.getElementById('ts-open-user-master-btn');
+        if(tsOpenUserMasterBtn) {
+            tsOpenUserMasterBtn.addEventListener('click', () => {
+                userMasterModal.classList.remove('hidden');
+                requestAnimationFrame(() => setTimeout(renderMasterUsers, 10));
+            });
+        }
 
         const tsViewHourlyFullBtn = document.getElementById('ts-view-hourly-full-btn');
         if (tsViewHourlyFullBtn) {
@@ -2340,6 +2407,7 @@
                                 <button class="icon-btn edit-counter-btn" data-id="${item.id}" title="Edit" style="padding:2px 6px; font-size:12px;">✎</button>
                                 <button class="icon-btn duplicate-counter-btn" data-id="${item.id}" title="Duplicate to Next Day" style="padding:2px 6px; font-size:12px;">📋</button>
                                 <button class="icon-btn hourly-btn" data-date="${date}" data-shift="${shift}" title="Hourly Monitor" style="padding:2px 6px; font-size:12px; background:#6f42c1; color:white; border:none;">Hourly</button>
+                                <button class="icon-btn duplicate-all-shifts-btn" data-id="${item.id}" title="Copy to All Shifts" style="padding:2px 6px; font-size:12px; background:#17a2b8; color:white; border:none;">📑</button>
                                 <button class="icon-btn delete-counter-btn" data-id="${item.id}" title="Delete" style="padding:2px 6px; font-size:12px; color:#d9534f;">&times;</button>
                             </div>
                         </td>`;
@@ -2472,6 +2540,31 @@
                         saveCountersData(data);
                         renderCountersTable();
                         alert(`Duplicated entry to ${nextDate}`);
+                    }
+                } else if (btn.classList.contains('duplicate-all-shifts-btn')) {
+                    const data = getCountersData();
+                    const item = data.find(i => i.id === id);
+                    if (item) {
+                        if(!confirm('Copy this entry to all other shifts for ' + item.date + '?')) return;
+                        const shifts = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+                        let added = false;
+                        shifts.forEach(s => {
+                            if (s !== item.shift) {
+                                const exists = data.find(x => x.date === item.date && x.shift === s);
+                                if (!exists) {
+                                    const newItem = { ...item, id: Date.now().toString() + Math.random(), shift: s, hourlyActuals: {}, hourlyTargets: {}, hourlyPallets: {}, hourlyNotes: {} };
+                                    data.push(newItem);
+                                    added = true;
+                                }
+                            }
+                        });
+                        if (added) {
+                            saveCountersData(data);
+                            renderCountersTable();
+                            showToast('Copied to all shifts');
+                        } else {
+                            alert('All shifts already exist for this date.');
+                        }
                     }
                 }
             });
@@ -7130,6 +7223,113 @@
 
         if(tsUserIdInput) {
             tsUserIdInput.addEventListener('input', () => {
+                const uid = tsUserIdInput.value.trim();
+                const nameDisplay = document.getElementById('ts-user-name-display');
+                if(nameDisplay) {
+                    if(uid) {
+                        const attData = getAttendanceData();
+                        const userRecord = attData.find(a => a.userId === uid);
+                        if (userRecord) {
+                            nameDisplay.value = `Name: ${userRecord.name} | Role: ${userRecord.role || '-'}`;
+                        } else {
+                            // Check Master Data
+                            const masterUsers = getMasterUsers();
+                            const masterUser = masterUsers.find(u => u.userId === uid);
+                            if (masterUser) {
+                                nameDisplay.value = `Name: ${masterUser.name} | Role: ${masterUser.role || '-'}`;
+                            } else {
+                                nameDisplay.value = '';
+                            }
+                        }
+                    } else {
+                        nameDisplay.value = '';
+                    }
+                }
+            });
+        }
+
+        // Toggle Section Logic for Timestamp Modal Tables
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-section-btn');
+            if (btn) {
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+
+        // Restore Timestamp Modal State
+        if (sessionStorage.getItem('ims_timestamp_modal_open') === 'true') {
+            const tm = document.getElementById('timestamp-modal');
+            if (tm) {
+                tm.classList.remove('hidden');
+                renderTimestamps();
+            }
+        }
+    });
+  </script>
+</body>
+</html>             
                 const uid = tsUserIdInput.value.trim();
                 const nameDisplay = document.getElementById('ts-user-name-display');
                 if(nameDisplay) {
