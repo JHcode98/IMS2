@@ -1177,9 +1177,14 @@
          <!-- Right Column: Hourly Output Chart + Analytics -->
             <div style="width: 50%; display:flex; flex-direction:column; border-left:1px solid #eee; padding-left:15px; padding-right:10px; gap:12px; overflow:hidden; min-width:350px;">
                 
-                <button id="ts-open-user-master-btn" class="icon-btn" title="User Master" style="margin-left:10px; font-size:12px; padding:4px 8px; background:#f0f4f8; border:1px solid #ccc;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;vertical-align:text-bottom;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> User Master
-                </button>
+                <div style="display:flex; gap:10px; margin-left:10px;">
+                    <button id="ts-open-user-master-btn" class="icon-btn" title="User Master" style="font-size:12px; padding:4px 8px; background:#f0f4f8; border:1px solid #ccc;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;vertical-align:text-bottom;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> User Master
+                    </button>
+                    <button id="ts-clear-logs-btn" class="icon-btn" title="Clear All Logs" style="font-size:12px; padding:4px 8px; background:#ffebee; color:#c62828; border:1px solid #ffcdd2;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;vertical-align:text-bottom;"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Clear Logs
+                    </button>
+                </div>
                 <!-- Hourly Output Chart Section -->
                 <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; border:1px solid #eee; box-shadow:none; flex-shrink:0; max-height:380px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1774,6 +1779,17 @@
             tsOpenUserMasterBtn.addEventListener('click', () => {
                 userMasterModal.classList.remove('hidden');
                 requestAnimationFrame(() => setTimeout(renderMasterUsers, 10));
+            });
+        }
+
+        const tsClearLogsBtn = document.getElementById('ts-clear-logs-btn');
+        if(tsClearLogsBtn) {
+            tsClearLogsBtn.addEventListener('click', () => {
+                if(confirm('Are you sure you want to clear ALL timestamp logs? This cannot be undone.')) {
+                    saveTimestamps([]);
+                    renderTimestamps();
+                    showToast('All logs cleared.');
+                }
             });
         }
 
