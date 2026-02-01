@@ -822,15 +822,31 @@
             <table id="ic-master-table" class="report-table" style="width:100%;">
                 <thead>
                     <tr>
-                        <th>User ID</th>
-                        <th>Name</th>
-                        <th>Role</th>
-                        <th>Job Description</th>
-                        <th>Action</th>
+                        <th class="sortable" data-sort="userId" style="position:sticky; top:0; z-index:1;">User ID <span class="sort-icon"></span></th>
+                        <th class="sortable" data-sort="name" style="position:sticky; top:0; z-index:1;">Name <span class="sort-icon"></span></th>
+                        <th class="sortable" data-sort="role" style="position:sticky; top:0; z-index:1;">Role <span class="sort-icon"></span></th>
+                        <th class="sortable" data-sort="jobDescription" style="position:sticky; top:0; z-index:1;">Job Description <span class="sort-icon"></span></th>
+                        <th style="position:sticky; top:0; z-index:1;">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
+        </div>
+        <div id="ic-master-pagination" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-top:1px solid #eee;">
+            <div style="display:flex; align-items:center; gap:5px;">
+                <label style="font-size:12px;">Rows:</label>
+                <select id="ic-master-rows" style="padding:2px; font-size:12px;">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <span id="ic-master-page-info" style="font-size:12px; color:#666;"></span>
+            <div style="display:flex; gap:5px;">
+                <button id="ic-master-prev" class="icon-btn" style="padding:2px 6px;">&lt;</button>
+                <button id="ic-master-next" class="icon-btn" style="padding:2px 6px;">&gt;</button>
+            </div>
         </div>
     </div>
   </div>
@@ -1601,6 +1617,11 @@
             container.innerHTML = html;
         }
 
+        let icMasterSortField = 'name';
+        let icMasterSortDir = 'asc';
+        let icMasterPage = 1;
+        let icMasterRowsPerPage = 20;
+
         // IC Master Logic
         function renderIcMaster() {
             const tbody = document.querySelector('#ic-master-table tbody');
@@ -1631,19 +1652,80 @@
                 users = users.filter(u => u.userId.toLowerCase().includes(term) || u.name.toLowerCase().includes(term));
             }
             
-            users.sort((a,b) => (a.name || '').localeCompare(b.name || ''));
+            // Sorting
+            users.sort((a,b) => {
+                let valA = (a[icMasterSortField] || '').toLowerCase();
+                let valB = (b[icMasterSortField] || '').toLowerCase();
+                if(valA < valB) return icMasterSortDir === 'asc' ? -1 : 1;
+                if(valA > valB) return icMasterSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Update Sort Icons
+            document.querySelectorAll('#ic-master-table th.sortable .sort-icon').forEach(el => el.textContent = '');
+            const activeTh = document.querySelector(`#ic-master-table th[data-sort="${icMasterSortField}"] .sort-icon`);
+            if(activeTh) activeTh.textContent = icMasterSortDir === 'asc' ? '↑' : '↓';
+
+            // Pagination
+            const totalItems = users.length;
+            const totalPages = Math.ceil(totalItems / icMasterRowsPerPage) || 1;
+            if (icMasterPage > totalPages) icMasterPage = totalPages;
+            if (icMasterPage < 1) icMasterPage = 1;
             
-            if(users.length === 0) {
+            const start = (icMasterPage - 1) * icMasterRowsPerPage;
+            const paginatedUsers = users.slice(start, start + icMasterRowsPerPage);
+
+            // Update Pagination Controls
+            const pageInfo = document.getElementById('ic-master-page-info');
+            const prevBtn = document.getElementById('ic-master-prev');
+            const nextBtn = document.getElementById('ic-master-next');
+            
+            if(pageInfo) pageInfo.textContent = `Page ${icMasterPage} of ${totalPages} (${totalItems} users)`;
+            if(prevBtn) prevBtn.disabled = icMasterPage <= 1;
+            if(nextBtn) nextBtn.disabled = icMasterPage >= totalPages;
+            
+            if(paginatedUsers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#999;">No IC Support users found.</td></tr>';
                 return;
             }
             
-            users.forEach(u => {
+            paginatedUsers.forEach(u => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.jobDescription || ''}</td><td><button class="icon-btn edit-ic-master-btn" data-id="${u.userId}" title="Edit" style="padding:2px 6px;">✎</button></td>`;
                 tbody.appendChild(tr);
             });
         }
+
+        // Sort headers
+        document.querySelectorAll('#ic-master-table th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if(icMasterSortField === field) {
+                    icMasterSortDir = icMasterSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    icMasterSortField = field;
+                    icMasterSortDir = 'asc';
+                }
+                renderIcMaster();
+            });
+        });
+
+        // Pagination controls
+        const icMasterPrev = document.getElementById('ic-master-prev');
+        const icMasterNext = document.getElementById('ic-master-next');
+        const icMasterRows = document.getElementById('ic-master-rows');
+
+        if(icMasterPrev) icMasterPrev.addEventListener('click', () => {
+            if(icMasterPage > 1) { icMasterPage--; renderIcMaster(); }
+        });
+        if(icMasterNext) icMasterNext.addEventListener('click', () => {
+            icMasterPage++; renderIcMaster();
+        });
+        if(icMasterRows) icMasterRows.addEventListener('change', () => {
+            icMasterRowsPerPage = parseInt(icMasterRows.value);
+            icMasterPage = 1;
+            renderIcMaster();
+        });
 
         const saveIcMasterBtn = document.getElementById('save-ic-master-btn');
         if(saveIcMasterBtn) {
@@ -1710,7 +1792,10 @@
         }
 
         if(icMasterSearch) {
-            icMasterSearch.addEventListener('input', renderIcMaster);
+            icMasterSearch.addEventListener('input', () => {
+                icMasterPage = 1;
+                renderIcMaster();
+            });
         }
 
         // Helper for click interaction
