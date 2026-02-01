@@ -4025,6 +4025,41 @@
         });
     }
 
+        function syncToAllIcAttendance(entry) {
+            try {
+                const allIcKey = 'ims_daily_attendance_v1';
+                let allIcData = [];
+                try { allIcData = JSON.parse(localStorage.getItem(allIcKey) || '[]'); } catch(e) {}
+                
+                const existingIdx = allIcData.findIndex(a => 
+                    a.date === entry.date && 
+                    a.shift === entry.shift && 
+                    a.userId === entry.userId
+                );
+
+                const targetEntry = {
+                    id: existingIdx > -1 ? allIcData[existingIdx].id : (Date.now().toString() + Math.random().toString(36).substr(2, 5)),
+                    date: entry.date,
+                    shift: entry.shift,
+                    userId: entry.userId,
+                    name: entry.name,
+                    role: entry.role,
+                    area: 'Cycle Counter', 
+                    timeIn: entry.timeIn || '',
+                    breakOut: entry.breakOut || '',
+                    breakIn: entry.breakIn || '',
+                    timeOut: entry.timeOut || '',
+                    status: (entry.status === 'Full counter' ? 'Full-time' : entry.status) || 'Full-time',
+                    notes: entry.notes || (existingIdx > -1 ? allIcData[existingIdx].notes : '')
+                };
+
+                if (existingIdx > -1) allIcData[existingIdx] = targetEntry;
+                else allIcData.push(targetEntry);
+                
+                localStorage.setItem(allIcKey, JSON.stringify(allIcData));
+            } catch (e) { console.error('Sync error:', e); }
+        }
+
         if (attForm) {
             attForm.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -4075,6 +4110,7 @@
                     data.push(newEntry);
                 }
                 saveAttendanceData(data);
+                syncToAllIcAttendance(newEntry);
                 showToast('Attendance saved successfully!');
                 
                 attModal.classList.add('hidden');
@@ -5329,6 +5365,7 @@
 
                 attendance.push(newEntry);
                 saveAttendanceData(attendance);
+                syncToAllIcAttendance(newEntry);
                 
                 showToast(`Timed in: ${user.name}`);
                 quickUserIdInput.value = '';
@@ -6901,6 +6938,7 @@
                     else if (action === 'Time Out') attData[attIdx].timeOut = timeStr;
                     saveAttendanceData(attData);
                     renderAttendanceTable();
+                    syncToAllIcAttendance(attData[attIdx]);
                 }
             }
 
