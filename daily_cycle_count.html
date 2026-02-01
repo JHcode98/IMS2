@@ -6531,9 +6531,19 @@
             if (action === 'Start' || action === 'Start Break') {
                 // Check if user is in attendance list
                 const attData = getAttendanceData();
-                const userExists = attData.some(a => a.userId === userId);
-                if (!userExists) {
-                    alert(`User ID ${userId} not found in attendance list.`);
+                
+                // Validate against current shift attendance
+                const shiftInfo = getShiftFromTimestamp(now.toISOString());
+                const userRecord = attData.find(a => a.userId === userId && a.date === shiftInfo.date && a.shift === shiftInfo.shift);
+
+                if (!userRecord) {
+                    alert(`User ID ${userId} not found in attendance for ${shiftInfo.date} (${shiftInfo.shift}). Please add to attendance first.`);
+                    return;
+                }
+
+                const status = userRecord.status || 'Full counter';
+                if (action === 'Start' && status !== 'Full counter') {
+                    alert(`User ${userId} is marked as '${status}'. Only 'Full counter' can start counting.`);
                     return;
                 }
 
