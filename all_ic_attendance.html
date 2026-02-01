@@ -851,8 +851,23 @@
     </div>
   </div>
 
-  <!-- Floating Add Button -->
-  <button id="fab-add-att" class="fab-btn" title="Add Attendance">+</button>
+  <!-- Floating Quick Time In Widget -->
+  <div id="quick-time-in-widget" class="card" style="position: fixed; bottom: 20px; right: 20px; width: 300px; padding: 0; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid #ccc; background: white; display:flex; flex-direction:column;">
+      <div id="quick-widget-header" style="padding:10px; background:#f1f1f1; border-bottom:1px solid #eee; cursor:move; display:flex; justify-content:space-between; align-items:center; border-radius: 8px 8px 0 0;">
+          <h4 style="margin:0; color:#2752a7; font-size:14px;">Quick Time In</h4>
+      </div>
+      <div style="padding:10px 15px 15px 15px; display:flex; flex-direction:column; gap:10px;">
+          <div id="quick-widget-clock" style="text-align:center; font-size:12px; color:#666; margin-bottom:5px; font-weight:bold;"></div>
+          <div style="display:flex; gap:5px;">
+              <input type="text" id="quick-user-id" placeholder="User ID" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px; text-transform:uppercase;">
+              <button id="quick-time-in-btn" class="icon-btn" style="background:#2ecc71; color:white; font-weight:bold; padding: 0 12px;">GO</button>
+              <button id="quick-clear-btn" class="icon-btn" style="background:#f0f0f0; color:#333; border:1px solid #ccc; padding: 0 8px;" title="Clear">C</button>
+          </div>
+          <input type="text" id="quick-user-name" placeholder="Name" readonly style="padding:8px; border:1px solid #eee; border-radius:4px; background:#f9f9f9; color:#555;">
+          <input type="text" id="quick-user-role" placeholder="Role" readonly style="padding:8px; border:1px solid #eee; border-radius:4px; background:#f9f9f9; color:#555;">
+          <button id="manual-add-btn" style="margin-top:5px; font-size:12px; background:none; border:none; color:#2752a7; text-decoration:underline; cursor:pointer; text-align:left; padding:0;">Manual Entry (+)</button>
+      </div>
+  </div>
 
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
@@ -882,7 +897,6 @@
         const attFilterRole = document.getElementById('att-filter-role');
         const deleteSelectedAttBtn = document.getElementById('delete-selected-att-btn');
         const selectAllAtt = document.getElementById('select-all-att');
-        const fabAddBtn = document.getElementById('fab-add-att');
         
         const globalStartDate = document.getElementById('global-start-date');
         const globalEndDate = document.getElementById('global-end-date');
@@ -1218,12 +1232,6 @@
                 
                 updateAttNameDatalist();
                 attModal.classList.remove('hidden');
-            });
-        }
-        
-        if (fabAddBtn) {
-            fabAddBtn.addEventListener('click', () => {
-                if(addAttBtn) addAttBtn.click();
             });
         }
 
@@ -1796,6 +1804,154 @@
                 icMasterPage = 1;
                 renderIcMaster();
             });
+        }
+
+        // Quick Time In Logic
+        const quickTimeInBtn = document.getElementById('quick-time-in-btn');
+        const quickUserIdInput = document.getElementById('quick-user-id');
+        const quickUserNameInput = document.getElementById('quick-user-name');
+        const quickUserRoleInput = document.getElementById('quick-user-role');
+        const quickClearBtn = document.getElementById('quick-clear-btn');
+        const manualAddBtn = document.getElementById('manual-add-btn');
+
+        if (manualAddBtn) {
+            manualAddBtn.addEventListener('click', () => {
+                if(addAttBtn) addAttBtn.click();
+            });
+        }
+
+        if (quickTimeInBtn && quickUserIdInput) {
+            quickUserIdInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') quickTimeInBtn.click();
+            });
+
+            if(quickClearBtn) {
+                quickClearBtn.addEventListener('click', () => {
+                    quickUserIdInput.value = '';
+                    if(quickUserNameInput) quickUserNameInput.value = '';
+                    if(quickUserRoleInput) quickUserRoleInput.value = '';
+                    quickUserIdInput.focus();
+                });
+            }
+
+            // Update Clock
+            function updateQuickClock() {
+                const el = document.getElementById('quick-widget-clock');
+                if(el) el.textContent = new Date().toLocaleString();
+            }
+            setInterval(updateQuickClock, 1000);
+            updateQuickClock();
+
+            // Auto-populate Name/Role
+            quickUserIdInput.addEventListener('input', () => {
+                const val = quickUserIdInput.value.trim().toUpperCase();
+                if (val) {
+                    let masterUsers = [];
+                    try { masterUsers = JSON.parse(localStorage.getItem('ims_master_users_v1') || '[]'); } catch(e) {}
+                    const user = masterUsers.find(u => u.userId === val);
+                    if (user) {
+                        if(quickUserNameInput) quickUserNameInput.value = user.name || '';
+                        if(quickUserRoleInput) quickUserRoleInput.value = user.role || '';
+                    } else {
+                        if(quickUserNameInput) quickUserNameInput.value = '';
+                        if(quickUserRoleInput) quickUserRoleInput.value = '';
+                    }
+                } else {
+                    if(quickUserNameInput) quickUserNameInput.value = '';
+                    if(quickUserRoleInput) quickUserRoleInput.value = '';
+                }
+            });
+
+            quickTimeInBtn.addEventListener('click', () => {
+                const userId = quickUserIdInput.value.trim().toUpperCase();
+                if (!userId) { showToast('Please enter User ID'); return; }
+
+                let masterUsers = [];
+                try { masterUsers = JSON.parse(localStorage.getItem('ims_master_users_v1') || '[]'); } catch(e) {}
+                const user = masterUsers.find(u => u.userId === userId);
+
+                if (!user) {
+                    alert(`User ID ${userId} not found in IC Master List.`);
+                    return;
+                }
+
+                const now = new Date();
+                const shiftInfo = getShiftFromTimestamp(now.getTime());
+                const date = shiftInfo.date;
+                const shift = shiftInfo.shift;
+                const timeIn = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+
+                const attendance = getAttendanceData();
+                const exists = attendance.find(a => a.date === date && a.shift === shift && a.userId === userId);
+
+                if (exists) {
+                    alert(`User ${user.name} is already timed in for ${shift} on ${date}.`);
+                    quickUserIdInput.value = '';
+                    return;
+                }
+
+                const newEntry = {
+                    id: Date.now().toString(),
+                    date: date,
+                    shift: shift,
+                    userId: user.userId,
+                    name: user.name,
+                    role: user.role || 'IC Support',
+                    area: user.jobDescription || '', // Auto-fill Job Description from master
+                    timeIn: timeIn,
+                    breakOut: '',
+                    breakIn: '',
+                    timeOut: '',
+                    status: 'Full-time',
+                    notes: 'Quick Time In'
+                };
+
+                attendance.push(newEntry);
+                saveAttendanceData(attendance);
+                
+                showToast(`Timed in: ${user.name}`);
+                quickUserIdInput.value = '';
+                if(quickUserNameInput) quickUserNameInput.value = '';
+                if(quickUserRoleInput) quickUserRoleInput.value = '';
+                
+                renderAttendanceTable();
+                if(flipContainer.classList.contains('flipped')) renderSubRoleDashboard();
+            });
+            
+            // Make Widget Draggable
+            const quickWidget = document.getElementById('quick-time-in-widget');
+            const quickHeader = document.getElementById('quick-widget-header');
+            if(quickWidget && quickHeader) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                quickHeader.onmousedown = dragMouseDown;
+
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    quickWidget.style.top = (quickWidget.offsetTop - pos2) + "px";
+                    quickWidget.style.left = (quickWidget.offsetLeft - pos1) + "px";
+                    quickWidget.style.bottom = "auto"; 
+                    quickWidget.style.right = "auto";
+                }
+
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
         }
 
         // Helper for click interaction
