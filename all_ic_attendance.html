@@ -781,6 +781,8 @@
             </table>
         </div>
         <div style="text-align:right; margin-top:15px;">
+            <input type="file" id="import-req-file" accept=".csv" style="display:none;">
+            <button id="import-req-btn" class="icon-btn" style="background: #fff; color: #333; border: 1px solid #ccc; padding: 8px 16px; margin-right: 5px;">Import CSV</button>
             <button id="export-req-btn" class="icon-btn" style="background: #fff; color: #333; border: 1px solid #ccc; padding: 8px 16px; margin-right: 5px;">Export CSV</button>
             <button id="save-req-btn" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 16px;">Save Requirements</button>
         </div>
@@ -938,6 +940,8 @@
         const setReqBtn = document.getElementById('set-requirements-btn');
         const saveReqBtn = document.getElementById('save-req-btn');
         const exportReqBtn = document.getElementById('export-req-btn');
+        const importReqBtn = document.getElementById('import-req-btn');
+        const importReqFile = document.getElementById('import-req-file');
         const viewChartBtn = document.getElementById('view-chart-btn');
         const viewTableBtn = document.getElementById('view-table-btn');
         const flipContainer = document.getElementById('attendance-flip-container');
@@ -1462,7 +1466,7 @@
             setReqBtn.addEventListener('click', () => {
                 const reqs = loadRequirements();
                 const tbody = document.querySelector('#req-table tbody');
-                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects"];
+                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects", "HO-Cancelled"];
                 const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
                 const roleFilter = document.getElementById('req-role-filter');
                 
@@ -1476,19 +1480,62 @@
                     });
                 }
                 
+                // Add Total Column Header if missing
+                const theadRow = document.querySelector('#req-table thead tr');
+                if (theadRow && theadRow.children.length === 4) {
+                    const th = document.createElement('th');
+                    th.textContent = 'Total';
+                    theadRow.appendChild(th);
+                }
+
                 tbody.innerHTML = '';
                 subRolesList.forEach(role => {
                     const tr = document.createElement('tr');
                     tr.dataset.role = role;
                     let html = `<td>${role}</td>`;
+                    let rowTotal = 0;
                     shiftsList.forEach(shift => {
                         const key = `${role}|${shift}`;
                         const val = reqs[key] || 0;
+                        rowTotal += val;
                         html += `<td><input type="number" class="req-input" data-key="${key}" value="${val}" style="width:60px; padding:4px; border:1px solid #ccc; border-radius:4px;"></td>`;
                     });
+                    html += `<td class="row-total" style="font-weight:bold; text-align:center;">${rowTotal}</td>`;
                     tr.innerHTML = html;
                     tbody.appendChild(tr);
                 });
+
+                // Footer for Grand Totals
+                let tfoot = document.querySelector('#req-table tfoot');
+                if(!tfoot) {
+                    tfoot = document.createElement('tfoot');
+                    document.getElementById('req-table').appendChild(tfoot);
+                }
+
+                const updateTotals = () => {
+                    let col1 = 0, col2 = 0, col3 = 0;
+                    document.querySelectorAll('.req-input').forEach(inp => {
+                        const val = parseInt(inp.value) || 0;
+                        const key = inp.dataset.key;
+                        if(key.includes('1st Shift')) col1 += val;
+                        if(key.includes('2nd Shift')) col2 += val;
+                        if(key.includes('3rd Shift')) col3 += val;
+                        
+                        // Update row total
+                        const row = inp.closest('tr');
+                        let rTotal = 0;
+                        row.querySelectorAll('.req-input').forEach(ri => rTotal += (parseInt(ri.value)||0));
+                        row.querySelector('.row-total').textContent = rTotal;
+                    });
+                    const grand = col1 + col2 + col3;
+                    tfoot.innerHTML = `<tr style="background:#f0f0f0; font-weight:bold;"><td>Grand Total</td><td>${col1}</td><td>${col2}</td><td>${col3}</td><td style="text-align:center;">${grand}</td></tr>`;
+                };
+                
+                updateTotals();
+                tbody.addEventListener('input', (e) => {
+                    if(e.target.classList.contains('req-input')) updateTotals();
+                });
+
                 reqModal.classList.remove('hidden');
             });
         }
@@ -1522,7 +1569,7 @@
         if(exportReqBtn) {
             exportReqBtn.addEventListener('click', () => {
                 const reqs = loadRequirements();
-                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects"];
+                const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects", "HO-Cancelled"];
                 const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
                 
                 const headers = ['Sub Role', '1st Shift', '2nd Shift', '3rd Shift'];
@@ -1542,6 +1589,42 @@
                 const a = document.createElement('a');
                 a.href = url; a.download = 'attendance_requirements.csv';
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            });
+        }
+
+        if(importReqBtn) importReqBtn.addEventListener('click', () => importReqFile.click());
+
+        if(importReqFile) {
+            importReqFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const text = ev.target.result;
+                    const lines = text.split(/\r?\n/);
+                    const reqs = loadRequirements();
+                    const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+                    let count = 0;
+                    for(let i=1; i<lines.length; i++) {
+                        const line = lines[i].trim();
+                        if(!line) continue;
+                        const parts = line.split(',').map(p => p.replace(/^"|"$/g, '').trim());
+                        if(parts.length >= 4) {
+                            const role = parts[0];
+                            if(role) {
+                                reqs[`${role}|${shiftsList[0]}`] = parseInt(parts[1]) || 0;
+                                reqs[`${role}|${shiftsList[1]}`] = parseInt(parts[2]) || 0;
+                                reqs[`${role}|${shiftsList[2]}`] = parseInt(parts[3]) || 0;
+                                count++;
+                            }
+                        }
+                    }
+                    localStorage.setItem('ims_att_requirements_v1', JSON.stringify(reqs));
+                    alert(`Imported requirements for ${count} roles.`);
+                    importReqFile.value = '';
+                    if(setReqBtn) setReqBtn.click(); // Refresh modal
+                };
+                reader.readAsText(file);
             });
         }
 
