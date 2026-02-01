@@ -1013,6 +1013,7 @@
                         <button class="tab-btn active" onclick="openTsTab(event, 'tab-active')">Active Sessions</button>
                         <button class="tab-btn" onclick="openTsTab(event, 'tab-history')">Session History</button>
                         <button class="tab-btn" onclick="openTsTab(event, 'tab-area-dashboard')">Area Dashboard</button>
+                        <button class="tab-btn" onclick="openTsTab(event, 'tab-user-dashboard')">User Dashboard</button>
                     </div>
                     
                     <div id="tab-active" class="tab-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
@@ -1089,6 +1090,10 @@
                     <div id="area-dashboard-grid" style="display:flex; flex-direction:column; gap:15px; overflow-y:auto; height:100%;">
                         <!-- Cards will be injected here -->
                     </div>
+                </div>
+
+                <div id="tab-user-dashboard" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
+                    <div id="user-dashboard-content" style="overflow-y:auto; height:100%;"></div>
                 </div>
 
                 <!-- Table 2: Inactive Users & Breaks -->
@@ -5440,6 +5445,58 @@
             });
         }
 
+        function renderUserDashboard(sessions) {
+            const container = document.getElementById('user-dashboard-content');
+            if (!container) return;
+
+            const shiftStats = {
+                '1st Shift-(6am-2pm)': {},
+                '2nd Shift-(2pm-10pm)': {},
+                '3rd Shift-(10pm-6am)': {}
+            };
+
+            sessions.forEach(s => {
+                if (s.endLog && s.endLog.skus) {
+                    const shift = s.resolvedShift;
+                    const name = s.resolvedName || s.userId;
+                    const count = parseInt(s.endLog.skus) || 0;
+                    
+                    if (shiftStats[shift]) {
+                        if (!shiftStats[shift][name]) shiftStats[shift][name] = 0;
+                        shiftStats[shift][name] += count;
+                    }
+                }
+            });
+
+            let html = '<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px;">';
+
+            Object.keys(shiftStats).forEach(shift => {
+                const users = shiftStats[shift];
+                const sortedUsers = Object.entries(users).sort((a, b) => b[1] - a[1]);
+                const totalSkus = sortedUsers.reduce((sum, [_, count]) => sum + count, 0);
+                const shortShiftName = shift.split('-')[0];
+
+                html += `<div class="card" style="padding:0; border:1px solid #eee; overflow:hidden; box-shadow:none;">
+                    <div style="background:#f5f5f5; padding:10px; border-bottom:1px solid #eee; font-weight:bold; color:#2752a7; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${shortShiftName}</span>
+                        <span style="font-size:12px; background:#e3f2fd; color:#1565c0; padding:2px 6px; border-radius:4px;">Total: ${totalSkus}</span>
+                    </div>
+                    <div style="max-height:300px; overflow-y:auto;"><table style="width:100%; border-collapse:collapse; font-size:12px;"><thead style="background:#fff; position:sticky; top:0;"><tr><th style="text-align:left; padding:8px; border-bottom:1px solid #eee; color:#666;">User</th><th style="text-align:right; padding:8px; border-bottom:1px solid #eee; color:#666;">SKUs</th></tr></thead><tbody>`;
+                
+                if (sortedUsers.length === 0) {
+                    html += `<tr><td colspan="2" style="padding:10px; text-align:center; color:#999;">No data</td></tr>`;
+                } else {
+                    sortedUsers.forEach(([user, count]) => {
+                        html += `<tr><td style="padding:6px 8px; border-bottom:1px solid #f0f0f0;">${user}</td><td style="padding:6px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:bold;">${count}</td></tr>`;
+                    });
+                }
+                html += `</tbody></table></div></div>`;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
         function renderTimestamps() {
             const data = getTimestamps();
             const attendance = getAttendanceData();
@@ -5673,6 +5730,7 @@
             updateTsDeleteButton();
             
             renderAreaDashboard(dashboardActiveSessions);
+            renderUserDashboard(sessions);
 
             // Calculate Total Duration
             const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
