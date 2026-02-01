@@ -963,23 +963,23 @@
                 <h3 style="margin:0">Counter Timestamp</h3>
                 
                 <div style="display:flex; gap:20px; margin-left: 20px;">
-                    <div class="ts-stat-card" onclick="activateTsTab('tab-active'); document.getElementById('ts-show-long-active').checked = false; renderTimestamps();" style="cursor:pointer; background:#e8f5e9; padding:8px 15px; border-radius:4px; border:1px solid #c8e6c9; text-align:center; min-width: 100px;">
+                    <div class="ts-stat-card" onclick="resetTsFilters(); activateTsTab('tab-active'); renderTimestamps();" style="cursor:pointer; background:#e8f5e9; padding:8px 15px; border-radius:4px; border:1px solid #c8e6c9; text-align:center; min-width: 100px;">
                         <div style="font-size:12px; color:#2e7d32;">Active Session</div>
                         <div style="font-weight:bold; color:#2ecc71; font-size:18px;" id="card-active-sessions">0</div>
                     </div>
-                    <div class="ts-stat-card" onclick="activateTsTab('tab-active'); document.getElementById('ts-show-long-active').checked = true; renderTimestamps();" style="cursor:pointer; background:#ffebee; padding:8px 15px; border-radius:4px; border:1px solid #ffcdd2; text-align:center; min-width: 100px;">
+                    <div class="ts-stat-card" onclick="resetTsFilters(); activateTsTab('tab-active'); document.getElementById('ts-show-long-active').checked = true; renderTimestamps();" style="cursor:pointer; background:#ffebee; padding:8px 15px; border-radius:4px; border:1px solid #ffcdd2; text-align:center; min-width: 100px;">
                         <div style="font-size:12px; color:#c62828;">Active > 1hr</div>
                         <div style="font-weight:bold; color:#e74c3c; font-size:18px;" id="card-long-sessions">0</div>
                     </div>
-                    <div class="ts-stat-card" onclick="activateTsTab('tab-inactive');" style="cursor:pointer; background:#f3e5f5; padding:8px 15px; border-radius:4px; border:1px solid #e1bee7; text-align:center; min-width: 100px;">
+                    <div class="ts-stat-card" onclick="resetTsFilters(); activateTsTab('tab-inactive');" style="cursor:pointer; background:#f3e5f5; padding:8px 15px; border-radius:4px; border:1px solid #e1bee7; text-align:center; min-width: 100px;">
                         <div style="font-size:12px; color:#6a1b9a;">Inactive User</div>
                         <div style="font-weight:bold; color:#8e24aa; font-size:18px;" id="card-inactive-users">0</div>
                     </div>
-                    <div class="ts-stat-card" onclick="activateTsTab('tab-active-breaks');" style="cursor:pointer; background:#fff3e0; padding:8px 15px; border-radius:4px; border:1px solid #ffe0b2; text-align:center; min-width: 100px;">
+                    <div class="ts-stat-card" onclick="resetTsFilters(); activateTsTab('tab-active-breaks'); renderTimestamps();" style="cursor:pointer; background:#fff3e0; padding:8px 15px; border-radius:4px; border:1px solid #ffe0b2; text-align:center; min-width: 100px;">
                         <div style="font-size:12px; color:#ef6c00;">Active Breaks</div>
                         <div style="font-weight:bold; color:#f57c00; font-size:18px;" id="card-active-breaks">0</div>
                     </div>
-                    <div class="ts-stat-card" onclick="activateTsTab('tab-active-breaks');" style="cursor:pointer; background:#fff8e1; padding:8px 15px; border-radius:4px; border:1px solid #ffecb3; text-align:center; min-width: 100px;">
+                    <div class="ts-stat-card" onclick="resetTsFilters(); tsBreakFilterLong = true; activateTsTab('tab-active-breaks'); renderTimestamps();" style="cursor:pointer; background:#fff8e1; padding:8px 15px; border-radius:4px; border:1px solid #ffecb3; text-align:center; min-width: 100px;">
                         <div style="font-size:12px; color:#f57f17;">Breaks > 40m</div>
                         <div style="font-weight:bold; color:#ffb300; font-size:18px;" id="card-long-breaks">0</div>
                     </div>
@@ -2171,6 +2171,7 @@
         let tsSortField = 'startTime';
         let tsSortDirection = 'desc';
         let tsFilterArea = null;
+        let tsBreakFilterLong = false;
 
         // Restore Filters & Button State
         if(uiState.globalStartDate && globalStartDate) globalStartDate.value = uiState.globalStartDate;
@@ -5349,6 +5350,14 @@
             }
         }, 15000);
 
+        // Auto Refresh Timestamp Modal (10s)
+        setInterval(() => {
+            const modal = document.getElementById('timestamp-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                renderTimestamps();
+            }
+        }, 10000);
+
         // Counter Timestamp Logic
         function getTimestamps() {
             try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TIMESTAMPS) || '[]'); } catch(e) { return []; }
@@ -5363,6 +5372,13 @@
             const tabBtn = document.querySelector('button[onclick*="tab-active"]');
             if(tabBtn) tabBtn.click();
             renderTimestamps();
+        };
+
+        window.resetTsFilters = function() {
+            tsFilterArea = null;
+            tsBreakFilterLong = false;
+            const chk = document.getElementById('ts-show-long-active');
+            if(chk) chk.checked = false;
         };
 
         function renderAreaDashboard(activeSessions) {
@@ -6122,7 +6138,7 @@
             // Filters
             const filterShift = breakShiftFilter ? breakShiftFilter.value : '';
             
-            const filteredBreaks = breaks.filter(b => {
+            let filteredBreaks = breaks.filter(b => {
                 if (filterShift) {
                     const att = attendanceData.find(a => a.userId === b.userId) || {};
                     const shift = att.shift || '';
@@ -6130,6 +6146,14 @@
                 }
                 return true;
             });
+
+            if (tsBreakFilterLong) {
+                filteredBreaks = filteredBreaks.filter(b => {
+                    const start = new Date(b.start);
+                    const end = b.end ? new Date(b.end) : now;
+                    return ((end - start) / 60000) > 40;
+                });
+            }
 
             filteredBreaks.sort((a,b) => new Date(b.start) - new Date(a.start));
             
