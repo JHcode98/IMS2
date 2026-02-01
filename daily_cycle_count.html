@@ -430,9 +430,6 @@
       <button id="user-master-btn" class="icon-btn" title="User Master Data" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> User Master
       </button>
-      <button id="quick-time-in-btn" class="icon-btn" title="Quick Time In" style="margin-left: 5px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"></path></svg> Quick Time In
-      </button>
       <button id="reports-menu-btn" class="icon-btn" title="Reports" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
       </button>
@@ -1014,7 +1011,6 @@
                     <div class="tab-header">
                         <button class="tab-btn active" onclick="openTsTab(event, 'tab-active')">Active Sessions</button>
                         <button class="tab-btn" onclick="openTsTab(event, 'tab-history')">Session History</button>
-                        <button class="tab-btn" onclick="openTsTab(event, 'tab-dashboard')">Dashboard</button>
                     </div>
                     
                     <div id="tab-active" class="tab-content" style="display:flex; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
@@ -1027,7 +1023,6 @@
                             </select>
                             <input type="text" id="ts-filter-user" placeholder="Search User..." style="padding: 2px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; width: 100px;">
                             <label style="font-size:12px; cursor:pointer; margin-left:5px;"><input type="checkbox" id="ts-show-long-active"> > 1hr</label>
-                            <button id="ts-clear-area-filter-btn" class="icon-btn" style="display:none; font-size:11px; background:#e74c3c; color:white; padding:2px 6px; border:none; border-radius:4px; margin-left:5px;" title="Clear Area Filter">Clear Area</button>
                         </div>
                         <div style="flex:1; overflow-y:auto; border:1px solid #eee; border-radius:4px; margin-top:5px;">
                             <table id="active-table" class="report-table">
@@ -1084,46 +1079,6 @@
                         <div style="display:flex; gap:5px;">
                             <button id="ts-prev-page" class="icon-btn" title="Previous" style="padding:2px 6px; font-size:12px;">‹</button>
                             <button id="ts-next-page" class="icon-btn" title="Next" style="padding:2px 6px; font-size:12px;">›</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tab-dashboard" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding:15px;">
-                    <h4 style="margin-top:0; margin-bottom:15px; color:#2752a7;">Active Sessions by Area</h4>
-                    
-                    <h5 style="margin:0 0 10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">Reserved Bin</h5>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:15px; margin-bottom:20px;">
-                        <div class="card" onclick="filterActiveByArea('Reserved - Coldroom')" style="padding:15px; text-align:center; border-left:4px solid #3498db; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size:12px; color:#666;">Coldroom</div>
-                            <div id="dash-count-reserved-coldroom" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
-                        </div>
-                        <div class="card" onclick="filterActiveByArea('Reserved - Ecom 2')" style="padding:15px; text-align:center; border-left:4px solid #3498db; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size:12px; color:#666;">Ecom 2</div>
-                            <div id="dash-count-reserved-ecom-2" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
-                        </div>
-                        <div class="card" onclick="filterActiveByArea('Reserved - Storage')" style="padding:15px; text-align:center; border-left:4px solid #3498db; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size:12px; color:#666;">Storage</div>
-                            <div id="dash-count-reserved-storage" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
-                        </div>
-                    </div>
-
-                    <h5 style="margin:0 0 10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">Pick Bin</h5>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:15px;">
-                        <div class="card" onclick="filterActiveByArea('Pick Bin - Coldroom')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size:12px; color:#666;">Coldroom</div>
-                            <div id="dash-count-pick-bin-coldroom" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
-                        </div>
-                        <div class="card" onclick="filterActiveByArea('Pick Bin - Ecom 2')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size:12px; color:#666;">Ecom 2</div>
-                            <div id="dash-count-pick-bin-ecom-2" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
-                        </div>
-                        <div class="card" onclick="filterActiveByArea('Pick Bin - Storage')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size:12px; color:#666;">Storage</div>
-                            <div id="dash-count-pick-bin-storage" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
-                        </div>
-                        <div class="card" onclick="filterActiveByArea('Pick Bin - Pallet Picking')" style="padding:15px; text-align:center; border-left:4px solid #e67e22; cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size:12px; color:#666;">Pallet Picking</div>
-                            <div id="dash-count-pick-bin-pallet-picking" style="font-size:24px; font-weight:bold; color:#2c3e50;">0</div>
                         </div>
                     </div>
                 </div>
@@ -1221,21 +1176,6 @@
          <!-- Right Column: Hourly Output Chart + Analytics -->
             <div style="width: 50%; display:flex; flex-direction:column; border-left:1px solid #eee; padding-left:15px; padding-right:10px; gap:12px; overflow:hidden; min-width:350px;">
                 
-                <!-- Quick Navigation & Actions -->
-                <div style="display:flex; gap:5px; margin-bottom:0; flex-wrap:wrap;">
-                    <button id="ts-nav-monitor-btn" class="icon-btn" title="Sub Area Monitor" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #ccc; padding:6px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:12px;margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Monitor
-                    </button>
-                    <button id="ts-nav-users-btn" class="icon-btn" title="User Master" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #ccc; padding:6px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:12px;margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Users
-                    </button>
-                    <button id="ts-nav-reports-btn" class="icon-btn" title="Reports" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #ccc; padding:6px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:12px;margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Reports
-                    </button>
-                    <button id="ts-clear-logs-btn" class="icon-btn" title="Clear All Logs" style="flex:1; font-size:11px; justify-content:center; background:#fff; border:1px solid #e74c3c; color:#e74c3c; padding:6px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:12px;margin-right:4px;"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Clear Logs
-                    </button>
-                </div>
                 <!-- Hourly Output Chart Section -->
                 <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; border:1px solid #eee; box-shadow:none; flex-shrink:0; max-height:380px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1247,12 +1187,10 @@
                         <div style="display:flex; align-items:center;"><span style="width:8px; height:8px; background:rgba(246, 194, 62, 0.8); display:inline-block; margin-right:3px;"></span> 2nd Shift</div>
                         <div style="display:flex; align-items:center;"><span style="width:8px; height:8px; background:rgba(78, 115, 223, 0.8); display:inline-block; margin-right:3px;"></span> 3rd Shift</div>
                     </div>
-                    <div id="ts-hourly-chart-container" style="flex:1; position:relative; width:100%; min-height:240px; border:1px solid #ddd; border-radius:4px; padding:5px; background:#fff; overflow:hidden;">
+                    <div style="flex:1; position:relative; width:100%; min-height:240px; border:1px solid #ddd; border-radius:4px; padding:5px; background:#fff; overflow:hidden;">
                         <canvas id="ts-hourly-chart" style="max-width:100%; max-height:100%;"></canvas>
                     </div>
                 </div>
-
-                
 
                 <!-- Analytics Overview -->
                 <div style="display:flex; flex-direction:column; flex:1; min-height:150px; padding:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:6px; overflow:hidden;">
@@ -1420,17 +1358,13 @@
                 <label style="font-size:12px; font-weight:bold;">User ID</label>
                 <input type="text" id="master-user-id" style="width:100%; padding:6px;" placeholder="ID">
             </div>
-            <input type="hidden" id="master-user-original-id">
             <div>
                 <label style="font-size:12px; font-weight:bold;">Name</label>
                 <input type="text" id="master-user-name" style="width:100%; padding:6px;" placeholder="Name">
             </div>
             <div>
                 <label style="font-size:12px; font-weight:bold;">Role</label>
-                <select id="master-user-role" style="width:100%; padding:6px;">
-                    <option value="IC Support">IC Support</option>
-                    <option value="IC Back up">IC Back up</option>
-                </select>
+                <input type="text" id="master-user-role" style="width:100%; padding:6px;" placeholder="Role">
             </div>
             <button id="save-master-user-btn" class="icon-btn" style="background:#2752a7; color:white; height:32px;">Save</button>
         </div>
@@ -1445,44 +1379,21 @@
             </div>
         </div>
 
-        <div class="tab-header" style="margin-bottom:0; border-bottom:1px solid #eee; background:#f9f9f9;">
-            <button class="tab-btn active master-user-tab" data-role="IC Support">IC Support</button>
-            <button class="tab-btn master-user-tab" data-role="IC Back up">IC Back up</button>
-        </div>
         <div style="max-height:400px; overflow-y:auto; border:1px solid #eee;">
             <table id="master-users-table" class="report-table" style="width:100%;">
                 <thead>
                     <tr>
-                        <th style="width:30px; position:sticky; top:0; z-index:10; background:#f0f0f0;"><input type="checkbox" id="select-all-master-users"></th>
-                        <th class="sortable" data-sort="userId" style="position:sticky; top:0; z-index:10; background:#f0f0f0;">User ID <span class="sort-icon"></span></th>
-                        <th class="sortable" data-sort="name" style="position:sticky; top:0; z-index:10; background:#f0f0f0;">Name <span class="sort-icon"></span></th>
-                        <th class="sortable" data-sort="role" style="position:sticky; top:0; z-index:10; background:#f0f0f0;">Role <span class="sort-icon"></span></th>
-                        <th style="width:60px; position:sticky; top:0; z-index:10; background:#f0f0f0;">Action</th>
+                        <th style="width:30px;"><input type="checkbox" id="select-all-master-users"></th>
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th style="width:60px;">Action</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
-  </div>
-
-  <!-- Floating Quick Time In Button -->
-  <button id="fab-quick-time-in" class="fab-btn" title="Quick Time In" style="position:fixed; bottom:30px; right:30px; width:56px; height:56px; border-radius:50%; background:#2752a7; color:white; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.3); font-size:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:9999;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M12 2v20M2 12h20"></path></svg>
-  </button>
-
-  <!-- Quick Time In Modal -->
-  <div id="quick-time-in-modal" class="modal hidden" style="z-index:10050;">
-      <div class="modal-overlay"></div>
-      <div class="modal-content card" style="max-width:300px; margin:150px auto; text-align:center;">
-          <h3 style="margin-top:0;">Quick Time In</h3>
-          <input type="text" id="quick-user-id" placeholder="Scan/Enter User ID" style="width:100%; padding:10px; font-size:16px; margin-bottom:15px; text-align:center; border:1px solid #ccc; border-radius:4px;">
-          <div id="quick-user-info" style="margin-bottom:15px; font-size:13px; color:#666; min-height:20px;"></div>
-          <div style="display:flex; gap:10px; justify-content:center;">
-              <button id="btn-quick-submit" class="icon-btn" style="background:#2752a7; color:white; padding:8px 16px;">Time In</button>
-              <button id="btn-quick-cancel" class="icon-btn" style="border:1px solid #ccc; padding:8px 16px;">Cancel</button>
-          </div>
-      </div>
   </div>
 
   <div id="toast-notification" class="toast"></div>
@@ -1567,6 +1478,7 @@
 
         // User Master Logic
         const STORAGE_KEY_MASTER_USERS = 'ims_master_users_v1';
+        const userMasterBtn = document.getElementById('user-master-btn');
         const userMasterModal = document.getElementById('user-master-modal');
         const masterUserTableBody = document.querySelector('#master-users-table tbody');
         const saveMasterUserBtn = document.getElementById('save-master-user-btn');
@@ -1579,10 +1491,6 @@
         const importMasterUsersBtn = document.getElementById('import-master-users-btn');
         const importMasterUsersFile = document.getElementById('import-master-users-file');
         const exportMasterUsersBtn = document.getElementById('export-master-users-btn');
-        const masterUserOriginalId = document.getElementById('master-user-original-id');
-        let masterSortField = 'name';
-        let masterSortDirection = 'asc';
-        let masterActiveTab = 'IC Support';
 
         function getMasterUsers() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_USERS) || '[]'); } catch(e) { return []; } }
         function saveMasterUsers(data) { localStorage.setItem(STORAGE_KEY_MASTER_USERS, JSON.stringify(data)); }
@@ -1595,21 +1503,7 @@
             if(term) {
                 users = users.filter(u => u.userId.toLowerCase().includes(term) || u.name.toLowerCase().includes(term) || (u.role && u.role.toLowerCase().includes(term)));
             }
-            
-            // Filter by Tab
-            if (masterActiveTab) {
-                users = users.filter(u => u.role === masterActiveTab);
-            }
-
-            // Sort
-            users.sort((a,b) => {
-                let valA = a[masterSortField] || '';
-                let valB = b[masterSortField] || '';
-                if (valA < valB) return masterSortDirection === 'asc' ? -1 : 1;
-                if (valA > valB) return masterSortDirection === 'asc' ? 1 : -1;
-                return 0;
-            });
-
+            users.sort((a,b) => a.name.localeCompare(b.name));
             if(users.length === 0) {
                 masterUserTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#999;">No users found.</td></tr>';
                 return;
@@ -1619,12 +1513,6 @@
                 tr.innerHTML = `<td><input type="checkbox" class="master-user-checkbox" value="${u.userId}"></td><td>${u.userId}</td><td>${u.name}</td><td>${u.role || ''}</td><td><button class="icon-btn edit-master-user-btn" data-id="${u.userId}" title="Edit" style="padding:2px 6px;">✎</button></td>`;
                 masterUserTableBody.appendChild(tr);
             });
-            
-            // Update sort icons
-            document.querySelectorAll('#master-users-table th.sortable .sort-icon').forEach(icon => icon.textContent = '');
-            const activeHeader = document.querySelector(`#master-users-table th[data-sort="${masterSortField}"]`);
-            if(activeHeader) activeHeader.querySelector('.sort-icon').textContent = masterSortDirection === 'asc' ? '↑' : '↓';
-
             updateMasterUserDeleteBtn();
         }
 
@@ -1647,30 +1535,14 @@
                 const id = masterUserIdInput.value.trim();
                 const name = masterUserNameInput.value.trim();
                 const role = masterUserRoleInput.value.trim();
-                const originalId = masterUserOriginalId.value;
-
                 if(!id || !name) { alert('User ID and Name are required.'); return; }
                 let users = getMasterUsers();
-                
-                // Validation: Unique ID
-                const exists = users.some(u => u.userId === id);
-                if (originalId) {
-                    // Edit mode
-                    if (id !== originalId && exists) { alert('User ID already exists. Please choose a unique ID.'); return; }
-                    // Remove old record if ID changed, or just update
-                    users = users.filter(u => u.userId !== originalId);
-                    users.push({ userId: id, name, role });
-                    showToast('User updated');
-                } else {
-                    // Add mode
-                    if (exists) { alert('User ID already exists.'); return; }
-                    users.push({ userId: id, name, role });
-                    showToast('User added');
-                }
-
+                const existingIdx = users.findIndex(u => u.userId === id);
+                if(existingIdx > -1) { users[existingIdx] = { userId: id, name, role }; showToast('User updated'); }
+                else { users.push({ userId: id, name, role }); showToast('User added'); }
                 saveMasterUsers(users);
                 renderMasterUsers();
-                masterUserIdInput.value = ''; masterUserNameInput.value = ''; masterUserRoleInput.value = ''; masterUserOriginalId.value = '';
+                masterUserIdInput.value = ''; masterUserNameInput.value = ''; masterUserRoleInput.value = '';
             });
         }
 
@@ -1681,7 +1553,7 @@
                     const id = btn.dataset.id;
                     const users = getMasterUsers();
                     const user = users.find(u => u.userId === id);
-                    if(user) { masterUserIdInput.value = user.userId; masterUserOriginalId.value = user.userId; masterUserNameInput.value = user.name; masterUserRoleInput.value = user.role || ''; }
+                    if(user) { masterUserIdInput.value = user.userId; masterUserNameInput.value = user.name; masterUserRoleInput.value = user.role || ''; }
                 }
             });
             masterUserTableBody.addEventListener('change', (e) => { if(e.target.classList.contains('master-user-checkbox')) updateMasterUserDeleteBtn(); });
@@ -1756,30 +1628,6 @@
             });
         }
 
-        // Master User Tabs
-        document.querySelectorAll('.master-user-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.master-user-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                masterActiveTab = tab.dataset.role;
-                renderMasterUsers();
-            });
-        });
-
-        // Master User Sorting
-        document.querySelectorAll('#master-users-table th.sortable').forEach(th => {
-            th.addEventListener('click', () => {
-                const field = th.dataset.sort;
-                if (masterSortField === field) {
-                    masterSortDirection = masterSortDirection === 'asc' ? 'desc' : 'asc';
-                } else {
-                    masterSortField = field;
-                    masterSortDirection = 'asc';
-                }
-                renderMasterUsers();
-            });
-        });
-
         // Timestamp Modal
         let cachedInactiveArgs = null;
         let inactiveSort = { field: 'status', dir: 'asc' };
@@ -1810,7 +1658,6 @@
         const tsDeleteSelectedBtn = document.getElementById('ts-delete-selected-btn');
         const tsSelectAll = document.getElementById('ts-select-all');
         const tsShowLongActive = document.getElementById('ts-show-long-active');
-        const tsClearAreaFilterBtn = document.getElementById('ts-clear-area-filter-btn');
         const tsAnalyticsDateFilter = document.getElementById('ts-analytics-date-filter');
 
         const tsViewHourlyFullBtn = document.getElementById('ts-view-hourly-full-btn');
@@ -2178,13 +2025,6 @@
         let attSortDirection = 'desc';
         let tsSortField = 'startTime';
         let tsSortDirection = 'desc';
-        let tsAreaFilter = '';
-
-        // Main Buttons Declarations (Moved to top to prevent scope issues)
-        const timestampBtn = document.getElementById('counter-timestamp-btn');
-        const userMasterBtn = document.getElementById('user-master-btn');
-        const quickTimeInBtn = document.getElementById('quick-time-in-btn');
-        const reportsMenuBtn = document.getElementById('reports-menu-btn');
 
         // Restore Filters & Button State
         if(uiState.globalStartDate && globalStartDate) globalStartDate.value = uiState.globalStartDate;
@@ -5204,16 +5044,6 @@
             const filterUser = tsFilterUser ? tsFilterUser.value.toLowerCase() : '';
             const showLongActive = tsShowLongActive ? tsShowLongActive.checked : false;
             
-            // Update Area Filter Button
-            if (tsClearAreaFilterBtn) {
-                if (tsAreaFilter) {
-                    tsClearAreaFilterBtn.style.display = 'inline-block';
-                    tsClearAreaFilterBtn.textContent = `Clear: ${tsAreaFilter}`;
-                } else {
-                    tsClearAreaFilterBtn.style.display = 'none';
-                }
-            }
-            
             // Analytics Date
             let analyticsDate = tsAnalyticsDateFilter ? tsAnalyticsDateFilter.value : '';
             if (!analyticsDate) {
@@ -5309,11 +5139,6 @@
                 });
             }
 
-            // Area Filter
-            if (tsAreaFilter) {
-                filteredSessions = filteredSessions.filter(s => s.resolvedArea === tsAreaFilter);
-            }
-
             // Pre-calculate fields for sorting and display
             const now = new Date();
             filteredSessions.forEach(s => {
@@ -5362,7 +5187,6 @@
             // Split into Active and History
             const activeSessions = filteredSessions.filter(s => !s.endLog);
             const historySessions = filteredSessions.filter(s => s.endLog);
-            updateTsDashboard(activeSessions);
 
             // Update Header Cards (Active Sessions)
             let statsActiveSessions = sessions.filter(s => !s.endLog);
@@ -5452,36 +5276,13 @@
                 duration: s.durationVal,
                 end: s.endLog.timestamp
             }));
-            try { renderTimestampChart(chartSessions); } catch(e) { console.error(e); }
-            try { renderTsAnalytics(sessions, analyticsDate, logsToProcess); } catch(e) { console.error(e); }
-            try { renderTsHourlyChart(analyticsDate); } catch(e) { console.error(e); }
-            try { renderBreakLogTable(logsToProcess, attendance); } catch(e) { console.error(e); }
+            renderTimestampChart(chartSessions);
+            renderTsAnalytics(sessions, analyticsDate, logsToProcess);
+            renderTsHourlyChart(analyticsDate);
+            renderBreakLogTable(logsToProcess, attendance);
             cachedInactiveArgs = [sessions, attendance, logsToProcess];
-            try { renderInactiveUsersTable(sessions, attendance, logsToProcess); } catch(e) { console.error(e); }
-            try { renderEmbeddedHourly(analyticsDate, filterShift); } catch(e) { console.error(e); }
-        }
-
-        function updateTsDashboard(activeSessions) {
-            const counts = {
-                'Reserved - Coldroom': 0,
-                'Reserved - Ecom 2': 0,
-                'Reserved - Storage': 0,
-                'Pick Bin - Coldroom': 0,
-                'Pick Bin - Ecom 2': 0,
-                'Pick Bin - Storage': 0,
-                'Pick Bin - Pallet Picking': 0
-            };
-
-            activeSessions.forEach(s => {
-                const area = s.resolvedArea;
-                if (counts.hasOwnProperty(area)) counts[area]++;
-            });
-
-            for (const [area, count] of Object.entries(counts)) {
-                const id = 'dash-count-' + area.toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
-                const el = document.getElementById(id);
-                if (el) el.textContent = count;
-            }
+            renderInactiveUsersTable(sessions, attendance, logsToProcess);
+            renderEmbeddedHourly(analyticsDate, filterShift);
         }
 
         function createSessionRow(session, isHistory) {
@@ -5977,15 +5778,7 @@
 
 
         function renderTsHourlyChart(date) {
-            const container = document.getElementById('ts-hourly-chart-container');
-            if (!container) return;
-            
-            let ctx = document.getElementById('ts-hourly-chart');
-            if (!ctx) {
-                container.innerHTML = '<canvas id="ts-hourly-chart" style="max-width:100%; max-height:100%;"></canvas>';
-                ctx = document.getElementById('ts-hourly-chart');
-            }
-            
+            const ctx = document.getElementById('ts-hourly-chart');
             if (!ctx || typeof Chart === 'undefined') return;
             
             const counters = getCountersData();
@@ -5993,8 +5786,9 @@
             const todayCounters = counters.filter(c => c.date === date);
             
             if (todayCounters.length === 0) {
-                if (window.tsHourlyChart) { window.tsHourlyChart.destroy(); window.tsHourlyChart = null; }
-                container.innerHTML = '<div style="text-align:center; padding:40px; color:#999; font-size:13px;">No data for ' + date + '</div>';
+                if(ctx.parentElement) {
+                    ctx.parentElement.innerHTML = '<div style="text-align:center; padding:40px; color:#999; font-size:13px;">No data for ' + date + '</div>';
+                }
                 return;
             }
             
@@ -6436,13 +6230,6 @@
                     alert(`User ID ${userId} not found in attendance list.`);
                     return;
                 }
-                
-                // Check if user is Full Counter
-                const attRecord = attData.find(a => a.userId === userId);
-                if (attRecord && action === 'Start' && attRecord.status !== 'Full counter') {
-                    alert(`User ${userId} is not a Full Counter (Status: ${attRecord.status}). Cannot start counting.`);
-                    return;
-                }
 
                 if (lastLog && lastLog.action !== 'End' && lastLog.action !== 'End Break') {
                     if (lastLog.action === 'Start Break') {
@@ -6812,9 +6599,6 @@
                 if (filterUser) {
                     const terms = filterUser.split(' ').filter(t => t);
                     filteredSessions = sessions.filter(s => {
-                    const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
-                    let sessionDate = '';
-                    if(ts) sessionDate = new Date(ts).toISOString().split('T')[0];
                     let attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
                     if (!attRecord) attRecord = attendance.find(a => a.userId === s.userId);
                     const name = attRecord ? attRecord.name : '';
@@ -7055,25 +6839,13 @@
             });
         }
 
-        if (timestampBtn) {
+        if(timestampBtn) {
             timestampBtn.addEventListener('click', () => {
                 timestampModal.classList.remove('hidden');
-                sessionStorage.setItem('ts_modal_open', 'true');
                 renderTimestamps();
                 setTimeout(() => tsUserIdInput.focus(), 100);
             });
         }
-
-        // Restore Timestamp Modal State
-        if (sessionStorage.getItem('ts_modal_open') === 'true') {
-            timestampModal.classList.remove('hidden');
-            renderTimestamps();
-        }
-        
-        // Add listener to close button to update state
-        const tsCloseBtn = timestampModal.querySelector('.close-modal');
-        if(tsCloseBtn) tsCloseBtn.addEventListener('click', () => sessionStorage.setItem('ts_modal_open', 'false'));
-
         if(btnStartCount) btnStartCount.addEventListener('click', () => logTimestamp('Start'));
         if(btnBreakStart) btnBreakStart.addEventListener('click', () => {
             const uid = tsUserIdInput.value.trim();
@@ -7088,12 +6860,6 @@
         if(tsFilterUser) tsFilterUser.addEventListener('input', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShiftFilter) tsShiftFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         if(tsShowLongActive) tsShowLongActive.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
-        if(tsClearAreaFilterBtn) {
-            tsClearAreaFilterBtn.addEventListener('click', () => {
-                tsAreaFilter = '';
-                renderTimestamps();
-            });
-        }
         if(tsAnalyticsDateFilter) tsAnalyticsDateFilter.addEventListener('change', () => { tsCurrentPage = 1; renderTimestamps(); });
         
         // Pagination Listeners for Timestamp Table
@@ -7167,12 +6933,6 @@
                 }
             });
         }
-    };
-
-    window.filterActiveByArea = function(area) {
-        tsAreaFilter = area;
-        activateTsTab('tab-active');
-        renderTimestamps();
     };
 
     let embeddedHourlyChart = null;
@@ -7322,6 +7082,40 @@
         };
     }
 
+    function renderTimestampChart(sessions) {
+        const ctx = document.getElementById('timestamp-chart');
+        if (!ctx || typeof Chart === 'undefined') return;
+        
+        if (timestampChart) timestampChart.destroy();
+        
+        const labels = sessions.map(s => {
+            const time = new Date(s.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            return `${s.user} (${time})`;
+        });
+        const data = sessions.map(s => s.duration);
+        
+        timestampChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Duration (Minutes)',
+                    data: data,
+                    backgroundColor: '#3498db',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Minutes' } },
+                    x: { ticks: { maxRotation: 45, minRotation: 45 } }
+                }
+            }
+        });
+    }
+        
         if(breakShiftFilter) breakShiftFilter.addEventListener('change', () => renderTimestamps());
 
         if(tsUserIdInput) {
@@ -7370,118 +7164,58 @@
                 }
             }
         });
-
-        // Timestamp Modal Navigation Buttons Logic
-        const tsNavMonitorBtn = document.getElementById('ts-nav-monitor-btn');
-        const tsNavUsersBtn = document.getElementById('ts-nav-users-btn');
-        const tsNavReportsBtn = document.getElementById('ts-nav-reports-btn');
-        const tsClearLogsBtn = document.getElementById('ts-clear-logs-btn');
-
-        if (tsNavMonitorBtn) {
-            tsNavMonitorBtn.addEventListener('click', () => {
-                const modal = document.getElementById('sub-area-monitor-modal');
-                if (modal) {
-                    modal.style.zIndex = '10030'; // Ensure it appears above timestamp modal
-                    modal.classList.remove('hidden');
-                    renderMonitorGrid();
-                }
-            });
-        }
-
-        if (tsNavUsersBtn) {
-            tsNavUsersBtn.addEventListener('click', () => {
-                if (userMasterBtn) userMasterBtn.click();
-            });
-        }
-
-        if (tsNavReportsBtn) {
-            tsNavReportsBtn.addEventListener('click', () => {
-                if (reportsMenuBtn) reportsMenuBtn.click();
-            });
-        }
-
-        if (tsClearLogsBtn) {
-            tsClearLogsBtn.addEventListener('click', () => {
-                if (confirm('Are you sure you want to clear ALL timestamp logs? This will NOT delete attendance records.')) {
-                    saveTimestamps([]);
-                    renderTimestamps();
-                    showToast('All logs cleared.');
-                }
-            });
-        }
-
-        // Quick Time In Logic
-        const fabQuickBtn = document.getElementById('fab-quick-time-in');
-        const quickModal = document.getElementById('quick-time-in-modal');
-        const quickInput = document.getElementById('quick-user-id');
-        const quickInfo = document.getElementById('quick-user-info');
-        const btnQuickSubmit = document.getElementById('btn-quick-submit');
-        const btnQuickCancel = document.getElementById('btn-quick-cancel');
-
-        if(fabQuickBtn) {
-            fabQuickBtn.addEventListener('click', () => {
-                quickModal.classList.remove('hidden');
-                quickInput.value = '';
-                quickInfo.textContent = '';
-                setTimeout(() => quickInput.focus(), 100);
-            });
-        }
-
-        if(quickTimeInBtn) {
-            quickTimeInBtn.addEventListener('click', () => {
-                quickModal.classList.remove('hidden');
-                quickInput.value = '';
-                quickInfo.textContent = '';
-                setTimeout(() => quickInput.focus(), 100);
-            });
-        }
-
-        if(btnQuickCancel) {
-            btnQuickCancel.addEventListener('click', () => quickModal.classList.add('hidden'));
-        }
-
-        if(quickInput) {
-            quickInput.addEventListener('input', () => {
-                const uid = quickInput.value.trim();
-                if(!uid) { quickInfo.textContent = ''; return; }
-                const masters = getMasterUsers();
-                const user = masters.find(u => u.userId.toLowerCase() === uid.toLowerCase());
-                if(user) {
-                    quickInfo.textContent = `${user.name} (${user.role || '-'})`;
-                    quickInfo.style.color = '#2752a7';
-                } else {
-                    quickInfo.textContent = 'User not found in Master';
-                    quickInfo.style.color = '#e74c3c';
-                }
-            });
-            quickInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') btnQuickSubmit.click(); });
-        }
-
-        if(btnQuickSubmit) {
-            btnQuickSubmit.addEventListener('click', () => {
-                const uid = quickInput.value.trim();
-                if(!uid) return;
-                const masters = getMasterUsers();
-                const user = masters.find(u => u.userId.toLowerCase() === uid.toLowerCase());
-                if(!user) { alert('User ID not found in Master Data.'); return; }
-
-                const now = new Date();
-                const h = now.getHours();
-                let shiftVal = '3rd Shift-(10pm-6am)';
-                let dateVal = now.toISOString().split('T')[0];
-                if (h >= 6 && h < 14) shiftVal = '1st Shift-(6am-2pm)';
-                else if (h >= 14 && h < 22) shiftVal = '2nd Shift-(2pm-10pm)';
-                else if (h < 6) { const prev = new Date(now); prev.setDate(prev.getDate() - 1); dateVal = prev.toISOString().split('T')[0]; }
-
-                const attData = getAttendanceData();
-                if(attData.find(a => a.userId === user.userId && a.date === dateVal && a.shift === shiftVal)) { alert(`User ${user.name} already in attendance.`); return; }
-
-                attData.push({ id: Date.now().toString(), date: dateVal, shift: shiftVal, userId: user.userId, name: (user.name||'').toUpperCase(), role: user.role || 'IC Support', timeIn: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}), status: 'Full counter' });
-                saveAttendanceData(attData); renderAttendanceTable(); renderCountersTable();
-                showToast(`Time In: ${user.name}`); quickModal.classList.add('hidden');
-            });
-        }
     });
   </script>
 </body>
-</html>
+</html>             
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+
