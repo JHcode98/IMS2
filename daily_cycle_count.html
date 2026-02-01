@@ -1086,7 +1086,7 @@
                 </div>
 
                 <div id="tab-area-dashboard" class="tab-content" style="display:none; flex-direction:column; flex:1; overflow:hidden; padding:10px;">
-                    <div id="area-dashboard-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; overflow-y:auto; align-content: start;">
+                    <div id="area-dashboard-grid" style="display:flex; flex-direction:column; gap:15px; overflow-y:auto; height:100%;">
                         <!-- Cards will be injected here -->
                     </div>
                 </div>
@@ -5355,36 +5355,72 @@
             const container = document.getElementById('area-dashboard-grid');
             if (!container) return;
             
-            const counts = {
-                'Pick Bin - Coldroom': 0,
-                'Pick Bin - Ecom 2': 0,
-                'Pick Bin - Storage': 0,
-                'Pick Bin - Pallet Picking': 0,
-                'Reserved - Coldroom': 0,
-                'Reserved - Ecom 2': 0,
-                'Reserved - Storage': 0
+            // Initialize data structure with arrays for user names
+            const data = {
+                'Pick Bin': {
+                    'Coldroom': [], 'Ecom 2': [], 'Storage': [], 'Pallet Picking': []
+                },
+                'Reserved': {
+                    'Coldroom': [], 'Ecom 2': [], 'Storage': []
+                }
             };
             
             activeSessions.forEach(s => {
-                if (counts.hasOwnProperty(s.resolvedArea)) {
-                    counts[s.resolvedArea]++;
+                const parts = (s.resolvedArea || '').split(' - ');
+                if (parts.length === 2) {
+                    const type = parts[0]; // Pick Bin or Reserved
+                    const sub = parts[1];
+                    // Map 'Reserved Bin' to 'Reserved' if needed, or handle exact match
+                    const key = type.includes('Reserved') ? 'Reserved' : type;
+                    
+                    if (data[key] && data[key][sub]) {
+                        data[key][sub].push(s.resolvedName || s.userId);
+                    }
                 }
             });
             
             let html = '';
-            Object.entries(counts).forEach(([area, count]) => {
-                const isZero = count === 0;
-                const bg = isZero ? '#f9f9f9' : '#e3f2fd';
-                const border = isZero ? '#eee' : '#90caf9';
-                const text = isZero ? '#999' : '#1565c0';
-                const valColor = isZero ? '#ccc' : '#1e88e5';
+            
+            const renderSection = (title, items) => {
+                let sectionHtml = `<div style="margin-bottom:5px;"><h5 style="margin:0; color:#2752a7; border-bottom:1px solid #eee; padding-bottom:5px;">${title}</h5></div>`;
+                sectionHtml += `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">`;
                 
-                html += `<div class="card" style="padding:15px; text-align:center; background:${bg}; border:1px solid ${border}; margin:0; display:flex; flex-direction:column; justify-content:center; min-height:100px; box-shadow:none;">
-                    <div style="font-size:12px; color:${text}; margin-bottom:5px; font-weight:600;">${area}</div>
-                    <div style="font-size:28px; font-weight:bold; color:${valColor};">${count}</div>
-                </div>`;
-            });
+                Object.entries(items).forEach(([subArea, users]) => {
+                    const count = users.length;
+                    const isZero = count === 0;
+                    const bg = isZero ? '#f9f9f9' : '#e3f2fd';
+                    const border = isZero ? '#eee' : '#90caf9';
+                    const text = isZero ? '#999' : '#1565c0';
+                    const valColor = isZero ? '#ccc' : '#1e88e5';
+                    const userList = users.length > 0 ? users.join('<br>') : 'No active users';
+                    
+                    sectionHtml += `<div class="card area-dash-card" style="padding:15px; text-align:center; background:${bg}; border:1px solid ${border}; margin:0; display:flex; flex-direction:column; justify-content:center; min-height:100px; box-shadow:none; position:relative; cursor:help;">
+                        <div style="font-size:12px; color:${text}; margin-bottom:5px; font-weight:600;">${subArea}</div>
+                        <div style="font-size:28px; font-weight:bold; color:${valColor};">${count}</div>
+                        <div class="hover-tooltip" style="display:none; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:8px; border-radius:4px; font-size:11px; width:160px; z-index:100; pointer-events:none; white-space:normal; box-shadow:0 4px 8px rgba(0,0,0,0.2); line-height:1.4;">
+                            <div style="font-weight:bold; border-bottom:1px solid #555; margin-bottom:4px; padding-bottom:2px; color:#eee;">Active Users</div>
+                            ${userList}
+                            <div style="position:absolute; top:100%; left:50%; margin-left:-5px; border-width:5px; border-style:solid; border-color:#333 transparent transparent transparent;"></div>
+                        </div>
+                    </div>`;
+                });
+                sectionHtml += `</div>`;
+                return sectionHtml;
+            };
+            
+            html += renderSection('Pick Bin', data['Pick Bin']);
+            html += renderSection('Reserved Bin', data['Reserved']);
+            
             container.innerHTML = html;
+            
+            // Add hover listeners
+            container.querySelectorAll('.area-dash-card').forEach(card => {
+                const tooltip = card.querySelector('.hover-tooltip');
+                if(tooltip){
+                    card.addEventListener('mouseenter', () => tooltip.style.display = 'block');
+                    card.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+                }
+            });
         }
 
         function renderTimestamps() {
@@ -8407,6 +8443,18 @@
   </script>
 </body>
 </html>             
+            }
+        }
+    });
+  </script>
+</body>
+</html>             
+                    card.style.flex = isHidden ? '0 0 auto' : '';
+                    card.style.minHeight = isHidden ? 'auto' : '';
+                }
+            }
+        });
+    });
   </script>
 </body>
 </html>             
