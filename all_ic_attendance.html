@@ -764,6 +764,9 @@
             <h3 style="margin:0">Set Shift Requirements (Daily)</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
+        <div style="margin-bottom:10px;">
+            <select id="req-role-filter" style="padding:6px; border:1px solid #ccc; border-radius:4px; width:100%;"><option value="">All Sub Roles</option></select>
+        </div>
         <div style="overflow-x:auto; max-height: 60vh;">
             <table class="report-table" id="req-table">
                 <thead>
@@ -802,6 +805,7 @@
                         <th>User ID</th>
                         <th>Name</th>
                         <th>Role</th>
+                        <th>Job Description</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -1415,10 +1419,22 @@
                 const tbody = document.querySelector('#req-table tbody');
                 const subRolesList = ["Cycle Counter", "TL", "OIC", "Encoder", "SBD Checker", "RTV", "Damaged Checker", "B1T1 Checker", "Validator", "HVI Support", "Projects"];
                 const shiftsList = ["1st Shift-(6am-2pm)", "2nd Shift-(2pm-10pm)", "3rd Shift-(10pm-6am)"];
+                const roleFilter = document.getElementById('req-role-filter');
+                
+                // Populate filter
+                if(roleFilter && roleFilter.options.length <= 1) {
+                    subRolesList.forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = r;
+                        opt.textContent = r;
+                        roleFilter.appendChild(opt);
+                    });
+                }
                 
                 tbody.innerHTML = '';
                 subRolesList.forEach(role => {
                     const tr = document.createElement('tr');
+                    tr.dataset.role = role;
                     let html = `<td>${role}</td>`;
                     shiftsList.forEach(shift => {
                         const key = `${role}|${shift}`;
@@ -1429,6 +1445,18 @@
                     tbody.appendChild(tr);
                 });
                 reqModal.classList.remove('hidden');
+            });
+        }
+
+        const reqRoleFilter = document.getElementById('req-role-filter');
+        if(reqRoleFilter) {
+            reqRoleFilter.addEventListener('change', () => {
+                const val = reqRoleFilter.value;
+                const rows = document.querySelectorAll('#req-table tbody tr');
+                rows.forEach(r => {
+                    if(val === '' || r.dataset.role === val) r.style.display = '';
+                    else r.style.display = 'none';
+                });
             });
         }
 
@@ -1571,13 +1599,13 @@
             users.sort((a,b) => (a.name || '').localeCompare(b.name || ''));
             
             if(users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:#999;">No IC Support users found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:10px; color:#999;">No IC Support users found.</td></tr>';
                 return;
             }
             
             users.forEach(u => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td>`;
+                tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.jobDescription || ''}</td>`;
                 tbody.appendChild(tr);
             });
         }
