@@ -2277,8 +2277,6 @@
         }
         if(rateInput) rateInput.addEventListener('input', autoCalcTarget);
         if(reqInput) reqInput.addEventListener('input', autoCalcTarget);
-        // if(rateInput) rateInput.addEventListener('input', autoCalcTarget);
-        // if(reqInput) reqInput.addEventListener('input', autoCalcTarget);
 
         // Global functions for hover popup
         window.showSummaryPopup = function(el) {
@@ -2432,7 +2430,6 @@
                         // Calculate dynamic target based on active counters if rate exists
                         const rate = item.standardRate || 0;
                         const activeTarget = rate > 0 ? (act * rate) : (item.targetOutput || 0);
-                        const activeTarget = (item.targetOutput && Number(item.targetOutput) > 0) ? Number(item.targetOutput) : (rate > 0 ? (act * rate) : 0);
                         
                         // Calculate actual output for this shift
                         let actualOutput = 0;
@@ -2456,7 +2453,6 @@
                             const varSign = variance > 0 ? '+' : '';
                             const customIcon = isCustomTarget ? `<span class="hourly-btn" data-date="${date}" data-shift="${shift}" title="Custom Hourly Targets Active - Click to Edit" style="font-size:12px; margin-left:3px; cursor:pointer;">⚙️</span>` : '';
                             varianceHtml = `<span style="background-color:${varColor}; color:white; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; vertical-align:middle; margin-left:5px;">Var: ${varSign}${variance}</span>${customIcon}`;
-                            varianceHtml = customIcon;
                         }
                         
                         // Visual indicator for shortage
@@ -2724,7 +2720,6 @@
              const act = shiftAtt.length;
              const rate = (counterEntry && counterEntry.standardRate) || 0;
              const activeTarget = rate > 0 ? (act * rate) : ((counterEntry && counterEntry.targetOutput) || 0);
-             const activeTarget = (counterEntry && Number(counterEntry.targetOutput) > 0) ? Number(counterEntry.targetOutput) : (rate > 0 ? (act * rate) : 0);
              const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
              
              const savedActuals = counterEntry && counterEntry.hourlyActuals ? counterEntry.hourlyActuals : null;
@@ -2921,7 +2916,6 @@
                     target = Object.values(item.hourlyTargets).reduce((a, b) => a + (Number(b)||0), 0);
                 } else {
                     target = rate > 0 ? (headcount * rate) : (Number(item.targetOutput) || 0);
-                    target = (item.targetOutput && Number(item.targetOutput) > 0) ? Number(item.targetOutput) : (rate > 0 ? (headcount * rate) : 0);
                 }
                 
                 dailyData[date].target += target;
@@ -6340,7 +6334,6 @@
                     const headcount = shiftAtt.length;
                     const rate = Number(counter.standardRate) || 0;
                     const activeTarget = rate > 0 ? (headcount * rate) : (Number(counter.targetOutput) || 0);
-                    const activeTarget = (counter.targetOutput && Number(counter.targetOutput) > 0) ? Number(counter.targetOutput) : (rate > 0 ? (headcount * rate) : 0);
                     const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
                     
                     if (counter.shift === "1st Shift-(6am-2pm)") {
@@ -6615,7 +6608,6 @@
                     target = Object.values(item.hourlyTargets).reduce((a, b) => a + (Number(b)||0), 0);
                 } else {
                     target = rate > 0 ? (actCounters * rate) : (Number(item.targetOutput) || 0);
-                    target = (item.targetOutput && Number(item.targetOutput) > 0) ? Number(item.targetOutput) : (rate > 0 ? (actCounters * rate) : 0);
                 }
                 total24Target += target;
             });
@@ -7481,7 +7473,6 @@
         const act = shiftAtt.length;
         const rate = (counterEntry && counterEntry.standardRate) || 0;
         const activeTarget = rate > 0 ? (act * rate) : ((counterEntry && counterEntry.targetOutput) || 0);
-        const activeTarget = (counterEntry && Number(counterEntry.targetOutput) > 0) ? Number(counterEntry.targetOutput) : (rate > 0 ? (act * rate) : 0);
         const defaultHourlyTarget = activeTarget > 0 ? Math.round(activeTarget / 8) : 0;
         
         const savedActuals = counterEntry && counterEntry.hourlyActuals ? counterEntry.hourlyActuals : null;
