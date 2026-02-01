@@ -418,11 +418,9 @@
       <input type="date" id="global-end-date" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
       <button id="apply-global-filter" class="icon-btn" title="Apply Filter" style="background: #2752a7; color: white;">Filter</button>
       <button id="clear-global-filter" class="icon-btn" title="Clear Filter">Clear</button>
-      <button id="sub-area-filter-btn" class="icon-btn" title="Sub Area Filter" style="margin-left: 10px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Sub Area
-      </button>
+    
       <button id="monitor-sub-area-btn" class="icon-btn" title="Monitor Sub Area" style="margin-left: 5px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Monitor
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Storage
       </button>
       <button id="counter-timestamp-btn" class="icon-btn" title="Counter Timestamp" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Timestamp
@@ -1567,7 +1565,6 @@
 
         // User Master Logic
         const STORAGE_KEY_MASTER_USERS = 'ims_master_users_v1';
-        const userMasterBtn = document.getElementById('user-master-btn');
         const userMasterModal = document.getElementById('user-master-modal');
         const masterUserTableBody = document.querySelector('#master-users-table tbody');
         const saveMasterUserBtn = document.getElementById('save-master-user-btn');
@@ -2180,6 +2177,12 @@
         let tsSortField = 'startTime';
         let tsSortDirection = 'desc';
         let tsAreaFilter = '';
+
+        // Main Buttons Declarations (Moved to top to prevent scope issues)
+        const timestampBtn = document.getElementById('counter-timestamp-btn');
+        const userMasterBtn = document.getElementById('user-master-btn');
+        const quickTimeInBtn = document.getElementById('quick-time-in-btn');
+        const reportsMenuBtn = document.getElementById('reports-menu-btn');
 
         // Restore Filters & Button State
         if(uiState.globalStartDate && globalStartDate) globalStartDate.value = uiState.globalStartDate;
@@ -7431,7 +7434,6 @@
 
         // Quick Time In Logic
         const fabQuickBtn = document.getElementById('fab-quick-time-in');
-        const quickTimeInBtn = document.getElementById('quick-time-in-btn');
         const quickModal = document.getElementById('quick-time-in-modal');
         const quickInput = document.getElementById('quick-user-id');
         const quickInfo = document.getElementById('quick-user-info');
@@ -7549,6 +7551,92 @@
                     card.style.flex = isHidden ? '0 0 auto' : '';
                     card.style.minHeight = isHidden ? 'auto' : '';
                 }
+            }
+        });
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
+    });
+  </script>
+</body>
+</html>             
             }
         });
     });
