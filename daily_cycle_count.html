@@ -2491,7 +2491,10 @@
 
         function openHourlyModal(dateStr, shift) {
              const tsModal = document.getElementById('timestamp-modal');
-             if(tsModal) tsModal.classList.add('hidden');
+             if(tsModal) {
+                 tsModal.classList.add('hidden');
+                 sessionStorage.removeItem('ims_timestamp_modal_open');
+             }
 
              document.getElementById('hourly-modal-title').textContent = `Hourly Output: ${dateStr} (${shift.split('-')[0]})`;
              hourlyModal.classList.remove('hidden');
@@ -2813,6 +2816,7 @@
             hourlyBackTimestampBtn.addEventListener('click', () => {
                 hourlyModal.classList.add('hidden');
                 timestampModal.classList.remove('hidden');
+                sessionStorage.setItem('ims_timestamp_modal_open', 'true');
             });
         }
 
@@ -3769,7 +3773,12 @@
         document.querySelectorAll('.close-modal').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const modal = e.target.closest('.modal');
-                if (modal) modal.classList.add('hidden');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    if (modal.id === 'timestamp-modal') {
+                        sessionStorage.removeItem('ims_timestamp_modal_open');
+                    }
+                }
             });
         });
 
@@ -6842,6 +6851,7 @@
         if(timestampBtn) {
             timestampBtn.addEventListener('click', () => {
                 timestampModal.classList.remove('hidden');
+                sessionStorage.setItem('ims_timestamp_modal_open', 'true');
                 renderTimestamps();
                 setTimeout(() => tsUserIdInput.focus(), 100);
             });
@@ -7214,8 +7224,16 @@
                 }
             }
         });
+
+        // Restore Timestamp Modal State
+        if (sessionStorage.getItem('ims_timestamp_modal_open') === 'true') {
+            const tm = document.getElementById('timestamp-modal');
+            if (tm) {
+                tm.classList.remove('hidden');
+                renderTimestamps();
+            }
+        }
     });
   </script>
 </body>
 </html>             
-
