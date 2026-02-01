@@ -1423,6 +1423,22 @@
                 <tbody></tbody>
             </table>
         </div>
+        <div id="master-users-pagination" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-top:1px solid #eee;">
+            <div style="display:flex; align-items:center; gap:5px;">
+                <label style="font-size:12px;">Rows:</label>
+                <select id="master-users-rows" style="padding:2px; font-size:12px;">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <span id="master-users-page-info" style="font-size:12px; color:#666;"></span>
+            <div style="display:flex; gap:5px;">
+                <button id="master-users-prev" class="icon-btn" style="padding:2px 6px;">&lt;</button>
+                <button id="master-users-next" class="icon-btn" style="padding:2px 6px;">&gt;</button>
+            </div>
+        </div>
     </div>
   </div>
 
@@ -1544,6 +1560,8 @@
         let currentMasterRole = 'IC Support';
         let masterSortField = 'name';
         let masterSortDir = 'asc';
+        let masterCurrentPage = 1;
+        let masterRowsPerPage = 20;
 
         function getMasterUsers() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_USERS) || '[]'); } catch(e) { return []; } }
         function saveMasterUsers(data) { localStorage.setItem(STORAGE_KEY_MASTER_USERS, JSON.stringify(data)); }
@@ -1570,11 +1588,29 @@
                 return 0;
             });
 
-            if(users.length === 0) {
+            // Pagination
+            const totalItems = users.length;
+            const totalPages = Math.ceil(totalItems / masterRowsPerPage) || 1;
+            if (masterCurrentPage > totalPages) masterCurrentPage = totalPages;
+            if (masterCurrentPage < 1) masterCurrentPage = 1;
+            
+            const start = (masterCurrentPage - 1) * masterRowsPerPage;
+            const paginatedUsers = users.slice(start, start + masterRowsPerPage);
+
+            // Update Controls
+            const pageInfo = document.getElementById('master-users-page-info');
+            const prevBtn = document.getElementById('master-users-prev');
+            const nextBtn = document.getElementById('master-users-next');
+            
+            if(pageInfo) pageInfo.textContent = `Page ${masterCurrentPage} of ${totalPages} (${totalItems} users)`;
+            if(prevBtn) prevBtn.disabled = masterCurrentPage <= 1;
+            if(nextBtn) nextBtn.disabled = masterCurrentPage >= totalPages;
+
+            if(paginatedUsers.length === 0) {
                 masterUserTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#999;">No users found.</td></tr>';
                 return;
             }
-            users.forEach(u => {
+            paginatedUsers.forEach(u => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td><input type="checkbox" class="master-user-checkbox" value="${u.userId}"></td><td>${u.userId}</td><td>${u.name}</td><td>${u.role || ''}</td><td><button class="icon-btn edit-master-user-btn" data-id="${u.userId}" title="Edit" style="padding:2px 6px;">✎</button></td>`;
                 masterUserTableBody.appendChild(tr);
@@ -1651,7 +1687,10 @@
             });
         }
 
-        if(masterUserSearch) masterUserSearch.addEventListener('input', renderMasterUsers);
+        if(masterUserSearch) masterUserSearch.addEventListener('input', () => {
+            masterCurrentPage = 1;
+            renderMasterUsers();
+        });
 
         if(exportMasterUsersBtn) {
             exportMasterUsersBtn.addEventListener('click', () => {
@@ -1736,6 +1775,7 @@
                 document.querySelectorAll('.master-role-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 currentMasterRole = tab.dataset.role;
+                masterCurrentPage = 1;
                 renderMasterUsers();
             });
         });
@@ -1752,6 +1792,23 @@
                 }
                 renderMasterUsers();
             });
+        });
+
+        // Pagination Listeners
+        const masterPrevBtn = document.getElementById('master-users-prev');
+        const masterNextBtn = document.getElementById('master-users-next');
+        const masterRowsSelect = document.getElementById('master-users-rows');
+
+        if(masterPrevBtn) masterPrevBtn.addEventListener('click', () => {
+            if(masterCurrentPage > 1) { masterCurrentPage--; renderMasterUsers(); }
+        });
+        if(masterNextBtn) masterNextBtn.addEventListener('click', () => {
+            masterCurrentPage++; renderMasterUsers();
+        });
+        if(masterRowsSelect) masterRowsSelect.addEventListener('change', () => {
+            masterRowsPerPage = parseInt(masterRowsSelect.value);
+            masterCurrentPage = 1;
+            renderMasterUsers();
         });
 
         // Timestamp Modal
