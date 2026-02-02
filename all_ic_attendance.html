@@ -144,7 +144,6 @@
         <ul class="sidebar-submenu" style="display:block">
           <li><button onclick="window.location.href='all_ic_attendance.html'" class="active"><span class="menu-text" >All IC Attendance</button></li>
           <li><button onclick="window.location.href='daily_cycle_count.html'">Daily Cycle Count</button></li>
-          <li><button id="sidebar-ic-master-btn"><span class="menu-text">User Master</span></button></li>
         </ul>
       </li>
   </nav>
@@ -1871,14 +1870,6 @@
 
         if(icMasterBtn) {
             icMasterBtn.addEventListener('click', () => {
-                icMasterModal.classList.remove('hidden');
-                renderIcMaster();
-            });
-        }
-
-        const sidebarIcMasterBtn = document.getElementById('sidebar-ic-master-btn');
-        if(sidebarIcMasterBtn) {
-            sidebarIcMasterBtn.addEventListener('click', () => {
                 icMasterModal.classList.remove('hidden');
                 renderIcMaster();
             });
