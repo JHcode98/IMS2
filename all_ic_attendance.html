@@ -113,6 +113,12 @@
       transform: scale(1.1);
       background-color: #1f4287;
     }
+
+    /* Clickable Summary Cards */
+    .summary-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .summary-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .summary-card.selected-summary-card { background-color: #e3f2fd; border-color: #2752a7; box-shadow: inset 0 0 0 1px #2752a7; }
+    body.dark-mode .summary-card.selected-summary-card { background-color: #2c3e50; border-color: #64b5f6; box-shadow: inset 0 0 0 1px #64b5f6; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -190,19 +196,19 @@
 
     <!-- Live Status Cards -->
     <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-        <div class="summary-card" style="border-left: 4px solid #2ecc71;">
+        <div class="summary-card" style="border-left: 4px solid #2ecc71;" onclick="filterByLiveStatus('active', this)">
             <div class="summary-value" id="live-status-active">0</div>
             <div class="summary-label">Active (Present)</div>
         </div>
-        <div class="summary-card" style="border-left: 4px solid #f1c40f;">
+        <div class="summary-card" style="border-left: 4px solid #f1c40f;" onclick="filterByLiveStatus('break', this)">
             <div class="summary-value" id="live-status-break">0</div>
             <div class="summary-label">On Break</div>
         </div>
-        <div class="summary-card" style="border-left: 4px solid #e74c3c;">
+        <div class="summary-card" style="border-left: 4px solid #e74c3c;" onclick="filterByLiveStatus('long_break', this)">
             <div class="summary-value" id="live-status-long-break">0</div>
             <div class="summary-label">Break > 40mins</div>
         </div>
-        <div class="summary-card" style="border-left: 4px solid #34495e;">
+        <div class="summary-card" style="border-left: 4px solid #34495e;" onclick="filterByLiveStatus('timeout', this)">
             <div class="summary-value" id="live-status-timeout">0</div>
             <div class="summary-label">Timed Out Today</div>
         </div>
@@ -897,6 +903,13 @@
         let tsSortDirection = 'desc';
         let currentShiftFilter = '';
         
+        // Live Status Filter Globals
+        let liveStatusFilter = null;
+        let liveStatusActiveUsers = new Set();
+        let liveStatusBreakUsers = new Set();
+        let liveStatusLongBreakUsers = new Set();
+        let liveStatusTimeoutUsers = new Set();
+        
         // Elements
         const attendanceTableBody = document.querySelector('#attendance-table tbody');
         const attModal = document.getElementById('att-modal');
@@ -1041,6 +1054,12 @@
             const timestamps = getTimestamps();
             const now = new Date();
 
+            // Reset Sets
+            liveStatusActiveUsers.clear();
+            liveStatusBreakUsers.clear();
+            liveStatusLongBreakUsers.clear();
+            liveStatusTimeoutUsers.clear();
+
             // Reconstruct sessions to find current status
             const openSessions = {}; // Active users
 
@@ -1076,13 +1095,16 @@
             Object.values(openSessions).forEach(session => {
                 if (session.currentBreakStart) {
                     onBreakCount++;
+                    liveStatusBreakUsers.add(session.startLog.userId);
                     const breakStart = new Date(session.currentBreakStart.timestamp);
                     const diffMins = (now - breakStart) / 60000;
                     if (diffMins > 40) {
                         longBreakCount++;
+                        liveStatusLongBreakUsers.add(session.startLog.userId);
                     }
                 } else {
                     activeCount++;
+                    liveStatusActiveUsers.add(session.startLog.userId);
                 }
             });
 
@@ -1096,12 +1118,31 @@
                     userLastActionToday[log.userId] = log.action;
                 }
             });
-            Object.values(userLastActionToday).forEach(action => { if (action === 'Time Out') timeoutCount++; });
+            Object.entries(userLastActionToday).forEach(([uid, action]) => { 
+                if (action === 'Time Out') {
+                    timeoutCount++;
+                    liveStatusTimeoutUsers.add(uid);
+                }
+            });
 
             document.getElementById('live-status-active').textContent = activeCount;
             document.getElementById('live-status-break').textContent = onBreakCount;
             document.getElementById('live-status-long-break').textContent = longBreakCount;
             document.getElementById('live-status-timeout').textContent = timeoutCount;
+        }
+
+        window.filterByLiveStatus = function(status, cardEl) {
+            if (liveStatusFilter === status) {
+                liveStatusFilter = null;
+                document.querySelectorAll('.summary-card').forEach(c => c.classList.remove('selected-summary-card'));
+            } else {
+                liveStatusFilter = status;
+                document.querySelectorAll('.summary-card').forEach(c => c.classList.remove('selected-summary-card'));
+                if(cardEl) cardEl.classList.add('selected-summary-card');
+            }
+            // Ensure sets are up to date before rendering
+            updateLiveStatusCards();
+            renderAttendanceTable();
         }
 
         // --- Attendance Logic ---
@@ -1137,6 +1178,19 @@
             }
             if (!ignoreShift && currentShiftFilter) data = data.filter(item => item.shift === currentShiftFilter);
             
+            // Apply Live Status Filter
+            if (liveStatusFilter) {
+                let targetSet = null;
+                if (liveStatusFilter === 'active') targetSet = liveStatusActiveUsers;
+                else if (liveStatusFilter === 'break') targetSet = liveStatusBreakUsers;
+                else if (liveStatusFilter === 'long_break') targetSet = liveStatusLongBreakUsers;
+                else if (liveStatusFilter === 'timeout') targetSet = liveStatusTimeoutUsers;
+                
+                if (targetSet) {
+                    data = data.filter(item => targetSet.has(item.userId));
+                }
+            }
+
             data.sort((a, b) => {
                 let valA = a[attSortField] || '';
                 let valB = b[attSortField] || '';
