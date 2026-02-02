@@ -188,6 +188,26 @@
       </div>
     </div>
 
+    <!-- Live Status Cards -->
+    <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="summary-card" style="border-left: 4px solid #2ecc71;">
+            <div class="summary-value" id="live-status-active">0</div>
+            <div class="summary-label">Active (Present)</div>
+        </div>
+        <div class="summary-card" style="border-left: 4px solid #f1c40f;">
+            <div class="summary-value" id="live-status-break">0</div>
+            <div class="summary-label">On Break</div>
+        </div>
+        <div class="summary-card" style="border-left: 4px solid #e74c3c;">
+            <div class="summary-value" id="live-status-long-break">0</div>
+            <div class="summary-label">Break > 40mins</div>
+        </div>
+        <div class="summary-card" style="border-left: 4px solid #34495e;">
+            <div class="summary-value" id="live-status-timeout">0</div>
+            <div class="summary-label">Timed Out Today</div>
+        </div>
+    </div>
+
     <div class="summary-grid">
         <div class="summary-card">
             <div class="summary-value" id="summary-1st">0</div>
@@ -867,7 +887,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const STORAGE_KEY_ATTENDANCE = 'ims_daily_attendance_v1';
-        const STORAGE_KEY_TIMESTAMPS = 'ims_all_ic_timestamps_v1';
+        const STORAGE_KEY_TIMESTAMPS = 'ims_all_ic_timestamps_v1'; // Using the correct key
         
         let attCurrentPage = 1;
         let attItemsPerPage = 20;
@@ -971,6 +991,9 @@
         function saveTimestamps(data) {
             localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
         }
+        function getTimestamps() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TIMESTAMPS) || '[]'); } catch (e) { return []; }
+        }
         function showToast(message) {
             const toast = document.getElementById('toast-notification');
             if (toast) {
@@ -1012,6 +1035,73 @@
                 }
             }
             return { date: dateStr, shift };
+        }
+
+        function updateLiveStatusCards() {
+            const timestamps = getTimestamps();
+            const now = new Date();
+
+            // Reconstruct sessions to find current status
+            const openSessions = {}; // Active users
+
+            timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            timestamps.forEach(log => {
+                if (log.deleted || !log.userId) return;
+
+                // Only consider logs from the last 24 hours for live status
+                if ((now - new Date(log.timestamp)) > 24 * 60 * 60 * 1000) {
+                    return;
+                }
+
+                if (log.action === 'Start' || log.action === 'NSW') {
+                    openSessions[log.userId] = { startLog: log, currentBreakStart: null };
+                } else if (log.action === 'Start Break') {
+                    if (openSessions[log.userId]) {
+                        openSessions[log.userId].currentBreakStart = log;
+                    }
+                } else if (log.action === 'End Break') {
+                    if (openSessions[log.userId]) {
+                        openSessions[log.userId].currentBreakStart = null;
+                    }
+                } else if (log.action === 'End' || log.action === 'Time Out') {
+                    delete openSessions[log.userId];
+                }
+            });
+
+            let activeCount = 0;
+            let onBreakCount = 0;
+            let longBreakCount = 0;
+
+            Object.values(openSessions).forEach(session => {
+                if (session.currentBreakStart) {
+                    onBreakCount++;
+                    const breakStart = new Date(session.currentBreakStart.timestamp);
+                    const diffMins = (now - breakStart) / 60000;
+                    if (diffMins > 40) {
+                        longBreakCount++;
+                    }
+                } else {
+                    activeCount++;
+                }
+            });
+
+            // Count timeouts for today
+            let timeoutCount = 0;
+            const todayStr = now.toISOString().split('T')[0];
+            const userLastActionToday = {};
+            timestamps.forEach(log => {
+                const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                if (log.userId && !log.deleted && logDate === todayStr) {
+                    userLastActionToday[log.userId] = log.action;
+                }
+            });
+            Object.values(userLastActionToday).forEach(action => { if (action === 'Time Out') timeoutCount++; });
+
+            document.getElementById('live-status-active').textContent = activeCount;
+            document.getElementById('live-status-break').textContent = onBreakCount;
+            document.getElementById('live-status-long-break').textContent = longBreakCount;
+            document.getElementById('live-status-timeout').textContent = timeoutCount;
         }
 
         // --- Attendance Logic ---
@@ -1161,6 +1251,7 @@
                 attendanceTableBody.appendChild(tr);
             });
             updateSummary();
+            updateLiveStatusCards();
         }
 
         // Auto-fill User ID based on Name selection
@@ -2180,7 +2271,10 @@
             const check = document.getElementById('auto-refresh-check');
             if(check && check.checked) {
                 if(document.querySelector('.modal:not(.hidden)')) return;
-                renderAttendanceTable();
+                renderAttendanceTable(); // This calls updateLiveStatusCards
+            } else {
+                // If table isn't refreshing, refresh the cards independently
+                updateLiveStatusCards();
             }
         }, 15000);
 
