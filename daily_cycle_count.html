@@ -388,7 +388,6 @@
       <li><button onclick="window.location.href='homepage.html'"><span class="menu-text">Homepage</span></button></li>
       <li><button onclick="window.location.href='cycle_count.html'" class="active"><span class="menu-text">Inventory Tracker</span></button></li>
       <li><button onclick="window.location.href='all_ic_attendance.html'">All IC Attendance</button></li>
-      <li><button id="sidebar-user-master-btn"><span class="menu-text">User Master</span></button></li>
     </ul>
   </nav>
 
@@ -1637,14 +1636,6 @@
                 requestAnimationFrame(() => {
                     setTimeout(renderMasterUsers, 10);
                 });
-            });
-        }
-
-        const sidebarUserMasterBtn = document.getElementById('sidebar-user-master-btn');
-        if(sidebarUserMasterBtn) {
-            sidebarUserMasterBtn.addEventListener('click', () => {
-                userMasterModal.classList.remove('hidden');
-                requestAnimationFrame(() => setTimeout(renderMasterUsers, 10));
             });
         }
 
