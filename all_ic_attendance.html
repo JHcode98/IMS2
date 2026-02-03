@@ -378,7 +378,12 @@
     <div class="modal-content card" style="max-width: 600px; margin: 50px auto;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">Active Users (Present)</h3>
-            <button class="icon-btn close-modal">&times;</button>
+            <div style="display:flex; gap:5px;">
+                <button id="modal-export-btn" class="icon-btn" title="Export CSV" style="border:1px solid #ccc;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                <button class="icon-btn close-modal">&times;</button>
+            </div>
         </div>
         <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
             <input type="text" id="modal-user-search" placeholder="Search name or ID..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
@@ -2525,6 +2530,69 @@
                 if(e.target.classList.contains('modal-row-checkbox')) {
                     updateModalBulkActionsUI();
                 }
+            });
+        }
+
+        const modalExportBtn = document.getElementById('modal-export-btn');
+        if(modalExportBtn) {
+            modalExportBtn.addEventListener('click', () => {
+                const searchTerm = document.getElementById('modal-user-search') ? document.getElementById('modal-user-search').value.toLowerCase() : '';
+                let dataToExport = currentModalData;
+                
+                if (searchTerm) {
+                    dataToExport = currentModalData.filter(u => {
+                        return (u.userId && u.userId.toLowerCase().includes(searchTerm)) ||
+                               (u.name && u.name.toLowerCase().includes(searchTerm));
+                    });
+                }
+
+                if (dataToExport.length === 0) {
+                    alert('No data to export.');
+                    return;
+                }
+                
+                const headers = ['User ID', 'Name', 'Role', 'Job Description', 'Time In'];
+                if (currentModalType === 'break' || currentModalType === 'long_break') {
+                    headers.push('Break Out');
+                    headers.push('Break Duration (min)');
+                }
+                
+                const rows = [headers.join(',')];
+                const now = new Date();
+                
+                dataToExport.forEach(u => {
+                    const row = [`"${u.userId}"`, `"${u.name}"`, `"${u.role}"`, `"${u.area || '-'}"`, `"${u.timeIn || '-'}"`];
+                    if (currentModalType === 'break' || currentModalType === 'long_break') {
+                        row.push(`"${u.breakOut || '-'}"`);
+                        let duration = 0;
+                        if (u.breakOut) {
+                            const [h, m] = u.breakOut.split(':').map(Number);
+                            if (!isNaN(h) && !isNaN(m)) {
+                                const breakStart = new Date();
+                                breakStart.setHours(h, m, 0, 0);
+                                if (breakStart > now) breakStart.setDate(breakStart.getDate() - 1);
+                                duration = Math.floor((now - breakStart) / 60000);
+                            }
+                        }
+                        row.push(duration);
+                    }
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                let filename = 'users_list.csv';
+                if (currentModalType === 'active') filename = 'active_users.csv';
+                else if (currentModalType === 'break') filename = 'users_on_break.csv';
+                else if (currentModalType === 'long_break') filename = 'long_break_users.csv';
+                else if (currentModalType === 'timeout') filename = 'timed_out_users.csv';
+                
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             });
         }
     });
