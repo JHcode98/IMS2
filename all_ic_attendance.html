@@ -196,19 +196,19 @@
 
     <!-- Live Status Cards -->
     <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-        <div class="summary-card" style="border-left: 4px solid #2ecc71;" onclick="showActiveUsersModal()">
+        <div class="summary-card" style="border-left: 4px solid #2ecc71;" onclick="showStatusModal('active')">
             <div class="summary-value" id="live-status-active">0</div>
             <div class="summary-label">Active (Present)</div>
         </div>
-        <div class="summary-card" style="border-left: 4px solid #f1c40f;" onclick="filterByLiveStatus('break', this)">
+        <div class="summary-card" style="border-left: 4px solid #f1c40f;" onclick="showStatusModal('break')">
             <div class="summary-value" id="live-status-break">0</div>
             <div class="summary-label">On Break</div>
         </div>
-        <div class="summary-card" style="border-left: 4px solid #e74c3c;" onclick="filterByLiveStatus('long_break', this)">
+        <div class="summary-card" style="border-left: 4px solid #e74c3c;" onclick="showStatusModal('long_break')">
             <div class="summary-value" id="live-status-long-break">0</div>
             <div class="summary-label">Break > 40mins</div>
         </div>
-        <div class="summary-card" style="border-left: 4px solid #34495e;" onclick="filterByLiveStatus('timeout', this)">
+        <div class="summary-card" style="border-left: 4px solid #34495e;" onclick="showStatusModal('timeout')">
             <div class="summary-value" id="live-status-timeout">0</div>
             <div class="summary-label">Timed Out Today</div>
         </div>
@@ -1173,28 +1173,49 @@
             renderAttendanceTable();
         }
 
-        window.showActiveUsersModal = function() {
+        window.showStatusModal = function(type) {
             updateLiveStatusCards();
             const attendance = getAttendanceData();
-            const activeIds = Array.from(liveStatusActiveUsers);
-            const activeUsers = [];
+            let targetSet = new Set();
+            let title = 'Users';
+
+            if (type === 'active') {
+                targetSet = liveStatusActiveUsers;
+                title = 'Active Users (Present)';
+            } else if (type === 'break') {
+                targetSet = liveStatusBreakUsers;
+                title = 'Users On Break';
+            } else if (type === 'long_break') {
+                targetSet = liveStatusLongBreakUsers;
+                title = 'Users on Break (> 40mins)';
+            } else if (type === 'timeout') {
+                targetSet = liveStatusTimeoutUsers;
+                title = 'Users Timed Out Today';
+            }
+
+            const ids = Array.from(targetSet);
+            const users = [];
             
-            activeIds.forEach(uid => {
+            ids.forEach(uid => {
                 const userAtt = attendance.filter(a => a.userId === uid).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
                 if (userAtt) {
-                    activeUsers.push(userAtt);
+                    users.push(userAtt);
                 } else {
-                    activeUsers.push({ userId: uid, name: 'Unknown', role: '-', area: '-', timeIn: '-' });
+                    users.push({ userId: uid, name: 'Unknown', role: '-', area: '-', timeIn: '-' });
                 }
             });
             
+            // Update Modal Title
+            const modalTitle = document.querySelector('#active-users-modal h3');
+            if(modalTitle) modalTitle.textContent = title;
+
             const tbody = document.getElementById('active-users-tbody');
             if(tbody) {
                 tbody.innerHTML = '';
-                if (activeUsers.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px;">No active users found.</td></tr>';
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px;">No users found.</td></tr>';
                 } else {
-                    activeUsers.forEach(u => {
+                    users.forEach(u => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.area || '-'}</td><td>${u.timeIn || '-'}</td>`;
                         tbody.appendChild(tr);
