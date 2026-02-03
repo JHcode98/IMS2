@@ -1089,8 +1089,9 @@
         }
 
         function updateLiveStatusCards() {
-            const timestamps = getTimestamps();
+            const attendance = getAttendanceData();
             const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
 
             // Reset Sets
             liveStatusActiveUsers.clear();
@@ -1098,78 +1099,50 @@
             liveStatusLongBreakUsers.clear();
             liveStatusTimeoutUsers.clear();
 
-            // Reconstruct sessions to find current status
-            const openSessions = {}; // Active users
+            attendance.forEach(att => {
+                if (!att.userId) return;
 
-            timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const attDate = new Date(att.date);
+                if (isNaN(attDate.getTime())) return;
 
-            timestamps.forEach(log => {
-                if (log.deleted || !log.userId) return;
-
-                // Only consider logs from the last 24 hours for live status
-                if ((now - new Date(log.timestamp)) > 24 * 60 * 60 * 1000) {
-                    return;
+                // Check if relevant (Today or Yesterday if not timed out)
+                const isToday = (att.date === todayStr);
+                let isRelevant = isToday;
+                if (!isToday && !att.timeOut) {
+                    const yesterday = new Date(now);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = yesterday.toISOString().split('T')[0];
+                    if (att.date === yesterdayStr) isRelevant = true;
                 }
 
-                if (log.action === 'Start' || log.action === 'NSW') {
-                    openSessions[log.userId] = { startLog: log, currentBreakStart: null };
-                } else if (log.action === 'Start Break') {
-                    if (openSessions[log.userId]) {
-                        openSessions[log.userId].currentBreakStart = log;
+                if (!isRelevant) return;
+
+                if (att.timeOut) {
+                    if (isToday) liveStatusTimeoutUsers.add(att.userId);
+                } else if (att.timeIn) {
+                    if (att.breakOut && !att.breakIn) {
+                        liveStatusBreakUsers.add(att.userId);
+                        const [h, m] = att.breakOut.split(':').map(Number);
+                        if (!isNaN(h) && !isNaN(m)) {
+                            const breakStart = new Date();
+                            breakStart.setHours(h, m, 0, 0);
+                            if (breakStart > now) breakStart.setDate(breakStart.getDate() - 1);
+                            const diffMins = (now - breakStart) / 60000;
+                            if (diffMins > 40) liveStatusLongBreakUsers.add(att.userId);
+                        }
+                    } else {
+                        liveStatusActiveUsers.add(att.userId);
                     }
-                } else if (log.action === 'End Break') {
-                    if (openSessions[log.userId]) {
-                        openSessions[log.userId].currentBreakStart = null;
-                    }
-                } else if (log.action === 'End' || log.action === 'Time Out') {
-                    delete openSessions[log.userId];
                 }
             });
 
-            let activeCount = 0;
-            let onBreakCount = 0;
-            let longBreakCount = 0;
-
-            Object.values(openSessions).forEach(session => {
-                if (session.currentBreakStart) {
-                    onBreakCount++;
-                    liveStatusBreakUsers.add(session.startLog.userId);
-                    const breakStart = new Date(session.currentBreakStart.timestamp);
-                    const diffMins = (now - breakStart) / 60000;
-                    if (diffMins > 40) {
-                        longBreakCount++;
-                        liveStatusLongBreakUsers.add(session.startLog.userId);
-                    }
-                } else {
-                    activeCount++;
-                    liveStatusActiveUsers.add(session.startLog.userId);
-                }
-            });
-
-            // Count timeouts for today
-            let timeoutCount = 0;
-            const todayStr = now.toISOString().split('T')[0];
-            const userLastActionToday = {};
-            timestamps.forEach(log => {
-                const logDate = new Date(log.timestamp).toISOString().split('T')[0];
-                if (log.userId && !log.deleted && logDate === todayStr) {
-                    userLastActionToday[log.userId] = log.action;
-                }
-            });
-            Object.entries(userLastActionToday).forEach(([uid, action]) => { 
-                if (action === 'Time Out') {
-                    timeoutCount++;
-                    liveStatusTimeoutUsers.add(uid);
-                }
-            });
-
-            document.getElementById('live-status-active').textContent = activeCount;
-            document.getElementById('live-status-break').textContent = onBreakCount;
-            document.getElementById('live-status-long-break').textContent = longBreakCount;
-            document.getElementById('live-status-timeout').textContent = timeoutCount;
+            document.getElementById('live-status-active').textContent = liveStatusActiveUsers.size;
+            document.getElementById('live-status-break').textContent = liveStatusBreakUsers.size;
+            document.getElementById('live-status-long-break').textContent = liveStatusLongBreakUsers.size;
+            document.getElementById('live-status-timeout').textContent = liveStatusTimeoutUsers.size;
 
             const lbCard = document.getElementById('live-status-long-break').closest('.summary-card');
-            if (longBreakCount > 0) {
+            if (liveStatusLongBreakUsers.size > 0) {
                 lbCard.classList.add('blink-red-card');
             } else {
                 lbCard.classList.remove('blink-red-card');
