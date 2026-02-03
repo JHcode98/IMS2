@@ -1178,6 +1178,7 @@
             const attendance = getAttendanceData();
             let targetSet = new Set();
             let title = 'Users';
+            let showDuration = false;
 
             if (type === 'active') {
                 targetSet = liveStatusActiveUsers;
@@ -1185,9 +1186,11 @@
             } else if (type === 'break') {
                 targetSet = liveStatusBreakUsers;
                 title = 'Users On Break';
+                showDuration = true;
             } else if (type === 'long_break') {
                 targetSet = liveStatusLongBreakUsers;
                 title = 'Users on Break (> 40mins)';
+                showDuration = true;
             } else if (type === 'timeout') {
                 targetSet = liveStatusTimeoutUsers;
                 title = 'Users Timed Out Today';
@@ -1209,15 +1212,56 @@
             const modalTitle = document.querySelector('#active-users-modal h3');
             if(modalTitle) modalTitle.textContent = title;
 
+            // Update Table Header
+            const thead = document.querySelector('#active-users-modal thead tr');
+            if (thead) {
+                if (showDuration) {
+                    thead.innerHTML = `
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Job Description</th>
+                        <th>Time In</th>
+                        <th>Break Duration</th>
+                    `;
+                } else {
+                    thead.innerHTML = `
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Job Description</th>
+                        <th>Time In</th>
+                    `;
+                }
+            }
+
             const tbody = document.getElementById('active-users-tbody');
             if(tbody) {
                 tbody.innerHTML = '';
+                const colSpan = showDuration ? 6 : 5;
                 if (users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px;">No users found.</td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; padding:10px;">No users found.</td></tr>`;
                 } else {
+                    const now = new Date();
                     users.forEach(u => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.area || '-'}</td><td>${u.timeIn || '-'}</td>`;
+                        let durationHtml = '';
+                        if (showDuration) {
+                            let duration = '-';
+                            if (u.breakOut) {
+                                const [h, m] = u.breakOut.split(':').map(Number);
+                                if (!isNaN(h) && !isNaN(m)) {
+                                    const breakStart = new Date();
+                                    breakStart.setHours(h, m, 0, 0);
+                                    if (breakStart > now) breakStart.setDate(breakStart.getDate() - 1);
+                                    const diffMins = Math.floor((now - breakStart) / 60000);
+                                    duration = `${diffMins} min`;
+                                    if (diffMins > 40) duration = `<span style="color:#e74c3c; font-weight:bold;">${duration}</span>`;
+                                }
+                            }
+                            durationHtml = `<td>${duration}</td>`;
+                        }
+                        tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.area || '-'}</td><td>${u.timeIn || '-'}</td>${durationHtml}`;
                         tbody.appendChild(tr);
                     });
                 }
