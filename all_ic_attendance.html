@@ -73,9 +73,20 @@
 
     /* Summary Cards */
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .summary-card { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eef2f6; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .summary-value { font-size: 24px; font-weight: bold; color: #2752a7; }
-    .summary-label { font-size: 12px; color: #6c757d; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-card { 
+        background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #eef2f6; text-align: center; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; overflow: hidden;
+    }
+    .summary-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .summary-value { font-size: 32px; font-weight: 800; color: #2c3e50; margin-bottom: 5px; }
+    .summary-label { font-size: 13px; color: #7f8c8d; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* Dashboard accent for cards */
+    .summary-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: transparent; }
+    .summary-card[style*="border-left: 4px solid #2ecc71"]::after { background: #2ecc71; }
+    .summary-card[style*="border-left: 4px solid #f1c40f"]::after { background: #f1c40f; }
+    .summary-card[style*="border-left: 4px solid #e74c3c"]::after { background: #e74c3c; }
+    .summary-card[style*="border-left: 4px solid #34495e"]::after { background: #34495e; }
 
     /* Flip Card Styles */
     .flip-container { perspective: 1000px; position: relative; margin-top: 20px; height: 80vh; min-height: 600px; }
@@ -115,8 +126,6 @@
     }
 
     /* Clickable Summary Cards */
-    .summary-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-    .summary-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     .summary-card.selected-summary-card { background-color: #e3f2fd; border-color: #2752a7; box-shadow: inset 0 0 0 1px #2752a7; }
     body.dark-mode .summary-card.selected-summary-card { background-color: #2c3e50; border-color: #64b5f6; box-shadow: inset 0 0 0 1px #64b5f6; }
 
@@ -1169,10 +1178,12 @@
             let targetSet = new Set();
             let title = 'Users';
             let showDuration = false;
+            let showAction = false;
 
             if (type === 'active') {
                 targetSet = liveStatusActiveUsers;
                 title = 'Active Users (Present)';
+                showAction = true;
             } else if (type === 'break') {
                 targetSet = liveStatusBreakUsers;
                 title = 'Users On Break';
