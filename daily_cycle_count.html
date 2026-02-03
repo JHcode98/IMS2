@@ -2471,12 +2471,8 @@
                     const item = grouped[date][shift];
                     if (item) {
                         const req = Number(item.required) || 1;
-                        let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift);
-                        
-                        // Apply Global Sub Area Filter to counts
-                        if (globalSubAreas.length > 0) {
-                            shiftAtt = shiftAtt.filter(a => globalSubAreas.includes(a.area));
-                        }
+                        // Automatically count only "Cycle Counter" attendance for daily counters
+                        let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift && a.area === 'Cycle Counter');
                         
                         // Exclude 'Temporary slide to Other task' from Actual count
                         shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
@@ -2956,10 +2952,8 @@
                 dailyData[date].output += act;
 
                 // Calculate Target
-                let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift);
-                if (typeof globalSubAreas !== 'undefined' && globalSubAreas.length > 0) {
-                    shiftAtt = shiftAtt.filter(a => globalSubAreas.includes(a.area));
-                }
+                // Automatically count only "Cycle Counter" attendance for daily counters
+                let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift && a.area === 'Cycle Counter');
                 shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
                 const headcount = shiftAtt.length;
                 
