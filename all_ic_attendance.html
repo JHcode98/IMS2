@@ -50,6 +50,10 @@
         font-weight: 600;
         color: #333;
         white-space: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 1px 0 #ccc;
     }
     .report-table tbody tr:nth-child(even) { background-color: #fafafa; }
     .report-table tr:hover { background-color: #eef6ff; }
@@ -57,7 +61,7 @@
     /* Dark mode overrides */
     body.dark-mode .report-table { border-color: #444; }
     body.dark-mode .report-table th, body.dark-mode .report-table td { border-color: #444; color: #e0e0e0; }
-    body.dark-mode .report-table th { background-color: #2c2c2c; }
+    body.dark-mode .report-table th { background-color: #2c2c2c; box-shadow: 0 1px 0 #444; }
     body.dark-mode .report-table tbody tr:nth-child(even) { background-color: #1f1f1f; }
     body.dark-mode .report-table tr:hover { background-color: #333; }
 
