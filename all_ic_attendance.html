@@ -397,6 +397,22 @@
                 <tbody id="active-users-tbody"></tbody>
             </table>
         </div>
+        <div id="modal-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid #eee;">
+            <div style="display:flex; align-items:center; gap:5px;">
+                <label style="font-size:12px;">Rows:</label>
+                <select id="modal-rows-per-page" style="padding:2px; font-size:12px;">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <span id="modal-page-info" style="font-size:12px; color:#666;"></span>
+            <div style="display:flex; gap:5px;">
+                <button id="modal-prev-page" class="icon-btn" style="padding:2px 6px;">&lt;</button>
+                <button id="modal-next-page" class="icon-btn" style="padding:2px 6px;">&gt;</button>
+            </div>
+        </div>
         <div style="text-align:right; margin-top:10px;">
              <button class="icon-btn close-modal" style="border: 1px solid #ccc; padding: 8px 16px;">Close</button>
         </div>
@@ -949,6 +965,12 @@
         let tsSortField = 'startTime';
         let tsSortDirection = 'desc';
         let currentShiftFilter = '';
+        
+        // Modal Pagination State
+        let modalCurrentPage = 1;
+        let modalRowsPerPage = 10;
+        let currentModalData = [];
+        let currentModalType = '';
         
         // Live Status Filter Globals
         let liveStatusFilter = null;
@@ -2472,15 +2494,27 @@
         // Modal Search Logic
         const modalSearch = document.getElementById('modal-user-search');
         if(modalSearch) {
-            modalSearch.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                const rows = document.querySelectorAll('#active-users-tbody tr');
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(term) ? '' : 'none';
-                });
+            modalSearch.addEventListener('input', () => {
+                modalCurrentPage = 1;
+                renderModalTable();
             });
         }
+        
+        const modalPrevBtn = document.getElementById('modal-prev-page');
+        const modalNextBtn = document.getElementById('modal-next-page');
+        const modalRowsSelect = document.getElementById('modal-rows-per-page');
+
+        if(modalPrevBtn) modalPrevBtn.addEventListener('click', () => {
+            if(modalCurrentPage > 1) { modalCurrentPage--; renderModalTable(); }
+        });
+        if(modalNextBtn) modalNextBtn.addEventListener('click', () => {
+            modalCurrentPage++; renderModalTable();
+        });
+        if(modalRowsSelect) modalRowsSelect.addEventListener('change', () => {
+            modalRowsPerPage = parseInt(modalRowsSelect.value);
+            modalCurrentPage = 1;
+            renderModalTable();
+        });
     });
   </script>
 </body>
