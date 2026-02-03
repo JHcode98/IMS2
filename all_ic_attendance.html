@@ -1218,30 +1218,23 @@
             // Update Table Header
             const thead = document.querySelector('#active-users-modal thead tr');
             if (thead) {
+                let headerHtml = `<th>User ID</th><th>Name</th><th>Role</th><th>Job Description</th><th>Time In</th>`;
                 if (showDuration) {
-                    thead.innerHTML = `
-                        <th>User ID</th>
-                        <th>Name</th>
-                        <th>Role</th>
-                        <th>Job Description</th>
-                        <th>Time In</th>
-                        <th>Break Duration</th>
-                    `;
-                } else {
-                    thead.innerHTML = `
-                        <th>User ID</th>
-                        <th>Name</th>
-                        <th>Role</th>
-                        <th>Job Description</th>
-                        <th>Time In</th>
-                    `;
+                    headerHtml += `<th>Break Duration</th>`;
                 }
+                if (showAction) {
+                    headerHtml += `<th>Action</th>`;
+                }
+                thead.innerHTML = headerHtml;
             }
 
             const tbody = document.getElementById('active-users-tbody');
             if(tbody) {
                 tbody.innerHTML = '';
-                const colSpan = showDuration ? 6 : 5;
+                let colSpan = 5;
+                if (showDuration) colSpan++;
+                if (showAction) colSpan++;
+
                 if (users.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; padding:10px;">No users found.</td></tr>`;
                 } else {
@@ -1264,7 +1257,20 @@
                             }
                             durationHtml = `<td>${duration}</td>`;
                         }
-                        tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.area || '-'}</td><td>${u.timeIn || '-'}</td>${durationHtml}`;
+                        
+                        let actionHtml = '';
+                        if (showAction) {
+                            if (type === 'active') {
+                                actionHtml = `<td style="white-space:nowrap;">
+                                    <button class="icon-btn" onclick="quickBreakOut('${u.userId}')" title="Quick Break Out" style="color:#f39c12; margin-right:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg></button>
+                                    <button class="icon-btn" onclick="quickTimeout('${u.userId}')" title="Timeout" style="color:#e74c3c;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>
+                                </td>`;
+                            } else if (type === 'break' || type === 'long_break') {
+                                actionHtml = `<td><button class="icon-btn" onclick="quickEndBreak('${u.userId}')" title="End Break" style="color:#2ecc71;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button></td>`;
+                            }
+                        }
+
+                        tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.area || '-'}</td><td>${u.timeIn || '-'}</td>${durationHtml}${actionHtml}`;
                         tbody.appendChild(tr);
                     });
                 }
