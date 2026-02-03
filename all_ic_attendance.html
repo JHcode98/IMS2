@@ -196,7 +196,7 @@
 
     <!-- Live Status Cards -->
     <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-        <div class="summary-card" style="border-left: 4px solid #2ecc71;" onclick="filterByLiveStatus('active', this)">
+        <div class="summary-card" style="border-left: 4px solid #2ecc71;" onclick="showActiveUsersModal()">
             <div class="summary-value" id="live-status-active">0</div>
             <div class="summary-label">Active (Present)</div>
         </div>
@@ -355,6 +355,34 @@
     </div>
     </div>
   </main>
+
+  <!-- Active Users Modal -->
+  <div id="active-users-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 600px; margin: 50px auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Active Users (Present)</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <table class="report-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Job Description</th>
+                        <th>Time In</th>
+                    </tr>
+                </thead>
+                <tbody id="active-users-tbody"></tbody>
+            </table>
+        </div>
+        <div style="text-align:right; margin-top:10px;">
+             <button class="icon-btn close-modal" style="border: 1px solid #ccc; padding: 8px 16px;">Close</button>
+        </div>
+    </div>
+  </div>
 
   <!-- Attendance Modal -->
   <div id="att-modal" class="modal hidden">
@@ -1144,6 +1172,38 @@
             updateLiveStatusCards();
             renderAttendanceTable();
         }
+
+        window.showActiveUsersModal = function() {
+            updateLiveStatusCards();
+            const attendance = getAttendanceData();
+            const activeIds = Array.from(liveStatusActiveUsers);
+            const activeUsers = [];
+            
+            activeIds.forEach(uid => {
+                const userAtt = attendance.filter(a => a.userId === uid).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+                if (userAtt) {
+                    activeUsers.push(userAtt);
+                } else {
+                    activeUsers.push({ userId: uid, name: 'Unknown', role: '-', area: '-', timeIn: '-' });
+                }
+            });
+            
+            const tbody = document.getElementById('active-users-tbody');
+            if(tbody) {
+                tbody.innerHTML = '';
+                if (activeUsers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px;">No active users found.</td></tr>';
+                } else {
+                    activeUsers.forEach(u => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${u.userId}</td><td>${u.name}</td><td>${u.role}</td><td>${u.area || '-'}</td><td>${u.timeIn || '-'}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
+            const modal = document.getElementById('active-users-modal');
+            if(modal) modal.classList.remove('hidden');
+        };
 
         // --- Attendance Logic ---
         
