@@ -380,8 +380,9 @@
             <h3 style="margin:0">Active Users (Present)</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
-        <div style="margin-bottom:10px;">
-            <input type="text" id="modal-user-search" placeholder="Search name or ID..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+        <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
+            <input type="text" id="modal-user-search" placeholder="Search name or ID..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
+            <div id="modal-bulk-actions" style="display:none; gap:5px;"></div>
         </div>
         <div style="max-height: 400px; overflow-y: auto;">
             <table class="report-table" style="width:100%;">
@@ -2515,6 +2516,15 @@
             modalCurrentPage = 1;
             renderModalTable();
         });
+
+        const modalTbody = document.getElementById('active-users-tbody');
+        if(modalTbody) {
+            modalTbody.addEventListener('change', (e) => {
+                if(e.target.classList.contains('modal-row-checkbox')) {
+                    updateModalBulkActionsUI();
+                }
+            });
+        }
     });
   </script>
 </body>
