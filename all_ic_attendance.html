@@ -119,6 +119,13 @@
     .summary-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     .summary-card.selected-summary-card { background-color: #e3f2fd; border-color: #2752a7; box-shadow: inset 0 0 0 1px #2752a7; }
     body.dark-mode .summary-card.selected-summary-card { background-color: #2c3e50; border-color: #64b5f6; box-shadow: inset 0 0 0 1px #64b5f6; }
+
+    @keyframes blink-red {
+        0% { background-color: #fff; }
+        50% { background-color: #ffebee; box-shadow: 0 0 5px rgba(231, 76, 60, 0.5); }
+        100% { background-color: #fff; }
+    }
+    .blink-red-card { animation: blink-red 1s infinite ease-in-out; border-color: #e74c3c !important; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -363,6 +370,9 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">Active Users (Present)</h3>
             <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="margin-bottom:10px;">
+            <input type="text" id="modal-user-search" placeholder="Search name or ID..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
         </div>
         <div style="max-height: 400px; overflow-y: auto;">
             <table class="report-table" style="width:100%;">
@@ -1157,6 +1167,13 @@
             document.getElementById('live-status-break').textContent = onBreakCount;
             document.getElementById('live-status-long-break').textContent = longBreakCount;
             document.getElementById('live-status-timeout').textContent = timeoutCount;
+
+            const lbCard = document.getElementById('live-status-long-break').closest('.summary-card');
+            if (longBreakCount > 0) {
+                lbCard.classList.add('blink-red-card');
+            } else {
+                lbCard.classList.remove('blink-red-card');
+            }
         }
 
         window.filterByLiveStatus = function(status, cardEl) {
@@ -2459,6 +2476,19 @@
 
         // Initial Render
         renderAttendanceTable();
+
+        // Modal Search Logic
+        const modalSearch = document.getElementById('modal-user-search');
+        if(modalSearch) {
+            modalSearch.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('#active-users-tbody tr');
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }
     });
   </script>
 </body>
