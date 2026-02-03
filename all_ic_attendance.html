@@ -1203,6 +1203,7 @@
         }
 
         window.showStatusModal = function(type) {
+            window.currentStatusModalType = type;
             updateLiveStatusCards();
             const attendance = getAttendanceData();
             let targetSet = new Set();
@@ -1308,6 +1309,56 @@
             const modal = document.getElementById('active-users-modal');
             if(modal) modal.classList.remove('hidden');
         };
+
+        // Quick Actions for Status Modal
+        window.quickBreakOut = function(userId) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+            updateAttendanceStatus(userId, { breakOut: timeStr });
+        };
+
+        window.quickEndBreak = function(userId) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+            updateAttendanceStatus(userId, { breakIn: timeStr });
+        };
+
+        window.quickTimeout = function(userId) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+            updateAttendanceStatus(userId, { timeOut: timeStr });
+        };
+
+        function updateAttendanceStatus(userId, updates) {
+            const attendance = getAttendanceData();
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            
+            // Find record (Today or Yesterday if not timed out)
+            let attIdx = attendance.findIndex(a => a.userId === userId && a.date === todayStr);
+            
+            if (attIdx === -1) {
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                attIdx = attendance.findIndex(a => a.userId === userId && a.date === yesterdayStr && !a.timeOut);
+            }
+
+            if (attIdx > -1) {
+                attendance[attIdx] = { ...attendance[attIdx], ...updates };
+                saveAttendanceData(attendance);
+                renderAttendanceTable();
+                
+                // Refresh modal if open
+                if (window.currentStatusModalType) {
+                    showStatusModal(window.currentStatusModalType);
+                }
+                
+                showToast(`Status updated for ${userId}`);
+            } else {
+                alert('Attendance record not found for today.');
+            }
+        }
 
         // --- Attendance Logic ---
         
