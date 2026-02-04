@@ -216,6 +216,9 @@
       <button id="ic-master-btn" class="icon-btn" title="IC User ID Master" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> IC Master
       </button>
+      <button id="validators-view-btn" class="icon-btn" title="Validators View" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> Validators View
+      </button>
       <div style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #ccc; padding-left:10px;">
           <input type="checkbox" id="auto-refresh-check" title="Auto Refresh every 15s">
           <label for="auto-refresh-check" style="font-size:13px; cursor:pointer;">Auto Refresh</label>
@@ -2265,6 +2268,24 @@
                         document.getElementById('ic-master-job').value = user.jobDescription || '';
                     }
                 }
+            });
+        }
+
+        const validatorsViewBtn = document.getElementById('validators-view-btn');
+        if (validatorsViewBtn) {
+            validatorsViewBtn.addEventListener('click', () => {
+                // Clear existing area filters
+                document.querySelectorAll('.att-area-cb').forEach(cb => cb.checked = false);
+                
+                // Select Validator
+                const validatorCb = document.querySelector('.att-area-cb[value="Validator"]');
+                if (validatorCb) validatorCb.checked = true;
+                
+                // Update text
+                const areaText = document.getElementById('att-filter-area-text');
+                if (areaText) areaText.textContent = 'Validator';
+                
+                renderAttendanceTable();
             });
         }
 
