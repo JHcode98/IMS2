@@ -1262,15 +1262,15 @@
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <h4 style="margin:0 0 10px 0; color:#2752a7;">Available Validators</h4>
                     <div style="flex:1; overflow:auto;">
-                        <table class="report-table" style="width:100%;">
+                        <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                     <thead>
                         <tr>
                             <th style="position:sticky; top:0; z-index:1;">User ID</th>
                             <th style="position:sticky; top:0; z-index:1;">Name</th>
                             <th style="position:sticky; top:0; z-index:1;">Shift</th>
-                            <th style="position:sticky; top:0; z-index:1;">Current Task</th>
                             <th style="position:sticky; top:0; z-index:1;">Pending</th>
-                            <th style="position:sticky; top:0; z-index:1;">Completed</th>
+                            <th style="position:sticky; top:0; z-index:1;">Resolved</th>
+                            <th style="position:sticky; top:0; z-index:1;">Unresolved</th>
                             <th style="position:sticky; top:0; z-index:1;">Total</th>
                         </tr>
                     </thead>
@@ -2601,23 +2601,13 @@
 
             validators.forEach(v => {
                 // Calculate stats for this validator
-                const pendingCount = tasks.filter(t => t.validator === v.name && t.status !== 'Completed').length;
+                const pendingCount = tasks.filter(t => t.validator === v.name && t.status !== 'Completed' && t.status !== 'Unresolved').length;
                 const completedCount = tasks.filter(t => t.validator === v.name && t.status === 'Completed').length;
-                const totalCount = pendingCount + completedCount;
-                
-                // Determine current task (first pending task)
-                let currentTask = '-';
-                const activeTask = tasks.find(t => t.validator === v.name && t.status !== 'Completed');
-                if (activeTask) {
-                    currentTask = activeTask.sku;
-                } else if (v.status === 'Temporary slide to Other task') {
-                    currentTask = 'Slide';
-                } else {
-                    currentTask = 'Idle';
-                }
+                const unresolvedCount = tasks.filter(t => t.validator === v.name && t.status === 'Unresolved').length;
+                const totalCount = pendingCount + completedCount + unresolvedCount;
 
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${currentTask}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${totalCount}</td>`;
+                tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${unresolvedCount}</td><td>${totalCount}</td>`;
                 validatorsTbody.appendChild(tr);
             });
         }
@@ -3149,8 +3139,8 @@
 
         if(downloadTaskTemplateBtn) {
             downloadTaskTemplateBtn.addEventListener('click', () => {
-                const headers = ['SKU', 'Description', 'Qty', 'Validator'];
-                const sample = ['10000001', 'Sample Item', '10', 'John Doe'];
+                const headers = ['SKU', 'Description', 'Qty', 'Reason', 'Validator'];
+                const sample = ['10000001', 'Sample Item', '10', 'Variance Check', 'John Doe'];
                 const csvContent = headers.join(',') + '\n' + sample.join(',');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
@@ -3180,6 +3170,7 @@
                     const skuIdx = headers.indexOf('sku');
                     const descIdx = headers.indexOf('description');
                     const qtyIdx = headers.indexOf('qty');
+                    const reasonIdx = headers.indexOf('reason');
                     const valIdx = headers.indexOf('validator');
                     
                     if(skuIdx === -1 || qtyIdx === -1) {
@@ -3202,6 +3193,7 @@
                         const sku = cols[skuIdx];
                         const qty = cols[qtyIdx];
                         let desc = (descIdx > -1) ? cols[descIdx] : '';
+                        const reason = (reasonIdx > -1) ? cols[reasonIdx] : '';
                         const validator = (valIdx > -1) ? cols[valIdx] : '';
                         
                         if(sku && qty) {
@@ -3213,6 +3205,7 @@
                                 sku: sku,
                                 desc: desc,
                                 qty: qty,
+                                reason: reason,
                                 validator: validator || 'Unassigned',
                                 status: 'Pending'
                             });
