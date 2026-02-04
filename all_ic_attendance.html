@@ -1001,7 +1001,13 @@
             <button class="icon-btn close-modal">&times;</button>
         </div>
         <div style="background:#f9f9f9; padding:10px; border-radius:4px; border:1px solid #eee; margin-bottom:15px;">
-            <h4 style="margin:0 0 10px 0; font-size:14px; color:#2752a7;">Assign Validation Task</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h4 style="margin:0; font-size:14px; color:#2752a7;">Assign Validation Task</h4>
+                <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List (Item Code, Description)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                </button>
+                <input type="file" id="upload-sku-desc-file" accept=".csv" style="display:none;">
+            </div>
             <div style="display:grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap:10px; align-items:end;">
                 <div>
                     <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">SKU Code</label>
@@ -2378,6 +2384,8 @@
         const assignValidator = document.getElementById('assign-validator');
         const btnAssignTask = document.getElementById('btn-assign-task');
         const assignedTasksTbody = document.getElementById('assigned-tasks-tbody');
+        const uploadSkuBtn = document.getElementById('upload-sku-desc-btn');
+        const uploadSkuFile = document.getElementById('upload-sku-desc-file');
 
         function renderValidatorsModal() {
             if (!validatorsTbody) return;
@@ -2520,6 +2528,90 @@
                         showToast('Task completed');
                     }
                 }
+            });
+        }
+
+        // SKU Master Upload in Validator Modal
+        if(uploadSkuBtn && uploadSkuFile) {
+            uploadSkuBtn.addEventListener('click', () => uploadSkuFile.click());
+
+            uploadSkuFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    let text = ev.target.result;
+                    if (text.charCodeAt(0) === 0xFEFF) {
+                        text = text.slice(1);
+                    }
+                    const lines = text.split(/\r\n|\n/);
+                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    const codeIdx = headers.findIndex(h => h.toLowerCase() === 'item code');
+                    const descIdx = headers.findIndex(h => h.toLowerCase() === 'description');
+                    
+                    if(codeIdx === -1 || descIdx === -1) {
+                        alert('Master List CSV must have "Item Code" and "Description" columns.');
+                        return;
+                    }
+
+                    const STORAGE_KEY_MASTER_DESC = 'ims_master_desc_v1';
+                    const masterMap = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_DESC) || '{}');
+                    let count = 0;
+                    for(let i=1; i<lines.length; i++) {
+                        if(!lines[i].trim()) continue;
+                        const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+                        if(cols[codeIdx]) {
+                            masterMap[cols[codeIdx]] = cols[descIdx] || '';
+                            count++;
+                        }
+                    }
+                    localStorage.setItem(STORAGE_KEY_MASTER_DESC, JSON.stringify(masterMap));
+                    showToast(`Master list updated with ${count} items.`);
+                    uploadSkuFile.value = '';
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // SKU Master Upload in Validator Modal
+        if(uploadSkuBtn && uploadSkuFile) {
+            uploadSkuBtn.addEventListener('click', () => uploadSkuFile.click());
+
+            uploadSkuFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    let text = ev.target.result;
+                    if (text.charCodeAt(0) === 0xFEFF) {
+                        text = text.slice(1);
+                    }
+                    const lines = text.split(/\r\n|\n/);
+                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                    const codeIdx = headers.findIndex(h => h.toLowerCase() === 'item code');
+                    const descIdx = headers.findIndex(h => h.toLowerCase() === 'description');
+                    
+                    if(codeIdx === -1 || descIdx === -1) {
+                        alert('Master List CSV must have "Item Code" and "Description" columns.');
+                        return;
+                    }
+
+                    const STORAGE_KEY_MASTER_DESC = 'ims_master_desc_v1';
+                    const masterMap = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_DESC) || '{}');
+                    let count = 0;
+                    for(let i=1; i<lines.length; i++) {
+                        if(!lines[i].trim()) continue;
+                        const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+                        if(cols[codeIdx]) {
+                            masterMap[cols[codeIdx]] = cols[descIdx] || '';
+                            count++;
+                        }
+                    }
+                    localStorage.setItem(STORAGE_KEY_MASTER_DESC, JSON.stringify(masterMap));
+                    showToast(`Master list updated with ${count} items.`);
+                    uploadSkuFile.value = '';
+                };
+                reader.readAsText(file);
             });
         }
 
