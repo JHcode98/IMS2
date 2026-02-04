@@ -340,7 +340,6 @@
                       <th style="width: 100px;">Notes</th>
                       <th style="width: 60px;">Action</th>
                   </tr>
-                  <th style="width: 60px;">Paste to Daily</th>
               </thead>
               <tbody></tbody>
               <tfoot>
@@ -1516,7 +1515,6 @@
                     <td>${item.timeOut || '-'}</td>
                     <td style="font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
                     <td>${item.status || '-'}</td>
-                    <td><button class="icon-btn paste-att-btn" data-id="${item.id}" title="Paste" style="margin-right:5px">Paste</button>
                     <td>${item.notes || ''}</td>
                     <td>
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
@@ -1690,10 +1688,6 @@
                 }
             });
         }
-        //Past Button from All Ic attendance to Daily Cycle Count.
-        if(attendanceTableBody){
-            attendanceTableBody.addEventListener('click', (e)
-
 
         // Mass Delete for Attendance
         function updateAttendanceActionButtons() {
