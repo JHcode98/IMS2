@@ -1039,7 +1039,7 @@
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <h4 style="margin:0 0 10px 0; color:#2752a7;">Pending Tasks</h4>
                     <div style="flex:1; overflow:auto;">
-                        <table class="report-table" style="width:100%;">
+                        <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
                                 <tr>
                                     <th style="position:sticky; top:0; z-index:1;">Assigned</th>
@@ -1055,13 +1055,28 @@
                             <tbody id="pending-tasks-tbody"></tbody>
                         </table>
                     </div>
+                    <div id="val-pending-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <label style="font-size:11px;">Rows:</label>
+                            <select id="val-pending-rows" style="padding:2px; font-size:11px;">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                            </select>
+                        </div>
+                        <span id="val-pending-info" style="font-size:11px; color:#666;"></span>
+                        <div style="display:flex; gap:5px;">
+                            <button id="val-pending-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
+                            <button id="val-pending-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Table 2: Resolved -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <h4 style="margin:0 0 10px 0; color:#2ecc71;">Resolved Tasks</h4>
                     <div style="flex:1; overflow:auto;">
-                        <table class="report-table" style="width:100%;">
+                        <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
                                 <tr>
                                     <th style="position:sticky; top:0; z-index:1;">Resolved</th>
@@ -1075,6 +1090,21 @@
                             </thead>
                             <tbody id="resolved-tasks-tbody"></tbody>
                         </table>
+                    </div>
+                    <div id="val-resolved-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <label style="font-size:11px;">Rows:</label>
+                            <select id="val-resolved-rows" style="padding:2px; font-size:11px;">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                            </select>
+                        </div>
+                        <span id="val-resolved-info" style="font-size:11px; color:#666;"></span>
+                        <div style="display:flex; gap:5px;">
+                            <button id="val-resolved-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
+                            <button id="val-resolved-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2524,6 +2554,11 @@
             localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(data));
         }
 
+        let valPendingPage = 1;
+        let valPendingRows = 10;
+        let valResolvedPage = 1;
+        let valResolvedRows = 10;
+
         function renderValidationTasks() {
             if(!pendingTasksTbody || !resolvedTasksTbody) return;
             pendingTasksTbody.innerHTML = '';
@@ -2570,11 +2605,27 @@
             const pendingTasks = tasks.filter(t => t.status !== 'Completed');
             const resolvedTasks = tasks.filter(t => t.status === 'Completed');
 
-            if(pendingTasks.length === 0) {
+            // Pagination for Pending
+            const totalPending = pendingTasks.length;
+            const totalPendingPages = Math.ceil(totalPending / valPendingRows) || 1;
+            if (valPendingPage > totalPendingPages) valPendingPage = totalPendingPages;
+            if (valPendingPage < 1) valPendingPage = 1;
+            const startPending = (valPendingPage - 1) * valPendingRows;
+            const paginatedPending = pendingTasks.slice(startPending, startPending + valPendingRows);
+
+            // Update Pending Controls
+            const pendingInfo = document.getElementById('val-pending-info');
+            if(pendingInfo) pendingInfo.textContent = `Page ${valPendingPage}/${totalPendingPages} (${totalPending})`;
+            const pendingPrev = document.getElementById('val-pending-prev');
+            const pendingNext = document.getElementById('val-pending-next');
+            if(pendingPrev) pendingPrev.disabled = valPendingPage <= 1;
+            if(pendingNext) pendingNext.disabled = valPendingPage >= totalPendingPages;
+
+            if(paginatedPending.length === 0) {
                 pendingTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
             } else {
                 const now = new Date();
-                pendingTasks.forEach(t => {
+                paginatedPending.forEach(t => {
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     
@@ -2602,10 +2653,26 @@
                 });
             }
 
-            if(resolvedTasks.length === 0) {
+            // Pagination for Resolved
+            const totalResolved = resolvedTasks.length;
+            const totalResolvedPages = Math.ceil(totalResolved / valResolvedRows) || 1;
+            if (valResolvedPage > totalResolvedPages) valResolvedPage = totalResolvedPages;
+            if (valResolvedPage < 1) valResolvedPage = 1;
+            const startResolved = (valResolvedPage - 1) * valResolvedRows;
+            const paginatedResolved = resolvedTasks.slice(startResolved, startResolved + valResolvedRows);
+
+            // Update Resolved Controls
+            const resolvedInfo = document.getElementById('val-resolved-info');
+            if(resolvedInfo) resolvedInfo.textContent = `Page ${valResolvedPage}/${totalResolvedPages} (${totalResolved})`;
+            const resolvedPrev = document.getElementById('val-resolved-prev');
+            const resolvedNext = document.getElementById('val-resolved-next');
+            if(resolvedPrev) resolvedPrev.disabled = valResolvedPage <= 1;
+            if(resolvedNext) resolvedNext.disabled = valResolvedPage >= totalResolvedPages;
+
+            if(paginatedResolved.length === 0) {
                 resolvedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
             } else {
-                resolvedTasks.forEach(t => {
+                paginatedResolved.forEach(t => {
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     const resolvedTime = t.completedAt ? new Date(t.completedAt).toLocaleString() : '-';
@@ -2615,6 +2682,23 @@
                 });
             }
         }
+
+        // Validation Tasks Pagination Listeners
+        const valPendingPrev = document.getElementById('val-pending-prev');
+        const valPendingNext = document.getElementById('val-pending-next');
+        const valPendingRowsSel = document.getElementById('val-pending-rows');
+
+        if(valPendingPrev) valPendingPrev.addEventListener('click', () => { if(valPendingPage > 1) { valPendingPage--; renderValidationTasks(); } });
+        if(valPendingNext) valPendingNext.addEventListener('click', () => { valPendingPage++; renderValidationTasks(); });
+        if(valPendingRowsSel) valPendingRowsSel.addEventListener('change', () => { valPendingRows = parseInt(valPendingRowsSel.value); valPendingPage = 1; renderValidationTasks(); });
+
+        const valResolvedPrev = document.getElementById('val-resolved-prev');
+        const valResolvedNext = document.getElementById('val-resolved-next');
+        const valResolvedRowsSel = document.getElementById('val-resolved-rows');
+
+        if(valResolvedPrev) valResolvedPrev.addEventListener('click', () => { if(valResolvedPage > 1) { valResolvedPage--; renderValidationTasks(); } });
+        if(valResolvedNext) valResolvedNext.addEventListener('click', () => { valResolvedPage++; renderValidationTasks(); });
+        if(valResolvedRowsSel) valResolvedRowsSel.addEventListener('change', () => { valResolvedRows = parseInt(valResolvedRowsSel.value); valResolvedPage = 1; renderValidationTasks(); });
 
         function handleTaskAction(e) {
                 if(e.target.classList.contains('delete-task-btn')) {
