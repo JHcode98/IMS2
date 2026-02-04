@@ -1069,13 +1069,26 @@
                     <div class="att-tabs" style="margin-bottom:10px;">
                         <button class="att-tab active" onclick="openValTab(event, 'tab-val-pending')">Pending</button>
                         <button class="att-tab" onclick="openValTab(event, 'tab-val-assigned')">Assigned</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div class="att-tabs" style="margin-bottom:0; border-bottom:none;">
+                            <button class="att-tab active" onclick="openValTab(event, 'tab-val-pending')">Pending</button>
+                            <button class="att-tab" onclick="openValTab(event, 'tab-val-assigned')">Assigned</button>
+                        </div>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <input type="text" id="val-filter-assigned-1" placeholder="Filter Assigned To..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
+                            <button class="icon-btn" id="val-print-btn-1" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+                            <button class="icon-btn" id="val-export-btn-1" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                            <button class="icon-btn" id="val-bulk-delete-btn-1" title="Delete Selected" style="color:#d9534f; display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
+                        </div>
                     </div>
 
                     <div id="tab-val-pending" class="val-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
                         <div style="flex:1; overflow:auto;">
+                        <div style="flex:1; overflow:auto; position:relative;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
                                 <tr>
+                                    <th style="position:sticky; top:0; z-index:10; width:30px; background:#f0f0f0;"><input type="checkbox" id="val-select-all-pending"></th>
                                     <th style="position:sticky; top:0; z-index:1;">Assigned</th>
                                     <th style="position:sticky; top:0; z-index:1;">SKU</th>
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
@@ -1108,9 +1121,11 @@
 
                     <div id="tab-val-assigned" class="val-tab-content" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
                         <div style="flex:1; overflow:auto;">
+                        <div style="flex:1; overflow:auto; position:relative;">
                             <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                                 <thead>
                                     <tr>
+                                        <th style="position:sticky; top:0; z-index:10; width:30px; background:#f0f0f0;"><input type="checkbox" id="val-select-all-assigned"></th>
                                         <th style="position:sticky; top:0; z-index:1;">Assigned</th>
                                         <th style="position:sticky; top:0; z-index:1;">SKU</th>
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
@@ -1147,14 +1162,27 @@
                     <div class="att-tabs" style="margin-bottom:10px;">
                         <button class="att-tab active" onclick="openValTab(event, 'tab-val-resolved')">Resolved</button>
                         <button class="att-tab" onclick="openValTab(event, 'tab-val-unresolved')">Unresolved</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div class="att-tabs" style="margin-bottom:0; border-bottom:none;">
+                            <button class="att-tab active" onclick="openValTab(event, 'tab-val-resolved')">Resolved</button>
+                            <button class="att-tab" onclick="openValTab(event, 'tab-val-unresolved')">Unresolved</button>
+                        </div>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <input type="text" id="val-filter-assigned-2" placeholder="Filter Validator..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
+                            <button class="icon-btn" id="val-print-btn-2" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+                            <button class="icon-btn" id="val-export-btn-2" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                            <button class="icon-btn" id="val-bulk-delete-btn-2" title="Delete Selected" style="color:#d9534f; display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
+                        </div>
                     </div>
                     
                     <!-- Resolved Tab -->
                     <div id="tab-val-resolved" class="val-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
                         <div style="flex:1; overflow:auto;">
+                        <div style="flex:1; overflow:auto; position:relative;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
                                 <tr>
+                                    <th style="position:sticky; top:0; z-index:10; width:30px; background:#f0f0f0;"><input type="checkbox" id="val-select-all-resolved"></th>
                                     <th style="position:sticky; top:0; z-index:1;">Resolved</th>
                                     <th style="position:sticky; top:0; z-index:1;">SKU</th>
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
@@ -1187,9 +1215,11 @@
                     <!-- Unresolved Tab -->
                     <div id="tab-val-unresolved" class="val-tab-content" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
                         <div style="flex:1; overflow:auto;">
+                        <div style="flex:1; overflow:auto; position:relative;">
                             <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                                 <thead>
                                     <tr>
+                                        <th style="position:sticky; top:0; z-index:10; width:30px; background:#f0f0f0;"><input type="checkbox" id="val-select-all-unresolved"></th>
                                         <th style="position:sticky; top:0; z-index:1;">Date</th>
                                         <th style="position:sticky; top:0; z-index:1;">SKU</th>
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
@@ -2588,6 +2618,7 @@
             }
             
             let validators = data.filter(item => item.area === 'Validator');
+            let validators = data.filter(item => item.area === 'Validator' && !item.timeOut);
             let tasks = getValidationTasks();
 
             validators.sort((a, b) => {
@@ -2643,6 +2674,10 @@
         let valResolvedRows = 10;
         let valUnresolvedPage = 1;
         let valUnresolvedRows = 10;
+        
+        // Filters
+        let valFilterAssigned1 = '';
+        let valFilterAssigned2 = '';
 
         function renderValidationTasks() {
             const assignedTasksTbody = document.getElementById('assigned-tasks-tbody');
@@ -2654,6 +2689,10 @@
             unresolvedTasksTbody.innerHTML = '';
             
             let tasks = getValidationTasks();
+            
+            // Get filter values
+            valFilterAssigned1 = document.getElementById('val-filter-assigned-1') ? document.getElementById('val-filter-assigned-1').value.toLowerCase() : '';
+            valFilterAssigned2 = document.getElementById('val-filter-assigned-2') ? document.getElementById('val-filter-assigned-2').value.toLowerCase() : '';
             
             if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
@@ -2696,6 +2735,22 @@
             const assignedTasks = allPending.filter(t => t.validator && t.validator !== 'Unassigned');
             const resolvedTasks = tasks.filter(t => t.status === 'Completed');
             const unresolvedTasks = tasks.filter(t => t.status === 'Unresolved');
+            let pendingTasks = allPending.filter(t => !t.validator || t.validator === 'Unassigned');
+            let assignedTasks = allPending.filter(t => t.validator && t.validator !== 'Unassigned');
+            let resolvedTasks = tasks.filter(t => t.status === 'Completed');
+            let unresolvedTasks = tasks.filter(t => t.status === 'Unresolved');
+            
+            // Apply Assigned To Filter
+            if (valFilterAssigned1) {
+                // Pending usually has no assignee, but maybe filter by SKU/Desc? Let's filter by Assignee for Assigned tab
+                assignedTasks = assignedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned1));
+                // For pending, maybe filter by SKU?
+                pendingTasks = pendingTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterAssigned1) || (t.desc || '').toLowerCase().includes(valFilterAssigned1));
+            }
+            if (valFilterAssigned2) {
+                resolvedTasks = resolvedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned2));
+                unresolvedTasks = unresolvedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned2));
+            }
 
             // Pagination for Pending (Unassigned)
             const totalPending = pendingTasks.length;
@@ -2715,6 +2770,7 @@
 
             if(paginatedPending.length === 0) {
                 pendingTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
+                pendingTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
             } else {
                 const now = new Date();
                 paginatedPending.forEach(t => {
@@ -2750,6 +2806,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
                     tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
@@ -2772,6 +2829,7 @@
 
             if(paginatedAssigned.length === 0) {
                 assignedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
+                assignedTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
             } else {
                 const now = new Date();
                 paginatedAssigned.forEach(t => {
@@ -2807,6 +2865,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
                     tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     assignedTasksTbody.appendChild(tr);
                 });
             }
@@ -2829,6 +2888,7 @@
 
             if(paginatedResolved.length === 0) {
                 resolvedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
+                resolvedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
             } else {
                 paginatedResolved.forEach(t => {
                     const tr = document.createElement('tr');
@@ -2842,6 +2902,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
                     tr.innerHTML = `<td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox resolved-cb" value="${t.id}"></td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     resolvedTasksTbody.appendChild(tr);
                 });
             }
@@ -2864,6 +2925,7 @@
 
             if(paginatedUnresolved.length === 0) {
                 unresolvedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No unresolved tasks.</td></tr>';
+                unresolvedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No unresolved tasks.</td></tr>';
             } else {
                 paginatedUnresolved.forEach(t => {
                     const tr = document.createElement('tr');
@@ -2876,9 +2938,11 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
                     tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     unresolvedTasksTbody.appendChild(tr);
                 });
             }
+            updateValBulkButtons();
         }
 
         // Validation Tasks Pagination Listeners
@@ -3002,6 +3066,109 @@
         const unresolvedTasksTbody = document.getElementById('unresolved-tasks-tbody');
         if(unresolvedTasksTbody) unresolvedTasksTbody.addEventListener('click', handleTaskAction);
 
+        // Bulk Actions Logic for Validators
+        function updateValBulkButtons() {
+            const pCount = document.querySelectorAll('.pending-cb:checked').length;
+            const aCount = document.querySelectorAll('.assigned-cb:checked').length;
+            const rCount = document.querySelectorAll('.resolved-cb:checked').length;
+            const uCount = document.querySelectorAll('.unresolved-cb:checked').length;
+            
+            const btn1 = document.getElementById('val-bulk-delete-btn-1');
+            if(btn1) btn1.style.display = (pCount + aCount) > 0 ? 'inline-flex' : 'none';
+            
+            const btn2 = document.getElementById('val-bulk-delete-btn-2');
+            if(btn2) btn2.style.display = (rCount + uCount) > 0 ? 'inline-flex' : 'none';
+        }
+
+        // Select All Listeners
+        ['pending', 'assigned', 'resolved', 'unresolved'].forEach(type => {
+            const cb = document.getElementById(`val-select-all-${type}`);
+            if(cb) {
+                cb.addEventListener('change', (e) => {
+                    document.querySelectorAll(`.${type}-cb`).forEach(c => c.checked = e.target.checked);
+                    updateValBulkButtons();
+                });
+            }
+        });
+
+        // Row Checkbox Listeners
+        document.addEventListener('change', (e) => {
+            if(e.target.classList.contains('val-row-checkbox')) updateValBulkButtons();
+        });
+
+        // Bulk Delete Handlers
+        const handleBulkDelete = (selector) => {
+            const selected = Array.from(document.querySelectorAll(selector + ':checked')).map(cb => cb.value);
+            if(selected.length === 0) return;
+            if(confirm(`Delete ${selected.length} tasks?`)) {
+                let tasks = getValidationTasks();
+                tasks = tasks.filter(t => !selected.includes(t.id));
+                saveValidationTasks(tasks);
+                renderValidationTasks();
+                showToast(`${selected.length} tasks deleted`);
+            }
+        };
+
+        const btnBulkDel1 = document.getElementById('val-bulk-delete-btn-1');
+        if(btnBulkDel1) btnBulkDel1.addEventListener('click', () => handleBulkDelete('.pending-cb, .assigned-cb'));
+        
+        const btnBulkDel2 = document.getElementById('val-bulk-delete-btn-2');
+        if(btnBulkDel2) btnBulkDel2.addEventListener('click', () => handleBulkDelete('.resolved-cb, .unresolved-cb'));
+
+        // Filter Inputs
+        const filterInput1 = document.getElementById('val-filter-assigned-1');
+        if(filterInput1) filterInput1.addEventListener('input', renderValidationTasks);
+        const filterInput2 = document.getElementById('val-filter-assigned-2');
+        if(filterInput2) filterInput2.addEventListener('input', renderValidationTasks);
+
+        // Export CSV
+        const exportValCSV = (selector) => {
+            // Export visible rows in the active tab of the card
+            // Find active tab in card 1 or 2
+            let activeTbody = null;
+            if(selector === 1) {
+                if(document.getElementById('tab-val-pending').style.display !== 'none') activeTbody = document.getElementById('pending-tasks-tbody');
+                else activeTbody = document.getElementById('assigned-tasks-tbody');
+            } else {
+                if(document.getElementById('tab-val-resolved').style.display !== 'none') activeTbody = document.getElementById('resolved-tasks-tbody');
+                else activeTbody = document.getElementById('unresolved-tasks-tbody');
+            }
+            
+            if(!activeTbody) return;
+            const rows = Array.from(activeTbody.querySelectorAll('tr'));
+            if(rows.length === 0) { alert('No data to export'); return; }
+            
+            const csv = [];
+            // Header
+            const headerRow = activeTbody.previousElementSibling.querySelector('tr');
+            const headers = Array.from(headerRow.querySelectorAll('th')).map(th => th.innerText.trim()).filter(t => t);
+            csv.push(headers.join(','));
+            
+            rows.forEach(row => {
+                const cols = Array.from(row.querySelectorAll('td')).slice(1); // Skip checkbox
+                const rowData = cols.map(td => {
+                    // Handle select elements
+                    const select = td.querySelector('select');
+                    if(select) return `"${select.value}"`;
+                    return `"${td.innerText.trim()}"`;
+                });
+                // Remove last column (Actions)
+                rowData.pop();
+                csv.push(rowData.join(','));
+            });
+            
+            const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'validation_tasks.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        };
+
+        if(document.getElementById('val-export-btn-1')) document.getElementById('val-export-btn-1').addEventListener('click', () => exportValCSV(1));
+        if(document.getElementById('val-export-btn-2')) document.getElementById('val-export-btn-2').addEventListener('click', () => exportValCSV(2));
+        // Print buttons can just call window.print() or a specific print function, for now simple alert or print
+        if(document.getElementById('val-print-btn-1')) document.getElementById('val-print-btn-1').addEventListener('click', () => window.print());
+        if(document.getElementById('val-print-btn-2')) document.getElementById('val-print-btn-2').addEventListener('click', () => window.print());
+
         // Tab switching for Validator View
         window.openValTab = function(evt, tabId) {
             const card = evt.target.closest('.card');
@@ -3013,6 +3180,65 @@
             if(target) target.style.display = 'flex';
             evt.target.classList.add('active');
         };
+
+        // IC Master Logic
+        const icMasterTemplateBtn = document.getElementById('ic-master-template-btn');
+        const icMasterUploadBtn = document.getElementById('ic-master-upload-btn');
+        const icMasterUploadFile = document.getElementById('ic-master-upload-file');
+
+        if(icMasterTemplateBtn) {
+            icMasterTemplateBtn.addEventListener('click', () => {
+                const headers = ['User ID', 'Name', 'Role', 'Job Description'];
+                const sample = ['A01', 'JOHN DOE', 'IC Support', 'Cycle Counter'];
+                const csvContent = headers.join(',') + '\n' + sample.join(',');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'ic_master_template.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            });
+        }
+
+        if(icMasterUploadBtn) icMasterUploadBtn.addEventListener('click', () => icMasterUploadFile.click());
+
+        if(icMasterUploadFile) {
+            icMasterUploadFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const text = ev.target.result;
+                    const lines = text.split(/\r?\n/);
+                    let users = [];
+                    try { users = JSON.parse(localStorage.getItem('ims_master_users_v1') || '[]'); } catch(e) {}
+                    let count = 0;
+                    // Skip header if present (simple check)
+                    const startIdx = lines[0].toLowerCase().includes('user id') ? 1 : 0;
+                    
+                    for(let i=startIdx; i<lines.length; i++) {
+                        const line = lines[i].trim();
+                        if(!line) continue;
+                        const parts = line.split(',').map(p => p.replace(/^"|"$/g, '').trim());
+                        if(parts.length >= 2) {
+                            const id = parts[0].toUpperCase();
+                            const name = parts[1].toUpperCase();
+                            const role = parts[2] || 'IC Support';
+                            const job = parts[3] || '';
+                            
+                            const existingIdx = users.findIndex(u => u.userId === id);
+                            if(existingIdx > -1) users[existingIdx] = { userId: id, name, role, jobDescription: job };
+                            else users.push({ userId: id, name, role, jobDescription: job });
+                            count++;
+                        }
+                    }
+                    localStorage.setItem('ims_master_users_v1', JSON.stringify(users));
+                    alert(`Imported/Updated ${count} users.`);
+                    renderIcMaster();
+                    icMasterUploadFile.value = '';
+                };
+                reader.readAsText(file);
+            });
+        }
 
         // SKU Master Template & Clear
         const downloadSkuTemplateBtn = document.getElementById('download-sku-template-btn');
@@ -3041,48 +3267,6 @@
                     localStorage.removeItem('ims_master_desc_v1');
                     showToast('SKU Master List cleared.');
                 }
-            });
-        }
-
-        // SKU Master Upload in Validator Modal
-        if(uploadSkuBtn && uploadSkuFile) {
-            uploadSkuBtn.addEventListener('click', () => uploadSkuFile.click());
-
-            uploadSkuFile.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    let text = ev.target.result;
-                    if (text.charCodeAt(0) === 0xFEFF) {
-                        text = text.slice(1);
-                    }
-                    const lines = text.split(/\r\n|\n/);
-                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                    const codeIdx = headers.findIndex(h => h.toLowerCase() === 'item code');
-                    const descIdx = headers.findIndex(h => h.toLowerCase() === 'description');
-                    
-                    if(codeIdx === -1 || descIdx === -1) {
-                        alert('Master List CSV must have "Item Code" and "Description" columns.');
-                        return;
-                    }
-
-                    const STORAGE_KEY_MASTER_DESC = 'ims_master_desc_v1';
-                    const masterMap = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_DESC) || '{}');
-                    let count = 0;
-                    for(let i=1; i<lines.length; i++) {
-                        if(!lines[i].trim()) continue;
-                        const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
-                        if(cols[codeIdx]) {
-                            masterMap[cols[codeIdx]] = cols[descIdx] || '';
-                            count++;
-                        }
-                    }
-                    localStorage.setItem(STORAGE_KEY_MASTER_DESC, JSON.stringify(masterMap));
-                    showToast(`Master list updated with ${count} items.`);
-                    uploadSkuFile.value = '';
-                };
-                reader.readAsText(file);
             });
         }
 
