@@ -1066,7 +1066,7 @@
             <div id="val-progress-bar" style="height:100%; width:0%; background:#2ecc71; transition:width 0.5s ease; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;">0%</div>
         </div>
         <div style="margin-bottom:15px;">
-            <h4 style="margin:0 0 5px 0; font-size:14px; color:#2752a7;">Assigned Tasks</h4>
+            <h4 style="margin:0 0 5px 0; font-size:14px; color:#2752a7;">Pending Tasks</h4>
             <div style="max-height: 200px; overflow:auto; border:1px solid #eee;">
                 <table class="report-table" style="width:100%;">
                     <thead>
@@ -1076,12 +1076,29 @@
                             <th style="position:sticky; top:0; z-index:1;">Description</th>
                             <th style="position:sticky; top:0; z-index:1;">Qty</th>
                             <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
-                            <th style="position:sticky; top:0; z-index:1;">Status</th>
-                            <th style="position:sticky; top:0; z-index:1;">Resolved</th>
                             <th style="position:sticky; top:0; z-index:1;">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="assigned-tasks-tbody"></tbody>
+                    <tbody id="pending-tasks-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div style="margin-bottom:15px;">
+            <h4 style="margin:0 0 5px 0; font-size:14px; color:#2ecc71;">Resolved Tasks</h4>
+            <div style="max-height: 200px; overflow:auto; border:1px solid #eee;">
+                <table class="report-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th style="position:sticky; top:0; z-index:1;">Assigned</th>
+                            <th style="position:sticky; top:0; z-index:1;">Resolved</th>
+                            <th style="position:sticky; top:0; z-index:1;">SKU</th>
+                            <th style="position:sticky; top:0; z-index:1;">Description</th>
+                            <th style="position:sticky; top:0; z-index:1;">Qty</th>
+                            <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
+                            <th style="position:sticky; top:0; z-index:1;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resolved-tasks-tbody"></tbody>
                 </table>
             </div>
         </div>
@@ -2403,7 +2420,8 @@
         const assignQty = document.getElementById('assign-qty');
         const assignValidator = document.getElementById('assign-validator');
         const btnAssignTask = document.getElementById('btn-assign-task');
-        const assignedTasksTbody = document.getElementById('assigned-tasks-tbody');
+        const pendingTasksTbody = document.getElementById('pending-tasks-tbody');
+        const resolvedTasksTbody = document.getElementById('resolved-tasks-tbody');
         const uploadSkuBtn = document.getElementById('upload-sku-desc-btn');
         const uploadSkuFile = document.getElementById('upload-sku-desc-file');
 
@@ -2477,8 +2495,10 @@
         }
 
         function renderValidationTasks() {
-            if(!assignedTasksTbody) return;
-            assignedTasksTbody.innerHTML = '';
+            if(!pendingTasksTbody || !resolvedTasksTbody) return;
+            pendingTasksTbody.innerHTML = '';
+            resolvedTasksTbody.innerHTML = '';
+            
             let tasks = getValidationTasks();
             
             if (globalStartDate.value || globalEndDate.value) {
@@ -2514,30 +2534,36 @@
 
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            if(tasks.length === 0) {
-                assignedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No tasks assigned.</td></tr>';
-                return;
+            const pendingTasks = tasks.filter(t => t.status !== 'Completed');
+            const resolvedTasks = tasks.filter(t => t.status === 'Completed');
+
+            if(pendingTasks.length === 0) {
+                pendingTasksTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
+            } else {
+                pendingTasks.forEach(t => {
+                    const tr = document.createElement('tr');
+                    const assignedTime = new Date(t.timestamp).toLocaleString();
+                    const actionHtml = `<button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Completed" style="color:#2ecc71; margin-right:5px;">✓</button><button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
+                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
+                    pendingTasksTbody.appendChild(tr);
+                });
             }
 
-            tasks.forEach(t => {
-                const tr = document.createElement('tr');
-                const assignedTime = new Date(t.timestamp).toLocaleString();
-                const resolvedTime = t.completedAt ? new Date(t.completedAt).toLocaleString() : '-';
-                const status = t.status || 'Pending';
-                let statusHtml = `<span style="color:#f39c12; font-weight:bold;">Pending</span>`;
-                let actionHtml = `<button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Completed" style="color:#2ecc71; margin-right:5px;">✓</button>`;
-                
-                if(status === 'Completed') {
-                    statusHtml = `<span style="color:#2ecc71; font-weight:bold;">Completed</span>`;
-                    actionHtml = '';
-                }
-                tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${statusHtml}</td><td>${resolvedTime}</td><td>${actionHtml}<button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button></td>`;
-                assignedTasksTbody.appendChild(tr);
-            });
+            if(resolvedTasks.length === 0) {
+                resolvedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
+            } else {
+                resolvedTasks.forEach(t => {
+                    const tr = document.createElement('tr');
+                    const assignedTime = new Date(t.timestamp).toLocaleString();
+                    const resolvedTime = t.completedAt ? new Date(t.completedAt).toLocaleString() : '-';
+                    const actionHtml = `<button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
+                    tr.innerHTML = `<td>${assignedTime}</td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
+                    resolvedTasksTbody.appendChild(tr);
+                });
+            }
         }
 
-        if(assignedTasksTbody) {
-            assignedTasksTbody.addEventListener('click', (e) => {
+        function handleTaskAction(e) {
                 if(e.target.classList.contains('delete-task-btn')) {
                     if(confirm('Delete this task?')) {
                         const id = e.target.dataset.id;
@@ -2558,7 +2584,13 @@
                         showToast('Task completed');
                     }
                 }
-            });
+        }
+
+        if(pendingTasksTbody) {
+            pendingTasksTbody.addEventListener('click', handleTaskAction);
+        }
+        if(resolvedTasksTbody) {
+            resolvedTasksTbody.addEventListener('click', handleTaskAction);
         }
 
         // SKU Master Template & Clear
