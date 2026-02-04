@@ -994,6 +994,9 @@
             <h3 style="margin:0">Validators List</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
+        <div style="margin-bottom:10px;">
+            <input type="text" id="validators-search" placeholder="Search by Name or User ID..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+        </div>
         <div style="flex:1; overflow:auto; border:1px solid #eee;">
             <table class="report-table" style="width:100%;">
                 <thead>
@@ -2303,6 +2306,7 @@
         const validatorsViewBtn = document.getElementById('validators-view-btn');
         const validatorsModal = document.getElementById('validators-modal');
         const validatorsTbody = document.getElementById('validators-tbody');
+        const validatorsSearch = document.getElementById('validators-search');
 
         function renderValidatorsModal() {
             if (!validatorsTbody) return;
@@ -2318,7 +2322,16 @@
                 });
             }
             
-            const validators = data.filter(item => item.area === 'Validator');
+            let validators = data.filter(item => item.area === 'Validator');
+            
+            const searchTerm = validatorsSearch ? validatorsSearch.value.toLowerCase() : '';
+            if (searchTerm) {
+                validators = validators.filter(v => 
+                    (v.name && v.name.toLowerCase().includes(searchTerm)) || 
+                    (v.userId && v.userId.toLowerCase().includes(searchTerm))
+                );
+            }
+
             validators.sort((a, b) => {
                 if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
                 return a.shift.localeCompare(b.shift);
@@ -2339,10 +2352,15 @@
         if (validatorsViewBtn) {
             validatorsViewBtn.addEventListener('click', () => {
                 if (validatorsModal) {
+                    if (validatorsSearch) validatorsSearch.value = '';
                     validatorsModal.classList.remove('hidden');
                     renderValidatorsModal();
                 }
             });
+        }
+
+        if (validatorsSearch) {
+            validatorsSearch.addEventListener('input', renderValidatorsModal);
         }
 
         if(icMasterBtn) {
