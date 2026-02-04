@@ -2634,7 +2634,7 @@
             // Keep first option
             assignValidator.innerHTML = '<option value="">Select Validator</option>';
             
-            const validators = data.filter(item => item.area === 'Validator');
+            const validators = data.filter(item => item.area === 'Validator' && !item.timeOut);
             const uniqueValidators = [...new Set(validators.map(v => v.name))].sort();
             
             uniqueValidators.forEach(name => {
@@ -2704,7 +2704,7 @@
                     return (!start || item.date >= start) && (!end || item.date <= end);
                 });
             }
-            const validators = attendanceData.filter(item => item.area === 'Validator');
+            const validators = attendanceData.filter(item => item.area === 'Validator' && !item.timeOut);
             const validatorNames = [...new Set(validators.map(v => v.name))].sort();
 
             const total = tasks.length;
