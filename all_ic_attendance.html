@@ -1066,9 +1066,6 @@
             <div style="flex:6; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
                 <!-- Table 1: Pending -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
-                    <div class="att-tabs" style="margin-bottom:10px;">
-                        <button class="att-tab active" onclick="openValTab(event, 'tab-val-pending')">Pending</button>
-                        <button class="att-tab" onclick="openValTab(event, 'tab-val-assigned')">Assigned</button>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <div class="att-tabs" style="margin-bottom:0; border-bottom:none;">
                             <button class="att-tab active" onclick="openValTab(event, 'tab-val-pending')">Pending</button>
@@ -1083,7 +1080,6 @@
                     </div>
 
                     <div id="tab-val-pending" class="val-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-                        <div style="flex:1; overflow:auto;">
                         <div style="flex:1; overflow:auto; position:relative;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
@@ -1120,7 +1116,6 @@
                     </div>
 
                     <div id="tab-val-assigned" class="val-tab-content" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
-                        <div style="flex:1; overflow:auto;">
                         <div style="flex:1; overflow:auto; position:relative;">
                             <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                                 <thead>
@@ -1159,9 +1154,6 @@
                 
                 <!-- Table 2: Resolved / Unresolved Tabs -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
-                    <div class="att-tabs" style="margin-bottom:10px;">
-                        <button class="att-tab active" onclick="openValTab(event, 'tab-val-resolved')">Resolved</button>
-                        <button class="att-tab" onclick="openValTab(event, 'tab-val-unresolved')">Unresolved</button>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <div class="att-tabs" style="margin-bottom:0; border-bottom:none;">
                             <button class="att-tab active" onclick="openValTab(event, 'tab-val-resolved')">Resolved</button>
@@ -1177,7 +1169,6 @@
                     
                     <!-- Resolved Tab -->
                     <div id="tab-val-resolved" class="val-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-                        <div style="flex:1; overflow:auto;">
                         <div style="flex:1; overflow:auto; position:relative;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
@@ -1214,7 +1205,6 @@
 
                     <!-- Unresolved Tab -->
                     <div id="tab-val-unresolved" class="val-tab-content" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
-                        <div style="flex:1; overflow:auto;">
                         <div style="flex:1; overflow:auto; position:relative;">
                             <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                                 <thead>
@@ -2764,7 +2754,6 @@
             if(pendingNext) pendingNext.disabled = valPendingPage >= totalPendingPages;
 
             if(paginatedPending.length === 0) {
-                pendingTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
                 pendingTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
             } else {
                 const now = new Date();
@@ -2800,7 +2789,6 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
@@ -2823,7 +2811,6 @@
             if(assignedNext) assignedNext.disabled = valAssignedPage >= totalAssignedPages;
 
             if(paginatedAssigned.length === 0) {
-                assignedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
                 assignedTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
             } else {
                 const now = new Date();
@@ -2859,7 +2846,6 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     assignedTasksTbody.appendChild(tr);
                 });
@@ -2882,7 +2868,6 @@
             if(resolvedNext) resolvedNext.disabled = valResolvedPage >= totalResolvedPages;
 
             if(paginatedResolved.length === 0) {
-                resolvedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
                 resolvedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
             } else {
                 paginatedResolved.forEach(t => {
@@ -2896,7 +2881,6 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox resolved-cb" value="${t.id}"></td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     resolvedTasksTbody.appendChild(tr);
                 });
@@ -2919,7 +2903,6 @@
             if(unresolvedNext) unresolvedNext.disabled = valUnresolvedPage >= totalUnresolvedPages;
 
             if(paginatedUnresolved.length === 0) {
-                unresolvedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No unresolved tasks.</td></tr>';
                 unresolvedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No unresolved tasks.</td></tr>';
             } else {
                 paginatedUnresolved.forEach(t => {
@@ -2932,7 +2915,6 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     unresolvedTasksTbody.appendChild(tr);
                 });
