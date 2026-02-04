@@ -1027,6 +1027,7 @@
                             <th style="position:sticky; top:0; z-index:1;">Description</th>
                             <th style="position:sticky; top:0; z-index:1;">Qty</th>
                             <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
+                            <th style="position:sticky; top:0; z-index:1;">Status</th>
                             <th style="position:sticky; top:0; z-index:1;">Action</th>
                         </tr>
                     </thead>
@@ -2430,14 +2431,22 @@
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             if(tasks.length === 0) {
-                assignedTasksTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px; color:#999;">No tasks assigned.</td></tr>';
+                assignedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No tasks assigned.</td></tr>';
                 return;
             }
 
             tasks.forEach(t => {
                 const tr = document.createElement('tr');
                 const time = new Date(t.timestamp).toLocaleTimeString();
-                tr.innerHTML = `<td>${time}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td><button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button></td>`;
+                const status = t.status || 'Pending';
+                let statusHtml = `<span style="color:#f39c12; font-weight:bold;">Pending</span>`;
+                let actionHtml = `<button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Completed" style="color:#2ecc71; margin-right:5px;">✓</button>`;
+                
+                if(status === 'Completed') {
+                    statusHtml = `<span style="color:#2ecc71; font-weight:bold;">Completed</span>`;
+                    actionHtml = '';
+                }
+                tr.innerHTML = `<td>${time}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${statusHtml}</td><td>${actionHtml}<button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button></td>`;
                 assignedTasksTbody.appendChild(tr);
             });
         }
@@ -2451,6 +2460,17 @@
                         tasks = tasks.filter(t => t.id !== id);
                         saveValidationTasks(tasks);
                         renderValidationTasks();
+                    }
+                } else if(e.target.classList.contains('complete-task-btn')) {
+                    const id = e.target.dataset.id;
+                    let tasks = getValidationTasks();
+                    const taskIndex = tasks.findIndex(t => t.id === id);
+                    if(taskIndex > -1) {
+                        tasks[taskIndex].status = 'Completed';
+                        tasks[taskIndex].completedAt = new Date().toISOString();
+                        saveValidationTasks(tasks);
+                        renderValidationTasks();
+                        showToast('Task completed');
                     }
                 }
             });
@@ -2480,7 +2500,8 @@
                     sku: sku,
                     desc: assignDesc.value,
                     qty: qty,
-                    validator: validator
+                    validator: validator,
+                    status: 'Pending'
                 };
                 const tasks = getValidationTasks();
                 tasks.push(newTask);
