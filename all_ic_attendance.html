@@ -165,12 +165,16 @@
 
     /* Hover effect for validator view tables */
     #pending-tasks-tbody tr .icon-btn,
-    #resolved-tasks-tbody tr .icon-btn {
+    #assigned-tasks-tbody tr .icon-btn,
+    #resolved-tasks-tbody tr .icon-btn,
+    #unresolved-tasks-tbody tr .icon-btn {
         opacity: 0;
         transition: opacity 0.2s;
     }
     #pending-tasks-tbody tr:hover .icon-btn,
-    #resolved-tasks-tbody tr:hover .icon-btn {
+    #assigned-tasks-tbody tr:hover .icon-btn,
+    #resolved-tasks-tbody tr:hover .icon-btn,
+    #unresolved-tasks-tbody tr:hover .icon-btn {
         opacity: 1;
     }
   </style>
@@ -1048,8 +1052,13 @@
             <div style="flex:6; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
                 <!-- Table 1: Pending -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
-                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Pending Tasks</h4>
-                    <div style="flex:1; overflow:auto;">
+                    <div class="att-tabs" style="margin-bottom:10px;">
+                        <button class="att-tab active" onclick="openValTab(event, 'tab-val-pending')">Pending</button>
+                        <button class="att-tab" onclick="openValTab(event, 'tab-val-assigned')">Assigned</button>
+                    </div>
+
+                    <div id="tab-val-pending" class="val-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                        <div style="flex:1; overflow:auto;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
                                 <tr>
@@ -1066,19 +1075,55 @@
                             <tbody id="pending-tasks-tbody"></tbody>
                         </table>
                     </div>
-                    <div id="val-pending-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
-                        <div style="display:flex; align-items:center; gap:5px;">
-                            <label style="font-size:11px;">Rows:</label>
-                            <select id="val-pending-rows" style="padding:2px; font-size:11px;">
-                                <option value="5">5</option>
-                                <option value="10" selected>10</option>
-                                <option value="20">20</option>
-                            </select>
+                        <div id="val-pending-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <label style="font-size:11px;">Rows:</label>
+                                <select id="val-pending-rows" style="padding:2px; font-size:11px;">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                            <span id="val-pending-info" style="font-size:11px; color:#666;"></span>
+                            <div style="display:flex; gap:5px;">
+                                <button id="val-pending-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
+                                <button id="val-pending-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                            </div>
                         </div>
-                        <span id="val-pending-info" style="font-size:11px; color:#666;"></span>
-                        <div style="display:flex; gap:5px;">
-                            <button id="val-pending-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
-                            <button id="val-pending-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                    </div>
+
+                    <div id="tab-val-assigned" class="val-tab-content" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+                        <div style="flex:1; overflow:auto;">
+                            <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
+                                <thead>
+                                    <tr>
+                                        <th style="position:sticky; top:0; z-index:1;">Assigned</th>
+                                        <th style="position:sticky; top:0; z-index:1;">SKU</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Description</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Qty</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Duration</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assigned-tasks-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div id="val-assigned-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <label style="font-size:11px;">Rows:</label>
+                                <select id="val-assigned-rows" style="padding:2px; font-size:11px;">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                            <span id="val-assigned-info" style="font-size:11px; color:#666;"></span>
+                            <div style="display:flex; gap:5px;">
+                                <button id="val-assigned-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
+                                <button id="val-assigned-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2606,14 +2651,18 @@
 
         let valPendingPage = 1;
         let valPendingRows = 10;
+        let valAssignedPage = 1;
+        let valAssignedRows = 10;
         let valResolvedPage = 1;
         let valResolvedRows = 10;
         let valUnresolvedPage = 1;
         let valUnresolvedRows = 10;
 
         function renderValidationTasks() {
-            if(!pendingTasksTbody || !resolvedTasksTbody || !document.getElementById('unresolved-tasks-tbody')) return;
+            const assignedTasksTbody = document.getElementById('assigned-tasks-tbody');
+            if(!pendingTasksTbody || !resolvedTasksTbody || !document.getElementById('unresolved-tasks-tbody') || !assignedTasksTbody) return;
             pendingTasksTbody.innerHTML = '';
+            assignedTasksTbody.innerHTML = '';
             resolvedTasksTbody.innerHTML = '';
             const unresolvedTasksTbody = document.getElementById('unresolved-tasks-tbody');
             unresolvedTasksTbody.innerHTML = '';
@@ -2656,11 +2705,13 @@
 
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            const pendingTasks = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
+            const allPending = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
+            const pendingTasks = allPending.filter(t => !t.validator || t.validator === 'Unassigned');
+            const assignedTasks = allPending.filter(t => t.validator && t.validator !== 'Unassigned');
             const resolvedTasks = tasks.filter(t => t.status === 'Completed');
             const unresolvedTasks = tasks.filter(t => t.status === 'Unresolved');
 
-            // Pagination for Pending
+            // Pagination for Pending (Unassigned)
             const totalPending = pendingTasks.length;
             const totalPendingPages = Math.ceil(totalPending / valPendingRows) || 1;
             if (valPendingPage > totalPendingPages) valPendingPage = totalPendingPages;
@@ -2714,6 +2765,63 @@
                         </button>`;
                     tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
+                });
+            }
+
+            // Pagination for Assigned
+            const totalAssigned = assignedTasks.length;
+            const totalAssignedPages = Math.ceil(totalAssigned / valAssignedRows) || 1;
+            if (valAssignedPage > totalAssignedPages) valAssignedPage = totalAssignedPages;
+            if (valAssignedPage < 1) valAssignedPage = 1;
+            const startAssigned = (valAssignedPage - 1) * valAssignedRows;
+            const paginatedAssigned = assignedTasks.slice(startAssigned, startAssigned + valAssignedRows);
+
+            // Update Assigned Controls
+            const assignedInfo = document.getElementById('val-assigned-info');
+            if(assignedInfo) assignedInfo.textContent = `Page ${valAssignedPage}/${totalAssignedPages} (${totalAssigned})`;
+            const assignedPrev = document.getElementById('val-assigned-prev');
+            const assignedNext = document.getElementById('val-assigned-next');
+            if(assignedPrev) assignedPrev.disabled = valAssignedPage <= 1;
+            if(assignedNext) assignedNext.disabled = valAssignedPage >= totalAssignedPages;
+
+            if(paginatedAssigned.length === 0) {
+                assignedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
+            } else {
+                const now = new Date();
+                paginatedAssigned.forEach(t => {
+                    const tr = document.createElement('tr');
+                    const assignedTime = new Date(t.timestamp).toLocaleString();
+                    
+                    const diffMs = now - new Date(t.timestamp);
+                    const diffMins = Math.floor(diffMs / 60000);
+                    let durationStr = diffMins < 60 ? `${diffMins}m` : `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
+                    
+                    if(diffMins > 60) durationStr = `<span style="color:#e74c3c; font-weight:bold;">${durationStr}</span>`;
+                    else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
+                    else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
+
+                    let validatorSelect = `<select class="task-validator-select" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">`;
+                    validatorSelect += `<option value="Unassigned" ${t.validator === 'Unassigned' ? 'selected' : ''}>Unassigned</option>`;
+                    validatorNames.forEach(vName => {
+                        validatorSelect += `<option value="${vName}" ${t.validator === vName ? 'selected' : ''}>${vName}</option>`;
+                    });
+                    if (t.validator !== 'Unassigned' && !validatorNames.includes(t.validator)) {
+                         validatorSelect += `<option value="${t.validator}" selected>${t.validator}</option>`;
+                    }
+                    validatorSelect += `</select>`;
+
+                    const actionHtml = `
+                        <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
+                        <button class="icon-btn mark-unresolved-btn" data-id="${t.id}" title="Mark Unresolved" style="color:#f39c12; margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                        </button>
+                        <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                        </button>`;
+                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    assignedTasksTbody.appendChild(tr);
                 });
             }
 
@@ -2796,6 +2904,14 @@
         if(valPendingNext) valPendingNext.addEventListener('click', () => { valPendingPage++; renderValidationTasks(); });
         if(valPendingRowsSel) valPendingRowsSel.addEventListener('change', () => { valPendingRows = parseInt(valPendingRowsSel.value); valPendingPage = 1; renderValidationTasks(); });
 
+        const valAssignedPrev = document.getElementById('val-assigned-prev');
+        const valAssignedNext = document.getElementById('val-assigned-next');
+        const valAssignedRowsSel = document.getElementById('val-assigned-rows');
+
+        if(valAssignedPrev) valAssignedPrev.addEventListener('click', () => { if(valAssignedPage > 1) { valAssignedPage--; renderValidationTasks(); } });
+        if(valAssignedNext) valAssignedNext.addEventListener('click', () => { valAssignedPage++; renderValidationTasks(); });
+        if(valAssignedRowsSel) valAssignedRowsSel.addEventListener('change', () => { valAssignedRows = parseInt(valAssignedRowsSel.value); valAssignedPage = 1; renderValidationTasks(); });
+
         const valResolvedPrev = document.getElementById('val-resolved-prev');
         const valResolvedNext = document.getElementById('val-resolved-next');
         const valResolvedRowsSel = document.getElementById('val-resolved-rows');
@@ -2862,6 +2978,25 @@
         if(pendingTasksTbody) {
             pendingTasksTbody.addEventListener('click', handleTaskAction);
             pendingTasksTbody.addEventListener('change', (e) => {
+                if(e.target.classList.contains('task-validator-select')) {
+                    const id = e.target.dataset.id;
+                    const newValidator = e.target.value;
+                    let tasks = getValidationTasks();
+                    const taskIndex = tasks.findIndex(t => t.id === id);
+                    if(taskIndex > -1) {
+                        tasks[taskIndex].validator = newValidator;
+                        saveValidationTasks(tasks);
+                        renderValidationTasks();
+                        renderValidatorsModal();
+                        showToast(`Task assigned to ${newValidator}`);
+                    }
+                }
+            });
+        }
+        const assignedTasksTbody = document.getElementById('assigned-tasks-tbody');
+        if(assignedTasksTbody) {
+            assignedTasksTbody.addEventListener('click', handleTaskAction);
+            assignedTasksTbody.addEventListener('change', (e) => {
                 if(e.target.classList.contains('task-validator-select')) {
                     const id = e.target.dataset.id;
                     const newValidator = e.target.value;
