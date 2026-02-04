@@ -1411,13 +1411,10 @@
         function getFilteredAttendanceData(ignoreShift = false) {
             let data = getAttendanceData();
             if (globalStartDate.value || globalEndDate.value) {
-                const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
-                if (start) start.setHours(0,0,0,0);
-                const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
-                if (end) end.setHours(23,59,59,999);
+                const start = globalStartDate.value;
+                const end = globalEndDate.value;
                 data = data.filter(item => {
-                    const itemDate = new Date(item.date);
-                    return (!start || itemDate >= start) && (!end || itemDate <= end);
+                    return (!start || item.date >= start) && (!end || item.date <= end);
                 });
             }
             const searchTerm = attSearchInput ? attSearchInput.value.toLowerCase() : '';
@@ -1700,13 +1697,13 @@
                 if (!btn) return;
                 const id = btn.dataset.id;
                 if (btn.classList.contains('delete-att-btn')) {
-                    if(confirm('Remove this person?')) {
+                    showSupervisorDeleteModal(1, () => {
                         let data = getAttendanceData();
                         data = data.filter(item => item.id !== id);
                         saveAttendanceData(data);
                         renderAttendanceTable();
                         showToast('Attendance entry deleted');
-                    }
+                    });
                 } else if (btn.classList.contains('edit-att-btn')) {
                     const data = getAttendanceData();
                     const item = data.find(x => x.id === id);
