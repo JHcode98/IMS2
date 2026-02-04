@@ -986,6 +986,35 @@
     </div>
   </div>
 
+  <!-- Validators Modal -->
+  <div id="validators-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 900px; margin: 50px auto; display:flex; flex-direction:column; max-height:85vh;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0">Validators List</h3>
+            <button class="icon-btn close-modal">&times;</button>
+        </div>
+        <div style="flex:1; overflow:auto; border:1px solid #eee;">
+            <table class="report-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th style="position:sticky; top:0; z-index:1;">Date</th>
+                        <th style="position:sticky; top:0; z-index:1;">User ID</th>
+                        <th style="position:sticky; top:0; z-index:1;">Name</th>
+                        <th style="position:sticky; top:0; z-index:1;">Shift</th>
+                        <th style="position:sticky; top:0; z-index:1;">Time In</th>
+                        <th style="position:sticky; top:0; z-index:1;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="validators-tbody"></tbody>
+            </table>
+        </div>
+        <div style="text-align:right; margin-top:10px; padding-top:10px; border-top:1px solid #eee;">
+             <button class="icon-btn close-modal" style="border: 1px solid #ccc; padding: 8px 16px;">Close</button>
+        </div>
+    </div>
+  </div>
+
   <!-- Floating Quick Time In Widget -->
   <div id="quick-time-in-widget" class="card" style="position: fixed; bottom: 20px; right: 20px; width: 300px; padding: 0; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid #ccc; background: white; display:flex; flex-direction:column;">
       <div id="quick-widget-header" style="padding:10px; background:#f1f1f1; border-bottom:1px solid #eee; cursor:move; display:flex; justify-content:space-between; align-items:center; border-radius: 8px 8px 0 0;">
@@ -2272,20 +2301,47 @@
         }
 
         const validatorsViewBtn = document.getElementById('validators-view-btn');
+        const validatorsModal = document.getElementById('validators-modal');
+        const validatorsTbody = document.getElementById('validators-tbody');
+
+        function renderValidatorsModal() {
+            if (!validatorsTbody) return;
+            validatorsTbody.innerHTML = '';
+            
+            let data = getAttendanceData();
+            
+            if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value;
+                const end = globalEndDate.value;
+                data = data.filter(item => {
+                    return (!start || item.date >= start) && (!end || item.date <= end);
+                });
+            }
+            
+            const validators = data.filter(item => item.area === 'Validator');
+            validators.sort((a, b) => {
+                if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+                return a.shift.localeCompare(b.shift);
+            });
+
+            if (validators.length === 0) {
+                validatorsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px; color:#999;">No validators found.</td></tr>';
+                return;
+            }
+
+            validators.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${v.date}</td><td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${v.timeIn || '-'}</td><td>${v.status || '-'}</td>`;
+                validatorsTbody.appendChild(tr);
+            });
+        }
+
         if (validatorsViewBtn) {
             validatorsViewBtn.addEventListener('click', () => {
-                // Clear existing area filters
-                document.querySelectorAll('.att-area-cb').forEach(cb => cb.checked = false);
-                
-                // Select Validator
-                const validatorCb = document.querySelector('.att-area-cb[value="Validator"]');
-                if (validatorCb) validatorCb.checked = true;
-                
-                // Update text
-                const areaText = document.getElementById('att-filter-area-text');
-                if (areaText) areaText.textContent = 'Validator';
-                
-                renderAttendanceTable();
+                if (validatorsModal) {
+                    validatorsModal.classList.remove('hidden');
+                    renderValidatorsModal();
+                }
             });
         }
 
