@@ -339,12 +339,13 @@
                       <th style="width: 80px;">Status</th>
                       <th style="width: 100px;">Notes</th>
                       <th style="width: 60px;">Action</th>
+                      <th style="width: 60px;">Paste to Daily</th>
                   </tr>
               </thead>
               <tbody></tbody>
               <tfoot>
                   <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #eef2f6;">
-                      <td colspan="15" style="text-align: right; padding: 10px;">Total Records: <span id="att-total-count">0</span></td>
+                      <td colspan="16" style="text-align: right; padding: 10px;">Total Records: <span id="att-total-count">0</span></td>
                   </tr>
               </tfoot>
           </table>
@@ -1501,6 +1502,14 @@
             }
             paginatedData.forEach(item => {
                 const tr = document.createElement('tr');
+
+                let pasteButtonHtml = '';
+                if (item.area === 'Cycle Counter') {
+                    pasteButtonHtml = `<button class="icon-btn paste-att-btn" data-id="${item.id}" title="Paste to Daily" style="margin-right:5px">📋</button>`;
+                } else {
+                    pasteButtonHtml = `<button class="icon-btn add-to-cycle-counter-btn" data-id="${item.id}" title="Add to Cycle Counters & Paste" style="margin-right:5px; color: #3498db;">➕</button>`;
+                }
+
                 tr.innerHTML = `
                     <td><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
                     <td>${item.date}</td>
@@ -1520,6 +1529,7 @@
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
                         <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
                     </td>
+                    <td>${pasteButtonHtml}</td>
                 `;
                 attendanceTableBody.appendChild(tr);
             });
@@ -1688,6 +1698,37 @@
                 }
             });
         }
+        //Past Button from All Ic attendance to Daily Cycle Count.
+        if(attendanceTableBody){
+            attendanceTableBody.addEventListener('click', (e) => {
+                const pasteBtn = e.target.closest('button.paste-att-btn');
+                const addBtn = e.target.closest('button.add-to-cycle-counter-btn');
+
+                if (pasteBtn) {
+                    const id = pasteBtn.dataset.id;
+                    const data = getAttendanceData();
+                    const item = data.find(x => x.id === id);
+
+                    if(item){
+                        localStorage.setItem('pastedFromAllAttendance', JSON.stringify(item));
+                        showToast('Attendance data for ' + item.name + ' copied!');
+                    }
+                } else if (addBtn) {
+                    const id = addBtn.dataset.id;
+                    let data = getAttendanceData();
+                    const itemIndex = data.findIndex(x => x.id === id);
+
+                    if(itemIndex > -1){
+                        data[itemIndex].area = 'Cycle Counter';
+                        saveAttendanceData(data);
+                        localStorage.setItem('pastedFromAllAttendance', JSON.stringify(data[itemIndex]));
+                        showToast(data[itemIndex].name + ' added to Cycle Counters and copied!');
+                        renderAttendanceTable(); // Re-render to show the change
+                    }
+                }
+            });
+        }
+
 
         // Mass Delete for Attendance
         function updateAttendanceActionButtons() {
