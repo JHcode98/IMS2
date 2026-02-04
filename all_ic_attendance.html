@@ -934,7 +934,16 @@
     <div class="modal-content card" style="max-width: 600px; margin: 50px auto; display:flex; flex-direction:column; max-height:85vh;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h3 style="margin:0">IC User ID Master (IC Support)</h3>
-            <button class="icon-btn close-modal">&times;</button>
+            <div style="display:flex; gap:5px;">
+                <button id="ic-master-template-btn" class="icon-btn" title="Download Template">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                <button id="ic-master-upload-btn" class="icon-btn" title="Upload Master List">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </button>
+                <input type="file" id="ic-master-upload-file" accept=".csv" style="display:none;">
+                <button class="icon-btn close-modal">&times;</button>
+            </div>
         </div>
         <div style="display:grid; grid-template-columns: 1fr 1.5fr 1fr 1fr auto; gap:5px; align-items:end; margin-bottom:15px; padding-bottom:15px; border-bottom:1px solid #eee;">
             <div>
