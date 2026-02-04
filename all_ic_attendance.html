@@ -1095,6 +1095,7 @@
                             <th style="position:sticky; top:0; z-index:1;">Description</th>
                             <th style="position:sticky; top:0; z-index:1;">Qty</th>
                             <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
+                            <th style="position:sticky; top:0; z-index:1;">Duration</th>
                             <th style="position:sticky; top:0; z-index:1;">Action</th>
                         </tr>
                     </thead>
@@ -2538,13 +2539,23 @@
             const resolvedTasks = tasks.filter(t => t.status === 'Completed');
 
             if(pendingTasks.length === 0) {
-                pendingTasksTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
+                pendingTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
             } else {
+                const now = new Date();
                 pendingTasks.forEach(t => {
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
+                    
+                    const diffMs = now - new Date(t.timestamp);
+                    const diffMins = Math.floor(diffMs / 60000);
+                    let durationStr = diffMins < 60 ? `${diffMins}m` : `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
+                    
+                    if(diffMins > 60) durationStr = `<span style="color:#e74c3c; font-weight:bold;">${durationStr}</span>`;
+                    else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
+                    else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
+
                     const actionHtml = `<button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Completed" style="color:#2ecc71; margin-right:5px;">✓</button><button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
-                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
