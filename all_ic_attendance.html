@@ -1083,10 +1083,16 @@
                     </div>
                 </div>
                 
-                <!-- Table 2: Resolved -->
+                <!-- Table 2: Resolved / Unresolved Tabs -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
-                    <h4 style="margin:0 0 10px 0; color:#2ecc71;">Resolved Tasks</h4>
-                    <div style="flex:1; overflow:auto;">
+                    <div class="att-tabs" style="margin-bottom:10px;">
+                        <button class="att-tab active" onclick="openValTab(event, 'tab-val-resolved')">Resolved</button>
+                        <button class="att-tab" onclick="openValTab(event, 'tab-val-unresolved')">Unresolved</button>
+                    </div>
+                    
+                    <!-- Resolved Tab -->
+                    <div id="tab-val-resolved" class="val-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                        <div style="flex:1; overflow:auto;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
                                 <tr>
@@ -1102,19 +1108,55 @@
                             <tbody id="resolved-tasks-tbody"></tbody>
                         </table>
                     </div>
-                    <div id="val-resolved-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
-                        <div style="display:flex; align-items:center; gap:5px;">
-                            <label style="font-size:11px;">Rows:</label>
-                            <select id="val-resolved-rows" style="padding:2px; font-size:11px;">
-                                <option value="5">5</option>
-                                <option value="10" selected>10</option>
-                                <option value="20">20</option>
-                            </select>
+                        <div id="val-resolved-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <label style="font-size:11px;">Rows:</label>
+                                <select id="val-resolved-rows" style="padding:2px; font-size:11px;">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                            <span id="val-resolved-info" style="font-size:11px; color:#666;"></span>
+                            <div style="display:flex; gap:5px;">
+                                <button id="val-resolved-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
+                                <button id="val-resolved-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                            </div>
                         </div>
-                        <span id="val-resolved-info" style="font-size:11px; color:#666;"></span>
-                        <div style="display:flex; gap:5px;">
-                            <button id="val-resolved-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
-                            <button id="val-resolved-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                    </div>
+
+                    <!-- Unresolved Tab -->
+                    <div id="tab-val-unresolved" class="val-tab-content" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+                        <div style="flex:1; overflow:auto;">
+                            <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
+                                <thead>
+                                    <tr>
+                                        <th style="position:sticky; top:0; z-index:1;">Date</th>
+                                        <th style="position:sticky; top:0; z-index:1;">SKU</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Description</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Qty</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Validator</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="unresolved-tasks-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div id="val-unresolved-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:5px; border-top:1px solid #eee;">
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <label style="font-size:11px;">Rows:</label>
+                                <select id="val-unresolved-rows" style="padding:2px; font-size:11px;">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                            <span id="val-unresolved-info" style="font-size:11px; color:#666;"></span>
+                            <div style="display:flex; gap:5px;">
+                                <button id="val-unresolved-prev" class="icon-btn" style="padding:2px 6px; font-size:11px;">&lt;</button>
+                                <button id="val-unresolved-next" class="icon-btn" style="padding:2px 6px; font-size:11px;">&gt;</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2569,11 +2611,15 @@
         let valPendingRows = 10;
         let valResolvedPage = 1;
         let valResolvedRows = 10;
+        let valUnresolvedPage = 1;
+        let valUnresolvedRows = 10;
 
         function renderValidationTasks() {
-            if(!pendingTasksTbody || !resolvedTasksTbody) return;
+            if(!pendingTasksTbody || !resolvedTasksTbody || !document.getElementById('unresolved-tasks-tbody')) return;
             pendingTasksTbody.innerHTML = '';
             resolvedTasksTbody.innerHTML = '';
+            const unresolvedTasksTbody = document.getElementById('unresolved-tasks-tbody');
+            unresolvedTasksTbody.innerHTML = '';
             
             let tasks = getValidationTasks();
             
@@ -2613,8 +2659,9 @@
 
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            const pendingTasks = tasks.filter(t => t.status !== 'Completed');
+            const pendingTasks = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
             const resolvedTasks = tasks.filter(t => t.status === 'Completed');
+            const unresolvedTasks = tasks.filter(t => t.status === 'Unresolved');
 
             // Pagination for Pending
             const totalPending = pendingTasks.length;
@@ -2662,6 +2709,9 @@
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         </button>
+                        <button class="icon-btn mark-unresolved-btn" data-id="${t.id}" title="Mark Unresolved" style="color:#f39c12; margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                        </button>
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
@@ -2694,7 +2744,7 @@
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     const resolvedTime = t.completedAt ? new Date(t.completedAt).toLocaleString() : '-';
                     const actionHtml = `
-                        <button class="icon-btn unresolve-task-btn" data-id="${t.id}" title="Mark Unresolved" style="color:#f39c12; margin-right:5px;">
+                        <button class="icon-btn reopen-task-btn" data-id="${t.id}" title="Reopen (Move to Pending)" style="color:#f39c12; margin-right:5px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38"/></svg>
                         </button>
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
@@ -2702,6 +2752,40 @@
                         </button>`;
                     tr.innerHTML = `<td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     resolvedTasksTbody.appendChild(tr);
+                });
+            }
+
+            // Pagination for Unresolved
+            const totalUnresolved = unresolvedTasks.length;
+            const totalUnresolvedPages = Math.ceil(totalUnresolved / valUnresolvedRows) || 1;
+            if (valUnresolvedPage > totalUnresolvedPages) valUnresolvedPage = totalUnresolvedPages;
+            if (valUnresolvedPage < 1) valUnresolvedPage = 1;
+            const startUnresolved = (valUnresolvedPage - 1) * valUnresolvedRows;
+            const paginatedUnresolved = unresolvedTasks.slice(startUnresolved, startUnresolved + valUnresolvedRows);
+
+            // Update Unresolved Controls
+            const unresolvedInfo = document.getElementById('val-unresolved-info');
+            if(unresolvedInfo) unresolvedInfo.textContent = `Page ${valUnresolvedPage}/${totalUnresolvedPages} (${totalUnresolved})`;
+            const unresolvedPrev = document.getElementById('val-unresolved-prev');
+            const unresolvedNext = document.getElementById('val-unresolved-next');
+            if(unresolvedPrev) unresolvedPrev.disabled = valUnresolvedPage <= 1;
+            if(unresolvedNext) unresolvedNext.disabled = valUnresolvedPage >= totalUnresolvedPages;
+
+            if(paginatedUnresolved.length === 0) {
+                unresolvedTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No unresolved tasks.</td></tr>';
+            } else {
+                paginatedUnresolved.forEach(t => {
+                    const tr = document.createElement('tr');
+                    const assignedTime = new Date(t.timestamp).toLocaleString();
+                    const actionHtml = `
+                        <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
+                        <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                        </button>`;
+                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
+                    unresolvedTasksTbody.appendChild(tr);
                 });
             }
         }
@@ -2722,6 +2806,14 @@
         if(valResolvedPrev) valResolvedPrev.addEventListener('click', () => { if(valResolvedPage > 1) { valResolvedPage--; renderValidationTasks(); } });
         if(valResolvedNext) valResolvedNext.addEventListener('click', () => { valResolvedPage++; renderValidationTasks(); });
         if(valResolvedRowsSel) valResolvedRowsSel.addEventListener('change', () => { valResolvedRows = parseInt(valResolvedRowsSel.value); valResolvedPage = 1; renderValidationTasks(); });
+
+        const valUnresolvedPrev = document.getElementById('val-unresolved-prev');
+        const valUnresolvedNext = document.getElementById('val-unresolved-next');
+        const valUnresolvedRowsSel = document.getElementById('val-unresolved-rows');
+
+        if(valUnresolvedPrev) valUnresolvedPrev.addEventListener('click', () => { if(valUnresolvedPage > 1) { valUnresolvedPage--; renderValidationTasks(); } });
+        if(valUnresolvedNext) valUnresolvedNext.addEventListener('click', () => { valUnresolvedPage++; renderValidationTasks(); });
+        if(valUnresolvedRowsSel) valUnresolvedRowsSel.addEventListener('change', () => { valUnresolvedRows = parseInt(valUnresolvedRowsSel.value); valUnresolvedPage = 1; renderValidationTasks(); });
 
         function handleTaskAction(e) {
             const btn = e.target.closest('.icon-btn');
@@ -2746,7 +2838,17 @@
                     renderValidationTasks();
                     showToast('Task completed');
                 }
-            } else if(btn.classList.contains('unresolve-task-btn')) {
+            } else if(btn.classList.contains('mark-unresolved-btn')) {
+                const id = btn.dataset.id;
+                let tasks = getValidationTasks();
+                const taskIndex = tasks.findIndex(t => t.id === id);
+                if(taskIndex > -1) {
+                    tasks[taskIndex].status = 'Unresolved';
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
+                    showToast('Task marked as Unresolved');
+                }
+            } else if(btn.classList.contains('reopen-task-btn')) {
                 const id = btn.dataset.id;
                 let tasks = getValidationTasks();
                 const taskIndex = tasks.findIndex(t => t.id === id);
@@ -2755,7 +2857,7 @@
                     delete tasks[taskIndex].completedAt;
                     saveValidationTasks(tasks);
                     renderValidationTasks();
-                    showToast('Task marked as unresolved');
+                    showToast('Task reopened (Pending)');
                 }
             }
         }
@@ -2778,8 +2880,24 @@
                 }
             });
         }
-        if(resolvedTasksTbody) {
-            resolvedTasksTbody.addEventListener('click', handleTaskAction);
+        if(resolvedTasksTbody) resolvedTasksTbody.addEventListener('click', handleTaskAction);
+        const unresolvedTasksTbody = document.getElementById('unresolved-tasks-tbody');
+        if(unresolvedTasksTbody) unresolvedTasksTbody.addEventListener('click', handleTaskAction);
+
+        // Tab switching for Validator View
+        window.openValTab = function(evt, tabId) {
+            const card = evt.target.closest('.card');
+            const tabContents = card.querySelectorAll('.val-tab-content');
+            tabContents.forEach(tc => tc.style.display = 'none');
+            const tabBtns = card.querySelectorAll('.att-tab');
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+            const target = document.getElementById(tabId);
+            if(target) target.style.display = 'flex';
+            evt.target.classList.add('active');
+        };
+
+        // SKU Master Template & Clear
+        const downloadSkuTemplateBtn = document.getElementById('download-sku-template-btn');
         }
 
         // SKU Master Template & Clear
