@@ -1380,9 +1380,6 @@
         function saveTimestamps(data) {
             localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
         }
-        function getTimestamps() {
-            try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TIMESTAMPS) || '[]'); } catch (e) { return []; }
-        }
         function showToast(message) {
             const toast = document.getElementById('toast-notification');
             if (toast) {
@@ -2895,10 +2892,6 @@
             if(target) target.style.display = 'flex';
             evt.target.classList.add('active');
         };
-
-        // SKU Master Template & Clear
-        const downloadSkuTemplateBtn = document.getElementById('download-sku-template-btn');
-        }
 
         // SKU Master Template & Clear
         const downloadSkuTemplateBtn = document.getElementById('download-sku-template-btn');
