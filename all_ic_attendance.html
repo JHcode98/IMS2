@@ -2543,6 +2543,18 @@
                 });
             }
 
+            // Get validators for dropdown
+            let attendanceData = getAttendanceData();
+            if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value;
+                const end = globalEndDate.value;
+                attendanceData = attendanceData.filter(item => {
+                    return (!start || item.date >= start) && (!end || item.date <= end);
+                });
+            }
+            const validators = attendanceData.filter(item => item.area === 'Validator');
+            const validatorNames = [...new Set(validators.map(v => v.name))].sort();
+
             const total = tasks.length;
             const completed = tasks.filter(t => t.status === 'Completed').length;
             const pending = total - completed;
@@ -2559,7 +2571,7 @@
             const resolvedTasks = tasks.filter(t => t.status === 'Completed');
 
             if(pendingTasks.length === 0) {
-                pendingTasksTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
+                pendingTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
             } else {
                 const now = new Date();
                 pendingTasks.forEach(t => {
@@ -2574,8 +2586,18 @@
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
+                    let validatorSelect = `<select class="task-validator-select" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">`;
+                    validatorSelect += `<option value="Unassigned" ${t.validator === 'Unassigned' ? 'selected' : ''}>Unassigned</option>`;
+                    validatorNames.forEach(vName => {
+                        validatorSelect += `<option value="${vName}" ${t.validator === vName ? 'selected' : ''}>${vName}</option>`;
+                    });
+                    if (t.validator !== 'Unassigned' && !validatorNames.includes(t.validator)) {
+                         validatorSelect += `<option value="${t.validator}" selected>${t.validator}</option>`;
+                    }
+                    validatorSelect += `</select>`;
+
                     const actionHtml = `<button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Completed" style="color:#2ecc71; margin-right:5px;">✓</button><button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
-                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
@@ -2619,6 +2641,21 @@
 
         if(pendingTasksTbody) {
             pendingTasksTbody.addEventListener('click', handleTaskAction);
+            pendingTasksTbody.addEventListener('change', (e) => {
+                if(e.target.classList.contains('task-validator-select')) {
+                    const id = e.target.dataset.id;
+                    const newValidator = e.target.value;
+                    let tasks = getValidationTasks();
+                    const taskIndex = tasks.findIndex(t => t.id === id);
+                    if(taskIndex > -1) {
+                        tasks[taskIndex].validator = newValidator;
+                        saveValidationTasks(tasks);
+                        renderValidationTasks();
+                        renderValidatorsModal();
+                        showToast(`Task assigned to ${newValidator}`);
+                    }
+                }
+            });
         }
         if(resolvedTasksTbody) {
             resolvedTasksTbody.addEventListener('click', handleTaskAction);
