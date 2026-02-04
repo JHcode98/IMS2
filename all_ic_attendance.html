@@ -162,6 +162,17 @@
         100% { background-color: #fff; }
     }
     .blink-red-card { animation: blink-red 1s infinite ease-in-out; border: 1px solid #e74c3c !important; }
+
+    /* Hover effect for validator view tables */
+    #pending-tasks-tbody tr .icon-btn,
+    #resolved-tasks-tbody tr .icon-btn {
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    #pending-tasks-tbody tr:hover .icon-btn,
+    #resolved-tasks-tbody tr:hover .icon-btn {
+        opacity: 1;
+    }
   </style>
 </head>
 <body class="inventory-mode">
@@ -2647,7 +2658,13 @@
                     }
                     validatorSelect += `</select>`;
 
-                    const actionHtml = `<button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Completed" style="color:#2ecc71; margin-right:5px;">✓</button><button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
+                    const actionHtml = `
+                        <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
+                        <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                        </button>`;
                     tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
@@ -2676,7 +2693,13 @@
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     const resolvedTime = t.completedAt ? new Date(t.completedAt).toLocaleString() : '-';
-                    const actionHtml = `<button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
+                    const actionHtml = `
+                        <button class="icon-btn unresolve-task-btn" data-id="${t.id}" title="Mark Unresolved" style="color:#f39c12; margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38"/></svg>
+                        </button>
+                        <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                        </button>`;
                     tr.innerHTML = `<td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     resolvedTasksTbody.appendChild(tr);
                 });
@@ -2701,26 +2724,40 @@
         if(valResolvedRowsSel) valResolvedRowsSel.addEventListener('change', () => { valResolvedRows = parseInt(valResolvedRowsSel.value); valResolvedPage = 1; renderValidationTasks(); });
 
         function handleTaskAction(e) {
-                if(e.target.classList.contains('delete-task-btn')) {
-                    if(confirm('Delete this task?')) {
-                        const id = e.target.dataset.id;
-                        let tasks = getValidationTasks();
-                        tasks = tasks.filter(t => t.id !== id);
-                        saveValidationTasks(tasks);
-                        renderValidationTasks();
-                    }
-                } else if(e.target.classList.contains('complete-task-btn')) {
-                    const id = e.target.dataset.id;
+            const btn = e.target.closest('.icon-btn');
+            if (!btn) return;
+
+            if(btn.classList.contains('delete-task-btn')) {
+                if(confirm('Delete this task?')) {
+                    const id = btn.dataset.id;
                     let tasks = getValidationTasks();
-                    const taskIndex = tasks.findIndex(t => t.id === id);
-                    if(taskIndex > -1) {
-                        tasks[taskIndex].status = 'Completed';
-                        tasks[taskIndex].completedAt = new Date().toISOString();
-                        saveValidationTasks(tasks);
-                        renderValidationTasks();
-                        showToast('Task completed');
-                    }
+                    tasks = tasks.filter(t => t.id !== id);
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
                 }
+            } else if(btn.classList.contains('complete-task-btn')) {
+                const id = btn.dataset.id;
+                let tasks = getValidationTasks();
+                const taskIndex = tasks.findIndex(t => t.id === id);
+                if(taskIndex > -1) {
+                    tasks[taskIndex].status = 'Completed';
+                    tasks[taskIndex].completedAt = new Date().toISOString();
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
+                    showToast('Task completed');
+                }
+            } else if(btn.classList.contains('unresolve-task-btn')) {
+                const id = btn.dataset.id;
+                let tasks = getValidationTasks();
+                const taskIndex = tasks.findIndex(t => t.id === id);
+                if(taskIndex > -1) {
+                    tasks[taskIndex].status = 'Pending';
+                    delete tasks[taskIndex].completedAt;
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
+                    showToast('Task marked as unresolved');
+                }
+            }
         }
 
         if(pendingTasksTbody) {
