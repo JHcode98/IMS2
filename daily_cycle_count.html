@@ -661,31 +661,11 @@
                 </div>
             </div>
             <div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
                     <label for="att-role">Role</label>
                     <select id="att-role" style="width:100%">
                         <option value="IC Support">IC Support</option>
                         <option value="IC Back up">IC Back up</option>
                     </select>
-                </div>
-                <div>
-                    <label for="att-area">Job Description</label>
-                    <select id="att-area" style="width:100%">
-                        <option value="Cycle Counter">Cycle Counter</option>
-                        <option value="TL">TL</option>
-                        <option value="OIC">OIC</option>
-                        <option value="Encoder">Encoder</option>
-                        <option value="SBD Checker">SBD Checker</option>
-                        <option value="RTV">RTV</option>
-                        <option value="Damaged Checker">Damaged Checker</option>
-                        <option value="B1T1 Checker">B1T1 Checker</option>
-                        <option value="Validator">Validator</option>
-                        <option value="HVI Support">HVI Support</option>
-                        <option value="Projects">Projects</option>
-                        <option value="HO-Cancelled">HO-Cancelled</option>
-                    </select>
-                </div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
@@ -1486,42 +1466,6 @@
     if(!sessionStorage.getItem('dms_auth_v1')) window.location.href = 'index.html';
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Handle pasted attendance data from all_ic_attendance.html
-        const pastedData = JSON.parse(localStorage.getItem('pastedFromAllAttendance') || 'null');
-        if (pastedData) {
-            localStorage.removeItem('pastedFromAllAttendance'); // Use it only once
-            
-            // Open the 'Add Attendance' modal and pre-fill it
-            const attModal = document.getElementById('att-modal');
-            if (attModal) {
-                document.getElementById('att-modal-title').textContent = 'Add Pasted Attendance';
-                attForm.reset();
-                document.getElementById('att-edit-id').value = ''; // Ensure it's a new entry
-
-                // Pre-fill fields
-                document.getElementById('att-date').value = pastedData.date || new Date().toISOString().split('T')[0];
-                document.getElementById('att-shift').value = pastedData.shift || '1st Shift-(6am-2pm)';
-                document.getElementById('att-user-id').value = pastedData.userId || '';
-                document.getElementById('att-name').value = pastedData.name || '';
-                
-                const roleSelect = document.getElementById('att-role');
-                const roleExists = Array.from(roleSelect.options).some(opt => opt.value === pastedData.role);
-                if (roleExists) roleSelect.value = pastedData.role;
-
-                const areaSelect = document.getElementById('att-area');
-                if (areaSelect) areaSelect.value = pastedData.area || 'Cycle Counter';
-
-                document.getElementById('att-time-in').value = pastedData.timeIn || '';
-                document.getElementById('att-break-out').value = pastedData.breakOut || '';
-                document.getElementById('att-break-in').value = pastedData.breakIn || '';
-                document.getElementById('att-time-out').value = pastedData.timeOut || '';
-                document.getElementById('att-status').value = pastedData.status || 'Full counter';
-                
-                attModal.classList.remove('hidden');
-                showToast('Pasted data from All IC Attendance. Please review and save.');
-            }
-        }
-
         let tsCurrentPage = 1;
         let tsItemsPerPage = 20;
         const countersForm = document.getElementById('daily-counters-form');
@@ -4086,7 +4030,6 @@
                     userId: document.getElementById('att-user-id').value.trim(),
                     name: document.getElementById('att-name').value.trim().toUpperCase(),
                     role: document.getElementById('att-role').value,
-                    area: document.getElementById('att-area') ? document.getElementById('att-area').value : '',
                     timeIn: document.getElementById('att-time-in').value,
                     breakIn: document.getElementById('att-break-in').value,
                     breakOut: document.getElementById('att-break-out').value,
@@ -4191,7 +4134,6 @@
                         document.getElementById('att-shift').value = item.shift;
                         document.getElementById('att-name').value = item.name;
                         document.getElementById('att-role').value = item.role;
-                        if(document.getElementById('att-area')) document.getElementById('att-area').value = item.area || '';
                         document.getElementById('att-time-in').value = item.timeIn || '';
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
