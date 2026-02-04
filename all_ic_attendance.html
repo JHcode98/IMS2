@@ -2428,7 +2428,7 @@
         const assignSku = document.getElementById('assign-sku');
         const assignDesc = document.getElementById('assign-desc');
         const assignQty = document.getElementById('assign-qty');
-        const assignValidator = document.getElementById('assign-validator');
+        const assignReason = document.getElementById('assign-reason');
         const btnAssignTask = document.getElementById('btn-assign-task');
         const pendingTasksTbody = document.getElementById('pending-tasks-tbody');
         const resolvedTasksTbody = document.getElementById('resolved-tasks-tbody');
@@ -2449,30 +2449,33 @@
                 });
             }
             
-            updateValidatorDropdown(data);
             let validators = data.filter(item => item.area === 'Validator');
-            
-            const searchTerm = validatorsSearch ? validatorsSearch.value.toLowerCase() : '';
-            if (searchTerm) {
-                validators = validators.filter(v => 
-                    (v.name && v.name.toLowerCase().includes(searchTerm)) || 
-                    (v.userId && v.userId.toLowerCase().includes(searchTerm))
-                );
-            }
+            let tasks = getValidationTasks();
 
             validators.sort((a, b) => {
                 if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
                 return a.shift.localeCompare(b.shift);
             });
 
-            if (validators.length === 0) {
-                validatorsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px; color:#999;">No validators found.</td></tr>';
-                return;
-            }
-
             validators.forEach(v => {
+                // Calculate stats for this validator
+                const pendingCount = tasks.filter(t => t.validator === v.name && t.status !== 'Completed').length;
+                const completedCount = tasks.filter(t => t.validator === v.name && t.status === 'Completed').length;
+                const totalCount = pendingCount + completedCount;
+                
+                // Determine current task (first pending task)
+                let currentTask = '-';
+                const activeTask = tasks.find(t => t.validator === v.name && t.status !== 'Completed');
+                if (activeTask) {
+                    currentTask = activeTask.sku;
+                } else if (v.status === 'Temporary slide to Other task') {
+                    currentTask = 'Slide';
+                } else {
+                    currentTask = 'Idle';
+                }
+
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${v.date}</td><td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${v.timeIn || '-'}</td><td>${v.status || '-'}</td>`;
+                tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${currentTask}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${totalCount}</td>`;
                 validatorsTbody.appendChild(tr);
             });
         }
@@ -2533,15 +2536,6 @@
             if(document.getElementById('val-pending-tasks')) document.getElementById('val-pending-tasks').textContent = pending;
             if(document.getElementById('val-completion-rate')) document.getElementById('val-completion-rate').textContent = rate + '%';
 
-            const progressBar = document.getElementById('val-progress-bar');
-            if(progressBar) {
-                progressBar.style.width = rate + '%';
-                progressBar.textContent = rate + '%';
-                if(rate < 30) progressBar.style.backgroundColor = '#e74c3c';
-                else if(rate < 70) progressBar.style.backgroundColor = '#f1c40f';
-                else progressBar.style.backgroundColor = '#2ecc71';
-            }
-
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             const pendingTasks = tasks.filter(t => t.status !== 'Completed');
@@ -2564,7 +2558,7 @@
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
                     const actionHtml = `<button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Completed" style="color:#2ecc71; margin-right:5px;">✓</button><button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
-                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
@@ -2577,7 +2571,7 @@
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     const resolvedTime = t.completedAt ? new Date(t.completedAt).toLocaleString() : '-';
                     const actionHtml = `<button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button>`;
-                    tr.innerHTML = `<td>${assignedTime}</td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
                     resolvedTasksTbody.appendChild(tr);
                 });
             }
@@ -2828,8 +2822,8 @@
             btnAssignTask.addEventListener('click', () => {
                 const sku = assignSku.value.trim();
                 const qty = assignQty.value.trim();
-                const validator = assignValidator.value;
-                if(!sku || !qty || !validator) { alert('Please fill in SKU, Qty and select a Validator.'); return; }
+                const reason = assignReason.value.trim();
+                if(!sku || !qty) { alert('Please fill in SKU and Qty.'); return; }
                 
                 const newTask = {
                     id: Date.now().toString(),
@@ -2837,7 +2831,8 @@
                     sku: sku,
                     desc: assignDesc.value,
                     qty: qty,
-                    validator: validator,
+                    reason: reason,
+                    validator: 'Unassigned',
                     status: 'Pending'
                 };
                 const tasks = getValidationTasks();
@@ -2846,7 +2841,7 @@
                 renderValidationTasks();
                 showToast('Task assigned');
                 
-                assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignValidator.value = '';
+                assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = '';
             });
         }
 
