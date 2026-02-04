@@ -2617,7 +2617,6 @@
                 });
             }
             
-            let validators = data.filter(item => item.area === 'Validator');
             let validators = data.filter(item => item.area === 'Validator' && !item.timeOut);
             let tasks = getValidationTasks();
 
@@ -2731,10 +2730,6 @@
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             const allPending = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
-            const pendingTasks = allPending.filter(t => !t.validator || t.validator === 'Unassigned');
-            const assignedTasks = allPending.filter(t => t.validator && t.validator !== 'Unassigned');
-            const resolvedTasks = tasks.filter(t => t.status === 'Completed');
-            const unresolvedTasks = tasks.filter(t => t.status === 'Unresolved');
             let pendingTasks = allPending.filter(t => !t.validator || t.validator === 'Unassigned');
             let assignedTasks = allPending.filter(t => t.validator && t.validator !== 'Unassigned');
             let resolvedTasks = tasks.filter(t => t.status === 'Completed');
@@ -3267,48 +3262,6 @@
                     localStorage.removeItem('ims_master_desc_v1');
                     showToast('SKU Master List cleared.');
                 }
-            });
-        }
-
-        // SKU Master Upload in Validator Modal
-        if(uploadSkuBtn && uploadSkuFile) {
-            uploadSkuBtn.addEventListener('click', () => uploadSkuFile.click());
-
-            uploadSkuFile.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    let text = ev.target.result;
-                    if (text.charCodeAt(0) === 0xFEFF) {
-                        text = text.slice(1);
-                    }
-                    const lines = text.split(/\r\n|\n/);
-                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                    const codeIdx = headers.findIndex(h => h.toLowerCase() === 'item code');
-                    const descIdx = headers.findIndex(h => h.toLowerCase() === 'description');
-                    
-                    if(codeIdx === -1 || descIdx === -1) {
-                        alert('Master List CSV must have "Item Code" and "Description" columns.');
-                        return;
-                    }
-
-                    const STORAGE_KEY_MASTER_DESC = 'ims_master_desc_v1';
-                    const masterMap = JSON.parse(localStorage.getItem(STORAGE_KEY_MASTER_DESC) || '{}');
-                    let count = 0;
-                    for(let i=1; i<lines.length; i++) {
-                        if(!lines[i].trim()) continue;
-                        const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
-                        if(cols[codeIdx]) {
-                            masterMap[cols[codeIdx]] = cols[descIdx] || '';
-                            count++;
-                        }
-                    }
-                    localStorage.setItem(STORAGE_KEY_MASTER_DESC, JSON.stringify(masterMap));
-                    showToast(`Master list updated with ${count} items.`);
-                    uploadSkuFile.value = '';
-                };
-                reader.readAsText(file);
             });
         }
 
