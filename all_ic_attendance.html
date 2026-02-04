@@ -380,6 +380,20 @@
         </div>
       </div>
       <div class="card-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+      <!-- Quick Time In Toolbar -->
+      <div style="background:#f1f5f9; padding:8px 12px; border-bottom:1px solid #e2e8f0; display:flex; gap:10px; align-items:center; margin-bottom:10px; border-radius:4px; flex-wrap: wrap;">
+          <div style="display:flex; align-items:center; gap:5px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:#2752a7;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span id="quick-widget-clock" style="font-size:12px; font-weight:bold; color:#555; min-width:120px;"></span>
+          </div>
+          <div style="width:1px; height:20px; background:#ccc; margin:0 5px;"></div>
+          <span style="font-weight:bold; color:#2752a7; font-size:13px;">Quick Time In:</span>
+          <input type="text" id="quick-user-id" placeholder="Scan User ID" style="width:120px; padding:5px; border:1px solid #ccc; border-radius:4px; text-transform:uppercase; font-size:12px;">
+          <button id="quick-time-in-btn" class="icon-btn" style="background:#2ecc71; color:white; font-weight:bold; padding: 5px 10px; font-size:12px;">GO</button>
+          <button id="quick-clear-btn" class="icon-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding: 5px 8px; font-size:12px;" title="Clear">C</button>
+          <input type="text" id="quick-user-name" placeholder="Name" readonly style="width:150px; padding:5px; border:1px solid #eee; border-radius:4px; background:#fff; color:#555; font-size:12px;">
+          <input type="text" id="quick-user-role" placeholder="Role" readonly style="width:100px; padding:5px; border:1px solid #eee; border-radius:4px; background:#fff; color:#555; font-size:12px;">
+      </div>
       <div class="att-tabs">
           <button class="att-tab active" data-shift="">All Shifts</button>
           <button class="att-tab" data-shift="1st Shift-(6am-2pm)">1st Shift</button>
@@ -1279,24 +1293,6 @@
             </div>
         </div>
     </div>
-  </div>
-
-  <!-- Floating Quick Time In Widget -->
-  <div id="quick-time-in-widget" class="card" style="position: fixed; bottom: 20px; right: 20px; width: 300px; padding: 0; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid #ccc; background: white; display:flex; flex-direction:column;">
-      <div id="quick-widget-header" style="padding:10px; background:#f1f1f1; border-bottom:1px solid #eee; cursor:move; display:flex; justify-content:space-between; align-items:center; border-radius: 8px 8px 0 0;">
-          <h4 style="margin:0; color:#2752a7; font-size:14px;">Quick Time In</h4>
-      </div>
-      <div style="padding:10px 15px 15px 15px; display:flex; flex-direction:column; gap:10px;">
-          <div id="quick-widget-clock" style="text-align:center; font-size:12px; color:#666; margin-bottom:5px; font-weight:bold;"></div>
-          <div style="display:flex; gap:5px;">
-              <input type="text" id="quick-user-id" placeholder="User ID" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px; text-transform:uppercase;">
-              <button id="quick-time-in-btn" class="icon-btn" style="background:#2ecc71; color:white; font-weight:bold; padding: 0 12px;">GO</button>
-              <button id="quick-clear-btn" class="icon-btn" style="background:#f0f0f0; color:#333; border:1px solid #ccc; padding: 0 8px;" title="Clear">C</button>
-          </div>
-          <input type="text" id="quick-user-name" placeholder="Name" readonly style="padding:8px; border:1px solid #eee; border-radius:4px; background:#f9f9f9; color:#555;">
-          <input type="text" id="quick-user-role" placeholder="Role" readonly style="padding:8px; border:1px solid #eee; border-radius:4px; background:#f9f9f9; color:#555;">
-          <button id="manual-add-btn" style="margin-top:5px; font-size:12px; background:none; border:none; color:#2752a7; text-decoration:underline; cursor:pointer; text-align:left; padding:0;">Manual Entry (+)</button>
-      </div>
   </div>
 
   <div id="toast-notification" class="toast"></div>
