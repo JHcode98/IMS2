@@ -1016,6 +1016,24 @@
                 <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:6px 12px; height:30px;">Assign</button>
             </div>
         </div>
+        <div style="margin-bottom:15px;">
+            <h4 style="margin:0 0 5px 0; font-size:14px; color:#2752a7;">Assigned Tasks</h4>
+            <div style="max-height: 200px; overflow:auto; border:1px solid #eee;">
+                <table class="report-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th style="position:sticky; top:0; z-index:1;">Time</th>
+                            <th style="position:sticky; top:0; z-index:1;">SKU</th>
+                            <th style="position:sticky; top:0; z-index:1;">Description</th>
+                            <th style="position:sticky; top:0; z-index:1;">Qty</th>
+                            <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
+                            <th style="position:sticky; top:0; z-index:1;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assigned-tasks-tbody"></tbody>
+                </table>
+            </div>
+        </div>
         <div style="margin-bottom:10px;">
             <input type="text" id="validators-search" placeholder="Search by Name or User ID..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
         </div>
@@ -2334,6 +2352,7 @@
         const assignQty = document.getElementById('assign-qty');
         const assignValidator = document.getElementById('assign-validator');
         const btnAssignTask = document.getElementById('btn-assign-task');
+        const assignedTasksTbody = document.getElementById('assigned-tasks-tbody');
 
         function renderValidatorsModal() {
             if (!validatorsTbody) return;
@@ -2395,6 +2414,48 @@
             if(currentVal) assignValidator.value = currentVal;
         }
 
+        const STORAGE_KEY_TASKS = 'ims_validation_tasks_v1';
+
+        function getValidationTasks() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TASKS) || '[]'); } catch(e) { return []; }
+        }
+        function saveValidationTasks(data) {
+            localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(data));
+        }
+
+        function renderValidationTasks() {
+            if(!assignedTasksTbody) return;
+            assignedTasksTbody.innerHTML = '';
+            const tasks = getValidationTasks();
+            tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if(tasks.length === 0) {
+                assignedTasksTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:10px; color:#999;">No tasks assigned.</td></tr>';
+                return;
+            }
+
+            tasks.forEach(t => {
+                const tr = document.createElement('tr');
+                const time = new Date(t.timestamp).toLocaleTimeString();
+                tr.innerHTML = `<td>${time}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.validator}</td><td><button class="icon-btn delete-task-btn" data-id="${t.id}" style="color:#d9534f;">&times;</button></td>`;
+                assignedTasksTbody.appendChild(tr);
+            });
+        }
+
+        if(assignedTasksTbody) {
+            assignedTasksTbody.addEventListener('click', (e) => {
+                if(e.target.classList.contains('delete-task-btn')) {
+                    if(confirm('Delete this task?')) {
+                        const id = e.target.dataset.id;
+                        let tasks = getValidationTasks();
+                        tasks = tasks.filter(t => t.id !== id);
+                        saveValidationTasks(tasks);
+                        renderValidationTasks();
+                    }
+                }
+            });
+        }
+
         if(assignSku && assignDesc){
             assignSku.addEventListener('input', () => {
                 const code = assignSku.value.trim();
@@ -2412,7 +2473,21 @@
                 const qty = assignQty.value.trim();
                 const validator = assignValidator.value;
                 if(!sku || !qty || !validator) { alert('Please fill in SKU, Qty and select a Validator.'); return; }
-                alert(`Task Assigned:\nSKU: ${sku}\nQty: ${qty}\nValidator: ${validator}`);
+                
+                const newTask = {
+                    id: Date.now().toString(),
+                    timestamp: new Date().toISOString(),
+                    sku: sku,
+                    desc: assignDesc.value,
+                    qty: qty,
+                    validator: validator
+                };
+                const tasks = getValidationTasks();
+                tasks.push(newTask);
+                saveValidationTasks(tasks);
+                renderValidationTasks();
+                showToast('Task assigned');
+                
                 assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignValidator.value = '';
             });
         }
@@ -2423,6 +2498,7 @@
                     if (validatorsSearch) validatorsSearch.value = '';
                     validatorsModal.classList.remove('hidden');
                     renderValidatorsModal();
+                    renderValidationTasks();
                 }
             });
         }
