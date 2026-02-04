@@ -1003,10 +1003,18 @@
         <div style="background:#f9f9f9; padding:10px; border-radius:4px; border:1px solid #eee; margin-bottom:15px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h4 style="margin:0; font-size:14px; color:#2752a7;">Assign Validation Task</h4>
-                <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List (Item Code, Description)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                </button>
-                <input type="file" id="upload-sku-desc-file" accept=".csv" style="display:none;">
+                <div style="display:flex; gap:5px;">
+                    <button id="download-sku-template-btn" class="icon-btn" title="Download Template">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>
+                    <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List (Item Code, Description)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </button>
+                    <button id="clear-sku-master-btn" class="icon-btn" title="Clear SKU Master List" style="color:#d9534f;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                    </button>
+                    <input type="file" id="upload-sku-desc-file" accept=".csv" style="display:none;">
+                </div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap:10px; align-items:end;">
                 <div>
@@ -2527,6 +2535,36 @@
                         renderValidationTasks();
                         showToast('Task completed');
                     }
+                }
+            });
+        }
+
+        // SKU Master Template & Clear
+        const downloadSkuTemplateBtn = document.getElementById('download-sku-template-btn');
+        const clearSkuMasterBtn = document.getElementById('clear-sku-master-btn');
+
+        if(downloadSkuTemplateBtn) {
+            downloadSkuTemplateBtn.addEventListener('click', () => {
+                const headers = ['Item Code', 'Description'];
+                const sample = ['10000001', 'Sample Item Description'];
+                const csvContent = headers.join(',') + '\n' + sample.join(',');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'sku_master_template.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        if(clearSkuMasterBtn) {
+            clearSkuMasterBtn.addEventListener('click', () => {
+                if(confirm('Are you sure you want to clear the SKU Master List?')) {
+                    localStorage.removeItem('ims_master_desc_v1');
+                    showToast('SKU Master List cleared.');
                 }
             });
         }
