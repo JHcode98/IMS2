@@ -994,6 +994,28 @@
             <h3 style="margin:0">Validators List</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
+        <div style="background:#f9f9f9; padding:10px; border-radius:4px; border:1px solid #eee; margin-bottom:15px;">
+            <h4 style="margin:0 0 10px 0; font-size:14px; color:#2752a7;">Assign Validation Task</h4>
+            <div style="display:grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap:10px; align-items:end;">
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">SKU Code</label>
+                    <input type="text" id="assign-sku" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">Description</label>
+                    <input type="text" id="assign-desc" readonly style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; background:#eee; color:#555;">
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">Qty</label>
+                    <input type="number" id="assign-qty" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">Assign To</label>
+                    <select id="assign-validator" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"><option value="">Select Validator</option></select>
+                </div>
+                <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:6px 12px; height:30px;">Assign</button>
+            </div>
+        </div>
         <div style="margin-bottom:10px;">
             <input type="text" id="validators-search" placeholder="Search by Name or User ID..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
         </div>
@@ -2307,6 +2329,11 @@
         const validatorsModal = document.getElementById('validators-modal');
         const validatorsTbody = document.getElementById('validators-tbody');
         const validatorsSearch = document.getElementById('validators-search');
+        const assignSku = document.getElementById('assign-sku');
+        const assignDesc = document.getElementById('assign-desc');
+        const assignQty = document.getElementById('assign-qty');
+        const assignValidator = document.getElementById('assign-validator');
+        const btnAssignTask = document.getElementById('btn-assign-task');
 
         function renderValidatorsModal() {
             if (!validatorsTbody) return;
@@ -2322,6 +2349,7 @@
                 });
             }
             
+            updateValidatorDropdown(data);
             let validators = data.filter(item => item.area === 'Validator');
             
             const searchTerm = validatorsSearch ? validatorsSearch.value.toLowerCase() : '';
@@ -2346,6 +2374,46 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${v.date}</td><td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${v.timeIn || '-'}</td><td>${v.status || '-'}</td>`;
                 validatorsTbody.appendChild(tr);
+            });
+        }
+
+        function updateValidatorDropdown(data) {
+            if(!assignValidator) return;
+            const currentVal = assignValidator.value;
+            // Keep first option
+            assignValidator.innerHTML = '<option value="">Select Validator</option>';
+            
+            const validators = data.filter(item => item.area === 'Validator');
+            const uniqueValidators = [...new Set(validators.map(v => v.name))].sort();
+            
+            uniqueValidators.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                assignValidator.appendChild(opt);
+            });
+            if(currentVal) assignValidator.value = currentVal;
+        }
+
+        if(assignSku && assignDesc){
+            assignSku.addEventListener('input', () => {
+                const code = assignSku.value.trim();
+                try {
+                    const masterMap = JSON.parse(localStorage.getItem('ims_master_desc_v1') || '{}');
+                    if(masterMap[code]) assignDesc.value = masterMap[code];
+                    else assignDesc.value = '';
+                } catch(e) {}
+            });
+        }
+
+        if(btnAssignTask) {
+            btnAssignTask.addEventListener('click', () => {
+                const sku = assignSku.value.trim();
+                const qty = assignQty.value.trim();
+                const validator = assignValidator.value;
+                if(!sku || !qty || !validator) { alert('Please fill in SKU, Qty and select a Validator.'); return; }
+                alert(`Task Assigned:\nSKU: ${sku}\nQty: ${qty}\nValidator: ${validator}`);
+                assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignValidator.value = '';
             });
         }
 
