@@ -1004,134 +1004,151 @@
   <!-- Validators Modal -->
   <div id="validators-modal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content card" style="width: 95%; height: 90vh; margin: 2vh auto; display:flex; flex-direction:column; max-width: 1800px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="margin:0">Validators List</h3>
+    <div class="modal-content card" style="width: 98%; height: 95vh; margin: 1vh auto; display:flex; flex-direction:column; max-width: 1800px; background:#f4f6f8;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eef2f6;">
+            <h3 style="margin:0">Validators View</h3>
             <button class="icon-btn close-modal">&times;</button>
         </div>
-        <div style="background:#f9f9f9; padding:10px; border-radius:4px; border:1px solid #eee; margin-bottom:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h4 style="margin:0; font-size:14px; color:#2752a7;">Assign Validation Task</h4>
-                <div style="display:flex; gap:5px;">
-                    <button id="download-sku-template-btn" class="icon-btn" title="Download Template">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    </button>
-                    <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List (Item Code, Description)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                    </button>
-                    <button id="clear-sku-master-btn" class="icon-btn" title="Clear SKU Master List" style="color:#d9534f;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
-                    </button>
-                    <input type="file" id="upload-sku-desc-file" accept=".csv" style="display:none;">
-                    <div style="width:1px; background:#ddd; margin:0 5px;"></div>
-                    <button id="download-task-template-btn" class="icon-btn" title="Download Task Template">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    </button>
-                    <button id="upload-bulk-tasks-btn" class="icon-btn" title="Bulk Assign Tasks (CSV)" style="color:#2752a7;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    </button>
-                    <input type="file" id="upload-bulk-tasks-file" accept=".csv" style="display:none;">
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 2fr 1fr 1fr auto; gap:10px; align-items:end;">
-                <div>
-                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">SKU Code</label>
-                    <input type="text" id="assign-sku" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
-                </div>
-                <div>
-                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">Description</label>
-                    <input type="text" id="assign-desc" readonly style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; background:#eee; color:#555;">
-                </div>
-                <div>
-                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">Qty</label>
-                    <input type="number" id="assign-qty" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
-                </div>
-                <div>
-                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">Assign To</label>
-                    <select id="assign-validator" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"><option value="">Select Validator</option></select>
-                </div>
-                <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:6px 12px; height:30px;">Assign</button>
-            </div>
-        </div>
-        <div id="validation-summary-dashboard" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:15px;">
-            <div class="stat-card" style="padding:15px; background:#e3f2fd; border:1px solid #90caf9; text-align:center; display:block;">
+
+        <!-- 1. Top Center: Dashboard -->
+        <div id="validation-summary-dashboard" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:15px;">
+            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
                 <div class="stat-value" id="val-total-tasks" style="font-size:24px; font-weight:bold; color:#1565c0;">0</div>
                 <div class="stat-label" style="font-size:12px; color:#555;">Total Tasks</div>
             </div>
-            <div class="stat-card" style="padding:15px; background:#e8f5e9; border:1px solid #a5d6a7; text-align:center; display:block;">
+            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
                 <div class="stat-value" id="val-completed-tasks" style="font-size:24px; font-weight:bold; color:#2e7d32;">0</div>
                 <div class="stat-label" style="font-size:12px; color:#555;">Completed</div>
             </div>
-            <div class="stat-card" style="padding:15px; background:#fff3e0; border:1px solid #ffe0b2; text-align:center; display:block;">
+            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
                 <div class="stat-value" id="val-pending-tasks" style="font-size:24px; font-weight:bold; color:#ef6c00;">0</div>
                 <div class="stat-label" style="font-size:12px; color:#555;">Pending</div>
             </div>
-            <div class="stat-card" style="padding:15px; background:#f3e5f5; border:1px solid #e1bee7; text-align:center; display:block;">
+            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
                 <div class="stat-value" id="val-completion-rate" style="font-size:24px; font-weight:bold; color:#7b1fa2;">0%</div>
                 <div class="stat-label" style="font-size:12px; color:#555;">Completion Rate</div>
             </div>
         </div>
-        <div style="margin-bottom:15px; background:#f0f0f0; border-radius:10px; height:20px; overflow:hidden; border:1px solid #ddd;">
-            <div id="val-progress-bar" style="height:100%; width:0%; background:#2ecc71; transition:width 0.5s ease; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;">0%</div>
-        </div>
-        <div style="margin-bottom:15px;">
-            <h4 style="margin:0 0 5px 0; font-size:14px; color:#2752a7;">Pending Tasks</h4>
-            <div style="max-height: 200px; overflow:auto; border:1px solid #eee;">
-                <table class="report-table" style="width:100%;">
+
+        <!-- Main Content -->
+        <div style="display:flex; gap:15px; flex:1; overflow:hidden;">
+            
+            <!-- 2. Left Side (60%) -->
+            <div style="flex:6; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
+                <!-- Table 1: Pending -->
+                <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
+                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Pending Tasks</h4>
+                    <div style="flex:1; overflow:auto;">
+                        <table class="report-table" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th style="position:sticky; top:0; z-index:1;">Assigned</th>
+                                    <th style="position:sticky; top:0; z-index:1;">SKU</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Description</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Qty</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Duration</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pending-tasks-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Table 2: Resolved -->
+                <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
+                    <h4 style="margin:0 0 10px 0; color:#2ecc71;">Resolved Tasks</h4>
+                    <div style="flex:1; overflow:auto;">
+                        <table class="report-table" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th style="position:sticky; top:0; z-index:1;">Resolved</th>
+                                    <th style="position:sticky; top:0; z-index:1;">SKU</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Description</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Qty</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Validator</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resolved-tasks-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Right Side (40%) -->
+            <div style="flex:4; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
+                
+                <!-- Top: Add Task Form -->
+                <div class="card" style="margin:0; padding:15px; overflow-y:auto;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="margin:0; color:#2752a7;">Add Validation Task</h4>
+                        <div style="display:flex; gap:5px;">
+                            <button id="download-sku-template-btn" class="icon-btn" title="Download Template">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            </button>
+                            <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            </button>
+                            <button id="clear-sku-master-btn" class="icon-btn" title="Clear SKU Master List" style="color:#d9534f;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                            </button>
+                            <input type="file" id="upload-sku-desc-file" accept=".csv" style="display:none;">
+                            <div style="width:1px; background:#ddd; margin:0 5px;"></div>
+                            <button id="download-task-template-btn" class="icon-btn" title="Download Task Template">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            </button>
+                            <button id="upload-bulk-tasks-btn" class="icon-btn" title="Bulk Assign Tasks (CSV)" style="color:#2752a7;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            </button>
+                            <input type="file" id="upload-bulk-tasks-file" accept=".csv" style="display:none;">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div style="grid-column: span 1;">
+                            <label style="font-size:11px; font-weight:bold;">SKU Code</label>
+                            <input type="text" id="assign-sku" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                        <div style="grid-column: span 1;">
+                            <label style="font-size:11px; font-weight:bold;">Qty</label>
+                            <input type="number" id="assign-qty" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label style="font-size:11px; font-weight:bold;">Description</label>
+                            <input type="text" id="assign-desc" readonly style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; background:#eee;">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label style="font-size:11px; font-weight:bold;">Reason for Validation</label>
+                            <input type="text" id="assign-reason" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;" placeholder="e.g. Variance, Damage check">
+                        </div>
+                        <div style="grid-column: span 2; text-align:right;">
+                            <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:8px 16px;">Add Task</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom: Available Validators -->
+                <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
+                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Available Validators</h4>
+                    <div style="flex:1; overflow:auto;">
+                        <table class="report-table" style="width:100%;">
                     <thead>
                         <tr>
-                            <th style="position:sticky; top:0; z-index:1;">Assigned</th>
-                            <th style="position:sticky; top:0; z-index:1;">SKU</th>
-                            <th style="position:sticky; top:0; z-index:1;">Description</th>
-                            <th style="position:sticky; top:0; z-index:1;">Qty</th>
-                            <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
-                            <th style="position:sticky; top:0; z-index:1;">Action</th>
+                            <th style="position:sticky; top:0; z-index:1;">User ID</th>
+                            <th style="position:sticky; top:0; z-index:1;">Name</th>
+                            <th style="position:sticky; top:0; z-index:1;">Shift</th>
+                            <th style="position:sticky; top:0; z-index:1;">Current Task</th>
+                            <th style="position:sticky; top:0; z-index:1;">Pending</th>
+                            <th style="position:sticky; top:0; z-index:1;">Completed</th>
+                            <th style="position:sticky; top:0; z-index:1;">Total</th>
                         </tr>
                     </thead>
-                    <tbody id="pending-tasks-tbody"></tbody>
+                    <tbody id="validators-tbody"></tbody>
                 </table>
             </div>
-        </div>
-        <div style="margin-bottom:15px;">
-            <h4 style="margin:0 0 5px 0; font-size:14px; color:#2ecc71;">Resolved Tasks</h4>
-            <div style="max-height: 200px; overflow:auto; border:1px solid #eee;">
-                <table class="report-table" style="width:100%;">
-                    <thead>
-                        <tr>
-                            <th style="position:sticky; top:0; z-index:1;">Assigned</th>
-                            <th style="position:sticky; top:0; z-index:1;">Resolved</th>
-                            <th style="position:sticky; top:0; z-index:1;">SKU</th>
-                            <th style="position:sticky; top:0; z-index:1;">Description</th>
-                            <th style="position:sticky; top:0; z-index:1;">Qty</th>
-                            <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
-                            <th style="position:sticky; top:0; z-index:1;">Duration</th>
-                            <th style="position:sticky; top:0; z-index:1;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resolved-tasks-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-        <div style="margin-bottom:10px;">
-            <input type="text" id="validators-search" placeholder="Search by Name or User ID..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-        </div>
-        <div style="flex:1; overflow:auto; border:1px solid #eee;">
-            <table class="report-table" style="width:100%;">
-                <thead>
-                    <tr>
-                        <th style="position:sticky; top:0; z-index:1;">Date</th>
-                        <th style="position:sticky; top:0; z-index:1;">User ID</th>
-                        <th style="position:sticky; top:0; z-index:1;">Name</th>
-                        <th style="position:sticky; top:0; z-index:1;">Shift</th>
-                        <th style="position:sticky; top:0; z-index:1;">Time In</th>
-                        <th style="position:sticky; top:0; z-index:1;">Status</th>
-                    </tr>
-                </thead>
-                <tbody id="validators-tbody"></tbody>
-            </table>
-        </div>
-        <div style="text-align:right; margin-top:10px; padding-top:10px; border-top:1px solid #eee;">
-             <button class="icon-btn close-modal" style="border: 1px solid #ccc; padding: 8px 16px;">Close</button>
         </div>
     </div>
   </div>
