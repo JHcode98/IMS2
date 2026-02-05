@@ -591,10 +591,6 @@
                         </button>
                     </div>
                 </div>
-                <div>
-                    <label for="att-notes">Notes (Optional)</label>
-                    <input type="text" id="att-notes" style="width:100%" placeholder="Enter notes">
-                </div>
             </div>
             <div>
                 <label for="att-status">Status</label>
@@ -1894,7 +1890,7 @@
             if(activeHeader) activeHeader.querySelector('.sort-icon').textContent = attSortDirection === 'asc' ? '↑' : '↓';
 
             if (paginatedData.length === 0) {
-                attendanceTableBody.innerHTML = `<tr><td colspan="15" class="muted" style="text-align:center; padding: 20px;">No attendance records found.</td></tr>`;
+                attendanceTableBody.innerHTML = `<tr><td colspan="14" class="muted" style="text-align:center; padding: 20px;">No attendance records found.</td></tr>`;
                 return;
             }
             paginatedData.forEach(item => {
@@ -1913,7 +1909,6 @@
                     <td>${item.timeOut || '-'}</td>
                     <td style="font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
                     <td>${item.status || '-'}</td>
-                    <td>${item.notes || ''}</td>
                     <td>
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
                         <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
@@ -2007,8 +2002,7 @@
                     breakIn: document.getElementById('att-break-in').value,
                     breakOut: document.getElementById('att-break-out').value,
                     timeOut: document.getElementById('att-time-out').value,
-                    status: document.getElementById('att-status').value,
-                    notes: document.getElementById('att-notes').value.trim()
+                    status: document.getElementById('att-status').value
                 };
                 if(!newEntry.name) return;
 
@@ -2080,7 +2074,6 @@
                         document.getElementById('att-break-in').value = item.breakIn;
                         document.getElementById('att-time-out').value = item.timeOut || '';
                         document.getElementById('att-status').value = item.status || 'Full-time';
-                        document.getElementById('att-notes').value = item.notes || '';
                         attModal.classList.remove('hidden');
                     }
                 }
@@ -2149,13 +2142,13 @@
             exportAttBtn.addEventListener('click', () => {
                 const data = getFilteredAttendanceData();
                 if (data.length === 0) { alert('No attendance records to export.'); return; }
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status', 'Notes'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
                 const rows = [headers.join(',')];
                 
                 data.forEach(item => {
                     const dur = getDuration(item.breakOut, item.breakIn);
                     const row = [
-                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`, `"${item.notes||''}"`
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
                     ];
                     rows.push(row.join(','));
                 });
@@ -2184,7 +2177,7 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Notes', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
@@ -2201,7 +2194,6 @@
                     printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
                     printWindow.document.write(`<td>${item.timeOut || ''}</td>`);
                     printWindow.document.write(`<td>${item.status || ''}</td>`);
-                    printWindow.document.write(`<td>${item.notes || ''}</td>`);
                     printWindow.document.write('<td class="sig"></td>');
                     printWindow.document.write('</tr>');
                 });
