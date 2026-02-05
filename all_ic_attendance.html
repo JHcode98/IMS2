@@ -3022,10 +3022,15 @@
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
-                    let options = `<option value="Unassigned" selected>Assign</option>`;
+                    let options = `<option value="Unassigned">Unassign</option>`;
                     validatorNames.forEach(v => {
-                        options += `<option value="${v}">${v}</option>`;
+                        const selected = (t.validator === v) ? 'selected' : '';
+                        options += `<option value="${v}" ${selected}>${v}</option>`;
                     });
+                    // If the assigned validator is not in the active list, add them as an option
+                    if (t.validator && !validatorNames.includes(t.validator)) {
+                        options += `<option value="${t.validator}" selected>${t.validator} (inactive)</option>`;
+                    }
                     const validatorInput = `<select class="task-validator-input" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #e0e0e0; border-radius:4px; font-size:11px; background:#fff; color:#333;">${options}</select>`;
 
                     const actionHtml = `
