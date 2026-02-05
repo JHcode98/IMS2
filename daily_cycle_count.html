@@ -711,6 +711,7 @@
                     </select>
                 </div>
             </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-time-in">Time In</label>
                     <div style="display:flex; align-items:center; gap:5px;">
@@ -729,13 +730,15 @@
                         </button>
                     </div>
                 </div>
-                    <label for="att-status">Status</label>
-                    <select id="att-status" style="width:100%">
-                        <option value="Full counter">Full counter</option>
-                        <option value="Temporary slide to Other task">Temporary slide to Other task</option>
-                    </select>
-                </div>
             </div>
+            <div>
+                <label for="att-status">Status</label>
+                <select id="att-status" style="width:100%">
+                    <option value="Full counter">Full counter</option>
+                    <option value="Temporary slide to Other task">Temporary slide to Other task</option>
+                </select>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-break-out">Break Out</label>
                     <div style="display:flex; align-items:center; gap:5px;">
@@ -754,6 +757,7 @@
                         </button>
                     </div>
                 </div>
+            </div>
             <div style="text-align:right; margin-top:10px; border-top: 1px solid #eee; padding-top: 15px;">
                 <button type="button" class="icon-btn close-modal" style="margin-right:5px; border: 1px solid #ccc; padding: 8px 16px;">Close</button>
                 <button type="submit" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 16px;">Save</button>
