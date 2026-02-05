@@ -1076,6 +1076,7 @@
                             <button class="att-tab" onclick="openValTab(event, 'tab-val-assigned')">Assigned</button>
                         </div>
                         <div style="display:flex; gap:5px; align-items:center;">
+                            <input type="text" id="val-filter-sku-1" placeholder="Filter SKU..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:100px;">
                             <input type="text" id="val-filter-assigned-1" placeholder="Filter Assigned To..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
                             <button class="icon-btn" id="val-print-btn-1" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                             <button class="icon-btn" id="val-export-btn-1" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
@@ -1164,6 +1165,7 @@
                             <button class="att-tab" onclick="openValTab(event, 'tab-val-unresolved')">Unresolved</button>
                         </div>
                         <div style="display:flex; gap:5px; align-items:center;">
+                            <input type="text" id="val-filter-sku-2" placeholder="Filter SKU..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:100px;">
                             <input type="text" id="val-filter-assigned-2" placeholder="Filter Validator..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
                             <button class="icon-btn" id="val-print-btn-2" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                             <button class="icon-btn" id="val-export-btn-2" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
@@ -2679,6 +2681,8 @@
         // Filters
         let valFilterAssigned1 = '';
         let valFilterAssigned2 = '';
+        let valFilterSku1 = '';
+        let valFilterSku2 = '';
 
         function renderValidationTasks() {
             const assignedTasksTbody = document.getElementById('assigned-tasks-tbody');
@@ -2694,6 +2698,8 @@
             // Get filter values
             valFilterAssigned1 = document.getElementById('val-filter-assigned-1') ? document.getElementById('val-filter-assigned-1').value.toLowerCase() : '';
             valFilterAssigned2 = document.getElementById('val-filter-assigned-2') ? document.getElementById('val-filter-assigned-2').value.toLowerCase() : '';
+            valFilterSku1 = document.getElementById('val-filter-sku-1') ? document.getElementById('val-filter-sku-1').value.toLowerCase() : '';
+            valFilterSku2 = document.getElementById('val-filter-sku-2') ? document.getElementById('val-filter-sku-2').value.toLowerCase() : '';
             
             if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
@@ -2740,12 +2746,19 @@
             let resolvedTasks = tasks.filter(t => t.status === 'Completed');
             let unresolvedTasks = tasks.filter(t => t.status === 'Unresolved');
             
-            // Apply Assigned To Filter
+            // Apply Filters for Card 1 (Pending/Assigned)
+            if (valFilterSku1) {
+                pendingTasks = pendingTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku1));
+                assignedTasks = assignedTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku1));
+            }
             if (valFilterAssigned1) {
-                // Pending usually has no assignee, but maybe filter by SKU/Desc? Let's filter by Assignee for Assigned tab
                 assignedTasks = assignedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned1));
-                // For pending, maybe filter by SKU?
-                pendingTasks = pendingTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterAssigned1) || (t.desc || '').toLowerCase().includes(valFilterAssigned1));
+            }
+
+            // Apply Filters for Card 2 (Resolved/Unresolved)
+            if (valFilterSku2) {
+                resolvedTasks = resolvedTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku2));
+                unresolvedTasks = unresolvedTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku2));
             }
             if (valFilterAssigned2) {
                 resolvedTasks = resolvedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned2));
@@ -2959,7 +2972,25 @@
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } },
-                        cutout: '60%'
+                        cutout: '60%',
+                        onHover: (event, chartElement) => {
+                            event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+                        },
+                        onClick: (evt, elements, chart) => {
+                            if (elements.length > 0) {
+                                const i = elements[0].index;
+                                const label = chart.data.labels[i];
+                                let tabId = '';
+                                if (label === 'Completed') tabId = 'tab-val-resolved';
+                                else if (label === 'Pending') tabId = 'tab-val-pending';
+                                else if (label === 'Unresolved') tabId = 'tab-val-unresolved';
+                                
+                                if (tabId) {
+                                    const btn = document.querySelector(`button[onclick*="'${tabId}'"]`);
+                                    if (btn) btn.click();
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -3140,6 +3171,10 @@
         if(filterInput1) filterInput1.addEventListener('input', renderValidationTasks);
         const filterInput2 = document.getElementById('val-filter-assigned-2');
         if(filterInput2) filterInput2.addEventListener('input', renderValidationTasks);
+        const filterSku1 = document.getElementById('val-filter-sku-1');
+        if(filterSku1) filterSku1.addEventListener('input', renderValidationTasks);
+        const filterSku2 = document.getElementById('val-filter-sku-2');
+        if(filterSku2) filterSku2.addEventListener('input', renderValidationTasks);
 
         // Export CSV
         const exportValCSV = (selector) => {
