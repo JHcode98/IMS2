@@ -6929,6 +6929,20 @@
                     else if (action === 'Time Out') attData[attIdx].timeOut = timeStr;
                     saveAttendanceData(attData);
                     renderAttendanceTable();
+
+                    // Sync to All IC Attendance (for Cycle Counters)
+                    try {
+                        const allIcKey = 'ims_daily_attendance_v1';
+                        let allIcData = JSON.parse(localStorage.getItem(allIcKey) || '[]');
+                        const targetDate = attData[attIdx].date;
+                        const allIcIdx = allIcData.findIndex(a => a.userId === userId && a.date === targetDate);
+                        if (allIcIdx > -1 && allIcData[allIcIdx].area === 'Cycle Counter') {
+                            if (action === 'Start Break') allIcData[allIcIdx].breakOut = timeStr;
+                            else if (action === 'End Break') allIcData[allIcIdx].breakIn = timeStr;
+                            else if (action === 'Time Out') allIcData[allIcIdx].timeOut = timeStr;
+                            localStorage.setItem(allIcKey, JSON.stringify(allIcData));
+                        }
+                    } catch(e) { console.error(e); }
                 }
             }
 
