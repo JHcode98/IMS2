@@ -1040,7 +1040,7 @@
         </div>
 
         <!-- 1. Top Center: Dashboard -->
-        <div id="validation-summary-dashboard" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:15px;">
+        <div id="validation-summary-dashboard" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:15px; margin-bottom:15px;">
             <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
                 <div class="stat-value" id="val-total-tasks" style="font-size:24px; font-weight:bold; color:#1565c0;">0</div>
                 <div class="stat-label" style="font-size:12px; color:#555;">Total Tasks</div>
@@ -1052,6 +1052,10 @@
             <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
                 <div class="stat-value" id="val-pending-tasks" style="font-size:24px; font-weight:bold; color:#ef6c00;">0</div>
                 <div class="stat-label" style="font-size:12px; color:#555;">Pending</div>
+            </div>
+            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
+                <div class="stat-value" id="val-unresolved-tasks" style="font-size:24px; font-weight:bold; color:#d9534f;">0</div>
+                <div class="stat-label" style="font-size:12px; color:#555;">Unresolved</div>
             </div>
             <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
                 <div class="stat-value" id="val-completion-rate" style="font-size:24px; font-weight:bold; color:#7b1fa2;">0%</div>
@@ -2709,12 +2713,14 @@
 
             const total = tasks.length;
             const completed = tasks.filter(t => t.status === 'Completed').length;
-            const pending = total - completed;
+            const unresolved = tasks.filter(t => t.status === 'Unresolved').length;
+            const pending = total - completed - unresolved;
             const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             if(document.getElementById('val-total-tasks')) document.getElementById('val-total-tasks').textContent = total;
             if(document.getElementById('val-completed-tasks')) document.getElementById('val-completed-tasks').textContent = completed;
             if(document.getElementById('val-pending-tasks')) document.getElementById('val-pending-tasks').textContent = pending;
+            if(document.getElementById('val-unresolved-tasks')) document.getElementById('val-unresolved-tasks').textContent = unresolved;
             if(document.getElementById('val-completion-rate')) document.getElementById('val-completion-rate').textContent = rate + '%';
 
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
