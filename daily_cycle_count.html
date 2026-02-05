@@ -571,6 +571,7 @@
                 <option value="IC Support">IC Support</option>
                 <option value="IC Back up">IC Back up</option>
             </select>
+            <select id="att-filter-area" style="padding:6px; border:1px solid #ccc; border-radius:4px;"><option value="">All Areas</option></select>
             <input type="text" id="att-search" placeholder="Search name..." style="padding:6px; border:1px solid #ccc; border-radius:4px;">
             <button id="print-att-btn" class="icon-btn" title="Print List">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -685,11 +686,18 @@
                 </div>
             </div>
             <div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
                     <label for="att-role">Role</label>
                     <select id="att-role" style="width:100%">
                         <option value="IC Support">IC Support</option>
                         <option value="IC Back up">IC Back up</option>
                     </select>
+                </div>
+                <div>
+                    <label for="att-area">Assigned Area</label>
+                    <select id="att-area" style="width:100%"><option value="">Select Area</option></select>
+                </div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
@@ -2482,6 +2490,8 @@
                         const req = Number(item.required) || 1;
                         // Automatically count only "Cycle Counter" attendance for daily counters
                         let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift && a.area === 'Cycle Counter');
+                        // Automatically count all attendance for daily counters
+                        let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift);
                         
                         // Exclude 'Temporary slide to Other task' from Actual count
                         shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
@@ -2963,6 +2973,8 @@
                 // Calculate Target
                 // Automatically count only "Cycle Counter" attendance for daily counters
                 let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift && a.area === 'Cycle Counter');
+                // Automatically count all attendance for daily counters
+                let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift);
                 shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
                 const headcount = shiftAtt.length;
                 
@@ -4039,6 +4051,7 @@
                     userId: document.getElementById('att-user-id').value.trim(),
                     name: document.getElementById('att-name').value.trim().toUpperCase(),
                     role: document.getElementById('att-role').value,
+                    area: document.getElementById('att-area').value,
                     timeIn: document.getElementById('att-time-in').value,
                     breakIn: document.getElementById('att-break-in').value,
                     breakOut: document.getElementById('att-break-out').value,
@@ -4143,6 +4156,7 @@
                         document.getElementById('att-shift').value = item.shift;
                         document.getElementById('att-name').value = item.name;
                         document.getElementById('att-role').value = item.role;
+                        document.getElementById('att-area').value = item.area || '';
                         document.getElementById('att-time-in').value = item.timeIn || '';
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
