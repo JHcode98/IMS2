@@ -618,6 +618,7 @@
                       <th class="sortable" data-sort="shift">Shift <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
                       <th class="sortable" data-sort="role">Role <span class="sort-icon"></span></th>
+                      <th class="sortable" data-sort="jobDescription">Job Description <span class="sort-icon"></span></th>
                       <th>Time In</th>
                       <th>Break Out</th>
                       <th>Break In</th>
@@ -685,8 +686,7 @@
                     <datalist id="att-name-list"></datalist>
                 </div>
             </div>
-            <div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-role">Role</label>
                     <select id="att-role" style="width:100%">
@@ -695,11 +695,26 @@
                     </select>
                 </div>
                 <div>
+                    <label for="att-job-desc">Job Description</label>
+                    <select id="att-job-desc" style="width:100%">
+                        <option value="">-</option>
+                        <option value="Cycle Counter">Cycle Counter</option>
+                        <option value="TL">TL</option>
+                        <option value="OIC">OIC</option>
+                        <option value="Encoder">Encoder</option>
+                        <option value="SBD Checker">SBD Checker</option>
+                        <option value="RTV">RTV</option>
+                        <option value="Damaged Checker">Damaged Checker</option>
+                        <option value="B1T1 Checker">B1T1 Checker</option>
+                        <option value="Validator">Validator</option>
+                        <option value="HVI Support">HVI Support</option>
+                    </select>
+                </div>
+                <div>
                     <label for="att-area">Assigned Area</label>
                     <select id="att-area" style="width:100%"><option value="">Select Area</option></select>
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-time-in">Time In</label>
                     <div style="display:flex; align-items:center; gap:5px;">
@@ -718,7 +733,6 @@
                         </button>
                     </div>
                 </div>
-                <div>
                     <label for="att-status">Status</label>
                     <select id="att-status" style="width:100%">
                         <option value="Full counter">Full counter</option>
@@ -726,7 +740,6 @@
                     </select>
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-break-out">Break Out</label>
                     <div style="display:flex; align-items:center; gap:5px;">
@@ -745,7 +758,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
             <div style="text-align:right; margin-top:10px; border-top: 1px solid #eee; padding-top: 15px;">
                 <button type="button" class="icon-btn close-modal" style="margin-right:5px; border: 1px solid #ccc; padding: 8px 16px;">Close</button>
                 <button type="submit" class="icon-btn" style="background: #2752a7; color: white; padding: 8px 16px;">Save</button>
@@ -3540,6 +3552,7 @@
                 data = data.filter(item => 
                     (item.name && item.name.toLowerCase().includes(searchTerm)) ||
                     (item.role && item.role.toLowerCase().includes(searchTerm)) ||
+                    (item.jobDescription && item.jobDescription.toLowerCase().includes(searchTerm)) ||
                     (item.area && item.area.toLowerCase().includes(searchTerm))
                 );
             }
@@ -3628,6 +3641,7 @@
                     <td>${item.shift}</td>
                     <td>${item.name}</td>
                     <td>${item.role || '-'}</td>
+                    <td>${item.jobDescription || '-'}</td>
                     <td>${item.timeIn || '-'}</td>
                     <td>${item.breakOut || '-'}</td>
                     <td>${item.breakIn || '-'}</td>
@@ -3660,7 +3674,7 @@
                 printWindow.document.write('<h2>Attendance Report</h2>');
                 printWindow.document.write(`<p>Generated: ${new Date().toLocaleString()}</p>`);
                 printWindow.document.write('<table><thead><tr>');
-                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Signature'];
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Status', 'Notes', 'Signature'];
                 headers.forEach(h => printWindow.document.write(`<th>${h}</th>`));
                 printWindow.document.write('</tr></thead><tbody>');
 
@@ -3671,11 +3685,13 @@
                     printWindow.document.write(`<td>${item.shift}</td>`);
                     printWindow.document.write(`<td>${item.name}</td>`);
                     printWindow.document.write(`<td>${item.role || '-'}</td>`);
+                    printWindow.document.write(`<td>${item.jobDescription || '-'}</td>`);
                     printWindow.document.write(`<td>${item.timeIn || ''}</td>`);
                     printWindow.document.write(`<td>${item.breakOut || ''}</td>`);
                     printWindow.document.write(`<td>${item.breakIn || ''}</td>`);
                     printWindow.document.write(`<td>${item.timeOut || ''}</td>`);
                     printWindow.document.write(`<td>${item.status || ''}</td>`);
+                    printWindow.document.write(`<td>${item.notes || ''}</td>`);
                     printWindow.document.write('<td class="sig"></td>'); // Empty signature cell
                     printWindow.document.write('</tr>');
                 });
@@ -4051,6 +4067,7 @@
                     userId: document.getElementById('att-user-id').value.trim(),
                     name: document.getElementById('att-name').value.trim().toUpperCase(),
                     role: document.getElementById('att-role').value,
+                    jobDescription: document.getElementById('att-job-desc').value,
                     area: document.getElementById('att-area').value,
                     timeIn: document.getElementById('att-time-in').value,
                     breakIn: document.getElementById('att-break-in').value,
@@ -4111,13 +4128,13 @@
 
         function exportAttendanceCSV(data) {
             if (data.length === 0) { alert('No attendance records to export.'); return; }
-            const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
+            const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Assigned Area', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status', 'Notes'];
             const rows = [headers.join(',')];
             
             data.forEach(item => {
                 const dur = getDuration(item.breakOut, item.breakIn);
                 const row = [
-                    item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
+                    item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.jobDescription || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`, `"${item.notes||''}"`
                 ];
                 rows.push(row.join(','));
             });
@@ -4156,6 +4173,7 @@
                         document.getElementById('att-shift').value = item.shift;
                         document.getElementById('att-name').value = item.name;
                         document.getElementById('att-role').value = item.role;
+                        document.getElementById('att-job-desc').value = item.jobDescription || '';
                         document.getElementById('att-area').value = item.area || '';
                         document.getElementById('att-time-in').value = item.timeIn || '';
                         document.getElementById('att-break-out').value = item.breakOut;
