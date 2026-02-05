@@ -337,6 +337,7 @@
             <select id="att-filter-status" style="padding:6px; border:1px solid #ccc; border-radius:4px;">
                 <option value="">All Statuses</option>
                 <option value="Full-time">Full-time</option>
+                <option value="Full Counter">Full Counter</option>
                 <option value="Temporary slide to Other task">Temporary slide to Other task</option>
             </select>
             <div id="att-filter-area-wrapper" style="position:relative; display:inline-block;">
@@ -594,6 +595,7 @@
                 <label for="att-status">Status</label>
                 <select id="att-status" style="width:100%">
                     <option value="Full-time">Full-time</option>
+                    <option value="Full Counter">Full Counter</option>
                     <option value="Temporary slide to Other task">Temporary slide to Other task</option>
                 </select>
             </div>
@@ -1893,6 +1895,13 @@
             }
             paginatedData.forEach(item => {
                 const tr = document.createElement('tr');
+
+                let forwardBtnHtml = '';
+                if (item.area === 'Cycle Counter' && item.status === 'Full-time') {
+                    forwardBtnHtml = `<button class="icon-btn forward-to-daily-btn" data-id="${item.id}" title="Forward to Daily Counters" style="color:#2752a7; margin-right:5px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>`;
+                }
                 tr.innerHTML = `
                     <td><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
                     <td>${item.date}</td>
@@ -1908,6 +1917,7 @@
                     <td style="font-weight:bold; color:#555;">${getDuration(item.breakOut, item.breakIn)}</td>
                     <td>${item.status || '-'}</td>
                     <td>
+                        ${forwardBtnHtml}
                         <button class="icon-btn edit-att-btn" data-id="${item.id}" title="Edit" style="margin-right:5px">✎</button>
                         <button class="icon-btn delete-att-btn" data-id="${item.id}" title="Delete" style="color:#d9534f">&times;</button>
                     </td>
@@ -2047,6 +2057,42 @@
                 const btn = e.target.closest('button');
                 if (!btn) return;
                 const id = btn.dataset.id;
+
+                if (btn.classList.contains('forward-to-daily-btn')) {
+                    const allAttendance = getAttendanceData();
+                    const itemIndex = allAttendance.findIndex(item => item.id === id);
+                    if (itemIndex > -1) {
+                        const itemToForward = { ...allAttendance[itemIndex] };
+                        
+                        // 1. Change status
+                        itemToForward.status = 'Full Counter';
+                        allAttendance[itemIndex].status = 'Full Counter';
+                        saveAttendanceData(allAttendance); // Save change in current list
+
+                        // 2. Forward to daily_cycle_count attendance
+                        const dailyCountersAttendanceKey = 'ims_daily_counters_attendance_v1';
+                        let dailyAttendance = [];
+                        try {
+                            dailyAttendance = JSON.parse(localStorage.getItem(dailyCountersAttendanceKey) || '[]');
+                        } catch (err) {
+                            console.error('Could not parse daily counters attendance', err);
+                            dailyAttendance = [];
+                        }
+
+                        // Avoid duplicates in daily counters attendance
+                        const alreadyExists = dailyAttendance.some(d => d.date === itemToForward.date && d.shift === itemToForward.shift && d.userId === itemToForward.userId);
+                        if (!alreadyExists) {
+                            dailyAttendance.push(itemToForward);
+                            localStorage.setItem(dailyCountersAttendanceKey, JSON.stringify(dailyAttendance));
+                            showToast(`${itemToForward.name} forwarded to Daily Counters.`);
+                        }
+                        
+                        // 3. Re-render table to update status and remove button
+                        renderAttendanceTable();
+                    }
+                    return; // Stop further processing
+                }
+
                 if (btn.classList.contains('delete-att-btn')) {
                     showSupervisorDeleteModal(1, () => {
                         let data = getAttendanceData();
