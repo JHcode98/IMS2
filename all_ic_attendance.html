@@ -2531,7 +2531,7 @@
                         }
                     }
                     localStorage.setItem('ims_att_requirements_v1', JSON.stringify(reqs));
-                    alert(`Imported requirements for ${count} roles.`);
+                    showToast(`Imported requirements for ${count} roles.`);
                     importReqFile.value = '';
                     if(setReqBtn) setReqBtn.click(); // Refresh modal
                 };
@@ -3080,10 +3080,9 @@
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
-                    let options = `<option value="Unassigned" selected>Assign</option>`;
+                    let options = `<option value="Unassigned">Unassign</option>`;
                   
                     validatorNames.forEach(v => {
-                        options += `<option value="${v}">${v}</option>`;
                         const selected = (t.validator === v) ? 'selected' : '';
                         options += `<option value="${v}" ${selected}>${v}</option>`;
                     });
@@ -3292,6 +3291,7 @@
                     tasks = tasks.filter(t => t.id !== id);
                     saveValidationTasks(tasks);
                     renderValidationTasks();
+                    showToast('Task deleted');
                 }
             } else if(btn.classList.contains('complete-task-btn')) {
                 const id = btn.dataset.id;
@@ -3579,7 +3579,7 @@
                         }
                     }
                     localStorage.setItem('ims_master_users_v1', JSON.stringify(users));
-                    alert(`Imported/Updated ${count} users.`);
+                    showToast(`Imported/Updated ${count} users.`);
                     renderIcMaster();
                     icMasterUploadFile.value = '';
                 };
