@@ -2489,7 +2489,7 @@
                     if (item) {
                         const req = Number(item.required) || 1;
                         // Automatically count only "Cycle Counter" attendance for daily counters
-                        let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift && a.area === 'Cycle Counter');
+                        // let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift && a.area === 'Cycle Counter');
                         // Automatically count all attendance for daily counters
                         let shiftAtt = attendance.filter(a => a.date === date && a.shift === shift);
                         
@@ -2972,7 +2972,7 @@
 
                 // Calculate Target
                 // Automatically count only "Cycle Counter" attendance for daily counters
-                let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift && a.area === 'Cycle Counter');
+                // let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift && a.area === 'Cycle Counter');
                 // Automatically count all attendance for daily counters
                 let shiftAtt = attendance.filter(a => a.date === item.date && a.shift === item.shift);
                 shiftAtt = shiftAtt.filter(a => a.status !== 'Temporary slide to Other task');
