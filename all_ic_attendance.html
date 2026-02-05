@@ -1296,6 +1296,14 @@
                     </div>
                 </div>
 
+                <!-- Middle: Status Chart -->
+                <div class="card" style="margin:0; padding:10px; min-height: 200px;">
+                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Task Status Distribution</h4>
+                    <div style="position:relative; height:160px; width:100%;">
+                        <canvas id="val-status-chart"></canvas>
+                    </div>
+                </div>
+
                 <!-- Bottom: Available Validators -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <h4 style="margin:0 0 10px 0; color:#2752a7;">Available Validators</h4>
@@ -2723,6 +2731,7 @@
             if(document.getElementById('val-unresolved-tasks')) document.getElementById('val-unresolved-tasks').textContent = unresolved;
             if(document.getElementById('val-completion-rate')) document.getElementById('val-completion-rate').textContent = rate + '%';
 
+            updateValStatusChart(completed, pending, unresolved);
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             const allPending = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
@@ -2926,6 +2935,34 @@
                 });
             }
             updateValBulkButtons();
+        }
+
+        let valStatusChart = null;
+        function updateValStatusChart(completed, pending, unresolved) {
+            const ctx = document.getElementById('val-status-chart');
+            if (!ctx || typeof Chart === 'undefined') return;
+            
+            if (valStatusChart) {
+                valStatusChart.data.datasets[0].data = [completed, pending, unresolved];
+                valStatusChart.update();
+            } else {
+                valStatusChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Completed', 'Pending', 'Unresolved'],
+                        datasets: [{
+                            data: [completed, pending, unresolved],
+                            backgroundColor: ['#2e7d32', '#ef6c00', '#d9534f'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } },
+                        cutout: '60%'
+                    }
+                });
+            }
         }
 
         // Validation Tasks Pagination Listeners
