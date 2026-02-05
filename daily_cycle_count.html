@@ -4034,6 +4034,9 @@
                 else if (h >= 14 && h < 22) shiftVal = '2nd Shift-(2pm-10pm)';
                 document.getElementById('att-shift').value = shiftVal;
 
+                // Set Job Description to Cycle Counter
+                document.getElementById('att-job-desc').value = 'Cycle Counter';
+
                 // Random 3-char User ID (1 Letter + 2 Digits)
                 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                 const letter = letters.charAt(Math.floor(Math.random() * letters.length));
@@ -4205,7 +4208,9 @@
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
                         document.getElementById('att-time-out').value = item.timeOut || '';
-                        document.getElementById('att-status').value = item.status || 'Full counter';
+                        let statusVal = item.status || 'Full counter';
+                        if (statusVal.toLowerCase() === 'full counter') statusVal = 'Full counter';
+                        document.getElementById('att-status').value = statusVal;
                         attModal.classList.remove('hidden');
                     }
                 }
@@ -5958,7 +5963,7 @@
 
             attendance.forEach(a => {
                 if (shiftData[a.shift]) {
-                    if (a.status === 'Full counter') {
+                    if (a.status && a.status.toLowerCase() === 'full counter') {
                         shiftData[a.shift].full++;
                         if (activeUserIds.has(a.userId)) shiftData[a.shift].fullActive++;
                         if (a.timeOut) shiftData[a.shift].timedOut++;
@@ -5984,7 +5989,7 @@
             let inactiveCount = 0;
             const filterShift = tsShiftFilter ? tsShiftFilter.value : '';
             attendance.forEach(a => {
-                if (a.status === 'Full counter') {
+                if (a.status && a.status.toLowerCase() === 'full counter') {
                     if (filterShift && !a.shift.includes(filterShift)) return;
                     if (a.timeOut) return; // Already timed out
                     if (!activeUserIds.has(a.userId) && !onBreakUserIds.has(a.userId)) {
@@ -6512,7 +6517,7 @@
             const filterDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
             
             // Get all Full Counters for the date
-            const fullCounters = attendanceData.filter(a => a.date === filterDate && a.status === 'Full counter');
+            const fullCounters = attendanceData.filter(a => a.date === filterDate && a.status && a.status.toLowerCase() === 'full counter');
             
             // Map of userId -> last end timestamp (from sessions)
             const userLastEnd = {};
@@ -6811,8 +6816,8 @@
                     return;
                 }
 
-                const status = userRecord.status || 'Full counter';
-                if (action === 'Start' && status !== 'Full counter') {
+                const status = (userRecord.status || 'Full counter').toLowerCase();
+                if (action === 'Start' && status !== 'full counter') {
                     alert(`User ${userId} is marked as '${status}'. Only 'Full counter' can start counting.`);
                     return;
                 }
