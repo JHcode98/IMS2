@@ -1335,7 +1335,16 @@
                         </div>
                         <div style="grid-column: span 2;">
                             <label style="font-size:11px; font-weight:bold;">Reason for Validation</label>
-                            <input type="text" id="assign-reason" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;" placeholder="e.g. Variance, Damage check">
+                            <select id="assign-reason" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                                <option value="">Select Reason</option>
+                                <option value="Missing">Missing</option>
+                                <option value="Oversell">Oversell</option>
+                                <option value="Damaged">Damaged</option>
+                                <option value="Expired">Expired</option>
+                                <option value="Near Expiry">Near Expiry</option>
+                                <option value="Others">Others (pls specify)</option>
+                            </select>
+                            <input type="text" id="assign-reason-other" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; margin-top:5px; display:none;" placeholder="Specify reason...">
                         </div>
                         <div style="grid-column: span 2; text-align:right;">
                             <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:8px 16px;">Add Task</button>
