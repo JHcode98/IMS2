@@ -1041,7 +1041,7 @@
 
         <!-- 1. Top Center: Dashboard -->
         <div id="validation-summary-dashboard" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:15px;">
-            <div class="stat-card" style="padding:15px; border-left: 4px solid #1565c0;">
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #1565c0;" onclick="document.getElementById('val-filter-sku-1').value=''; document.getElementById('val-filter-assigned-1').value=''; renderValidationTasks();">
                 <div class="stat-icon" style="background: #e3f2fd; color: #1565c0;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
                 </div>
@@ -1050,16 +1050,16 @@
                     <div class="stat-label">Total Tasks</div>
                 </div>
             </div>
-            <div class="stat-card" style="padding:15px; border-left: 4px solid #2e7d32;">
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #2e7d32;" onclick="const btn = document.querySelector('button[onclick*=\'tab-val-resolved\']'); if(btn) btn.click();">
                 <div class="stat-icon" style="background: #e8f5e9; color: #2e7d32;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
                 <div class="stat-info">
                     <div class="stat-value" id="val-completed-tasks">0</div>
-                    <div class="stat-label">Completed</div>
+                <div class="stat-label">Resolved</div>
                 </div>
             </div>
-            <div class="stat-card" style="padding:15px; border-left: 4px solid #ef6c00;">
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #ef6c00;" onclick="const btn = document.querySelector('button[onclick*=\'tab-val-pending\']'); if(btn) btn.click();">
                 <div class="stat-icon" style="background: #fff3e0; color: #ef6c00;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 </div>
@@ -1068,7 +1068,16 @@
                     <div class="stat-label">Pending</div>
                 </div>
             </div>
-            <div class="stat-card" style="padding:15px; border-left: 4px solid #d9534f;">
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #3498db;" onclick="const btn = document.querySelector('button[onclick*=\'tab-val-assigned\']'); if(btn) btn.click();">
+            <div class="stat-icon" style="background: rgba(52, 152, 219, 0.1); color: #3498db;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value" id="val-assigned-tasks">0</div>
+                <div class="stat-label">Assigned</div>
+            </div>
+        </div>
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #d9534f;" onclick="const btn = document.querySelector('button[onclick*=\'tab-val-unresolved\']'); if(btn) btn.click();">
                 <div class="stat-icon" style="background: #ffebee; color: #d9534f;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
                 </div>
@@ -1077,7 +1086,7 @@
                     <div class="stat-label">Unresolved</div>
                 </div>
             </div>
-            <div class="stat-card" style="padding:15px; border-left: 4px solid #7b1fa2;">
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #7b1fa2;" onclick="const chart = document.getElementById('val-status-chart'); if(chart) chart.scrollIntoView({behavior:'smooth'});">
                 <div class="stat-icon" style="background: #f3e5f5; color: #7b1fa2;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                 </div>
@@ -2753,16 +2762,21 @@
             const total = tasks.length;
             const completed = tasks.filter(t => t.status === 'Completed').length;
             const unresolved = tasks.filter(t => t.status === 'Unresolved').length;
-            const pending = total - completed - unresolved;
+            
+            const allActive = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
+            const assigned = allActive.filter(t => t.validator && t.validator !== 'Unassigned').length;
+            const pending = allActive.length - assigned;
+
             const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             if(document.getElementById('val-total-tasks')) document.getElementById('val-total-tasks').textContent = total;
             if(document.getElementById('val-completed-tasks')) document.getElementById('val-completed-tasks').textContent = completed;
             if(document.getElementById('val-pending-tasks')) document.getElementById('val-pending-tasks').textContent = pending;
+            if(document.getElementById('val-assigned-tasks')) document.getElementById('val-assigned-tasks').textContent = assigned;
             if(document.getElementById('val-unresolved-tasks')) document.getElementById('val-unresolved-tasks').textContent = unresolved;
             if(document.getElementById('val-completion-rate')) document.getElementById('val-completion-rate').textContent = rate + '%';
 
-            updateValStatusChart(completed, pending, unresolved);
+            updateValStatusChart(completed, pending, unresolved, assigned);
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             const allPending = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
@@ -2960,21 +2974,22 @@
         }
 
         let valStatusChart = null;
-        function updateValStatusChart(completed, pending, unresolved) {
+        function updateValStatusChart(completed, pending, unresolved, assigned) {
             const ctx = document.getElementById('val-status-chart');
             if (!ctx || typeof Chart === 'undefined') return;
             
             if (valStatusChart) {
-                valStatusChart.data.datasets[0].data = [completed, pending, unresolved];
+                valStatusChart.data.labels = ['Resolved', 'Pending', 'Assigned', 'Unresolved'];
+                valStatusChart.data.datasets[0].data = [completed, pending, assigned, unresolved];
                 valStatusChart.update();
             } else {
                 valStatusChart = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: ['Completed', 'Pending', 'Unresolved'],
+                        labels: ['Resolved', 'Pending', 'Assigned', 'Unresolved'],
                         datasets: [{
-                            data: [completed, pending, unresolved],
-                            backgroundColor: ['#2e7d32', '#ef6c00', '#d9534f'],
+                            data: [completed, pending, assigned, unresolved],
+                            backgroundColor: ['#2e7d32', '#ef6c00', '#3498db', '#d9534f'],
                             borderWidth: 1
                         }]
                     },
@@ -2990,8 +3005,9 @@
                                 const i = elements[0].index;
                                 const label = chart.data.labels[i];
                                 let tabId = '';
-                                if (label === 'Completed') tabId = 'tab-val-resolved';
+                                if (label === 'Resolved') tabId = 'tab-val-resolved';
                                 else if (label === 'Pending') tabId = 'tab-val-pending';
+                                else if (label === 'Assigned') tabId = 'tab-val-assigned';
                                 else if (label === 'Unresolved') tabId = 'tab-val-unresolved';
                                 
                                 if (tabId) {
