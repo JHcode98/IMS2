@@ -3976,6 +3976,9 @@
                         const optionExists = Array.from(roleSelect.options).some(opt => opt.value === masterUser.role);
                         if (optionExists) roleSelect.value = masterUser.role;
                     }
+                    // Auto-set Job Description to Cycle Counter for Master Users
+                    const jobDescSelect = document.getElementById('att-job-desc');
+                    if (jobDescSelect) jobDescSelect.value = 'Cycle Counter';
                 } else {
                     // Fallback to searching in existing attendance data if not in master
                     const data = getAttendanceData();
@@ -5354,6 +5357,7 @@
                     userId: user.userId,
                     name: user.name,
                     role: user.role || 'IC Support',
+                    jobDescription: 'Cycle Counter',
                     timeIn: timeIn,
                     breakOut: '',
                     breakIn: '',
