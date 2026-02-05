@@ -3020,7 +3020,11 @@
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
-                    const validatorInput = `<input type="text" list="validator-names-list" class="task-validator-input" data-id="${t.id}" value="${t.validator || 'Unassigned'}" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">`;
+                    let options = `<option value="Unassigned" selected>Assign</option>`;
+                    validatorNames.forEach(v => {
+                        options += `<option value="${v}">${v}</option>`;
+                    });
+                    const validatorInput = `<select class="task-validator-input" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #e0e0e0; border-radius:4px; font-size:11px; background:#fff; color:#333;">${options}</select>`;
 
                     const actionHtml = `
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
