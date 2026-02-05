@@ -1040,26 +1040,51 @@
         </div>
 
         <!-- 1. Top Center: Dashboard -->
-        <div id="validation-summary-dashboard" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:15px; margin-bottom:15px;">
-            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
-                <div class="stat-value" id="val-total-tasks" style="font-size:24px; font-weight:bold; color:#1565c0;">0</div>
-                <div class="stat-label" style="font-size:12px; color:#555;">Total Tasks</div>
+        <div id="validation-summary-dashboard" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:15px;">
+            <div class="stat-card" style="padding:15px; border-left: 4px solid #1565c0;">
+                <div class="stat-icon" style="background: #e3f2fd; color: #1565c0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-total-tasks">0</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
             </div>
-            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
-                <div class="stat-value" id="val-completed-tasks" style="font-size:24px; font-weight:bold; color:#2e7d32;">0</div>
-                <div class="stat-label" style="font-size:12px; color:#555;">Completed</div>
+            <div class="stat-card" style="padding:15px; border-left: 4px solid #2e7d32;">
+                <div class="stat-icon" style="background: #e8f5e9; color: #2e7d32;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-completed-tasks">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
             </div>
-            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
-                <div class="stat-value" id="val-pending-tasks" style="font-size:24px; font-weight:bold; color:#ef6c00;">0</div>
-                <div class="stat-label" style="font-size:12px; color:#555;">Pending</div>
+            <div class="stat-card" style="padding:15px; border-left: 4px solid #ef6c00;">
+                <div class="stat-icon" style="background: #fff3e0; color: #ef6c00;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-pending-tasks">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
             </div>
-            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
-                <div class="stat-value" id="val-unresolved-tasks" style="font-size:24px; font-weight:bold; color:#d9534f;">0</div>
-                <div class="stat-label" style="font-size:12px; color:#555;">Unresolved</div>
+            <div class="stat-card" style="padding:15px; border-left: 4px solid #d9534f;">
+                <div class="stat-icon" style="background: #ffebee; color: #d9534f;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-unresolved-tasks">0</div>
+                    <div class="stat-label">Unresolved</div>
+                </div>
             </div>
-            <div class="stat-card" style="padding:15px; background:#fff; border:1px solid #eef2f6; text-align:center; display:block;">
-                <div class="stat-value" id="val-completion-rate" style="font-size:24px; font-weight:bold; color:#7b1fa2;">0%</div>
-                <div class="stat-label" style="font-size:12px; color:#555;">Completion Rate</div>
+            <div class="stat-card" style="padding:15px; border-left: 4px solid #7b1fa2;">
+                <div class="stat-icon" style="background: #f3e5f5; color: #7b1fa2;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-completion-rate">0%</div>
+                    <div class="stat-label">Completion Rate</div>
+                </div>
             </div>
         </div>
 
@@ -2797,15 +2822,7 @@
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
-                    let validatorSelect = `<select class="task-validator-select" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">`;
-                    validatorSelect += `<option value="Unassigned" ${t.validator === 'Unassigned' ? 'selected' : ''}>Unassigned</option>`;
-                    validatorNames.forEach(vName => {
-                        validatorSelect += `<option value="${vName}" ${t.validator === vName ? 'selected' : ''}>${vName}</option>`;
-                    });
-                    if (t.validator !== 'Unassigned' && !validatorNames.includes(t.validator)) {
-                         validatorSelect += `<option value="${t.validator}" selected>${t.validator}</option>`;
-                    }
-                    validatorSelect += `</select>`;
+                    const validatorInput = `<input type="text" list="validator-names-list" class="task-validator-input" data-id="${t.id}" value="${t.validator || 'Unassigned'}" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">`;
 
                     const actionHtml = `
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
@@ -2817,7 +2834,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
@@ -2854,15 +2871,7 @@
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
-                    let validatorSelect = `<select class="task-validator-select" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">`;
-                    validatorSelect += `<option value="Unassigned" ${t.validator === 'Unassigned' ? 'selected' : ''}>Unassigned</option>`;
-                    validatorNames.forEach(vName => {
-                        validatorSelect += `<option value="${vName}" ${t.validator === vName ? 'selected' : ''}>${vName}</option>`;
-                    });
-                    if (t.validator !== 'Unassigned' && !validatorNames.includes(t.validator)) {
-                         validatorSelect += `<option value="${t.validator}" selected>${t.validator}</option>`;
-                    }
-                    validatorSelect += `</select>`;
+                    const validatorInput = `<input type="text" list="validator-names-list" class="task-validator-input" data-id="${t.id}" value="${t.validator || 'Unassigned'}" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px;">`;
 
                     const actionHtml = `
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
@@ -2874,7 +2883,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorSelect}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     assignedTasksTbody.appendChild(tr);
                 });
             }
@@ -3079,7 +3088,7 @@
         if(pendingTasksTbody) {
             pendingTasksTbody.addEventListener('click', handleTaskAction);
             pendingTasksTbody.addEventListener('change', (e) => {
-                if(e.target.classList.contains('task-validator-select')) {
+                if(e.target.classList.contains('task-validator-input')) {
                     const id = e.target.dataset.id;
                     const newValidator = e.target.value;
                     let tasks = getValidationTasks();
@@ -3098,7 +3107,7 @@
         if(assignedTasksTbody) {
             assignedTasksTbody.addEventListener('click', handleTaskAction);
             assignedTasksTbody.addEventListener('change', (e) => {
-                if(e.target.classList.contains('task-validator-select')) {
+                if(e.target.classList.contains('task-validator-input')) {
                     const id = e.target.dataset.id;
                     const newValidator = e.target.value;
                     let tasks = getValidationTasks();
@@ -3178,44 +3187,84 @@
 
         // Export CSV
         const exportValCSV = (selector) => {
-            // Export visible rows in the active tab of the card
-            // Find active tab in card 1 or 2
-            let activeTbody = null;
-            if(selector === 1) {
-                if(document.getElementById('tab-val-pending').style.display !== 'none') activeTbody = document.getElementById('pending-tasks-tbody');
-                else activeTbody = document.getElementById('assigned-tasks-tbody');
-            } else {
-                if(document.getElementById('tab-val-resolved').style.display !== 'none') activeTbody = document.getElementById('resolved-tasks-tbody');
-                else activeTbody = document.getElementById('unresolved-tasks-tbody');
+            let tasks = getValidationTasks();
+            
+            // Apply Global Date Filter
+            if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+                if(start) start.setHours(0,0,0,0);
+                const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+                if(end) end.setHours(23,59,59,999);
+                
+                tasks = tasks.filter(t => {
+                    const d = new Date(t.timestamp);
+                    return (!start || d >= start) && (!end || d <= end);
+                });
             }
             
-            if(!activeTbody) return;
-            const rows = Array.from(activeTbody.querySelectorAll('tr'));
-            if(rows.length === 0) { alert('No data to export'); return; }
+            // Sort by timestamp desc
+            tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            let dataToExport = [];
+            let filename = 'validation_tasks.csv';
             
-            const csv = [];
-            // Header
-            const headerRow = activeTbody.previousElementSibling.querySelector('tr');
-            const headers = Array.from(headerRow.querySelectorAll('th')).map(th => th.innerText.trim()).filter(t => t);
-            csv.push(headers.join(','));
+            if (selector === 1) {
+                // Card 1: Pending or Assigned
+                const isPendingTab = document.getElementById('tab-val-pending').style.display !== 'none';
+                const skuFilter = document.getElementById('val-filter-sku-1').value.toLowerCase();
+                const assignedFilter = document.getElementById('val-filter-assigned-1').value.toLowerCase();
+                
+                let filtered = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
+                if (skuFilter) filtered = filtered.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
+                
+                if (isPendingTab) {
+                    dataToExport = filtered.filter(t => !t.validator || t.validator === 'Unassigned');
+                    filename = 'pending_validation_tasks.csv';
+                } else {
+                    dataToExport = filtered.filter(t => t.validator && t.validator !== 'Unassigned');
+                    if (assignedFilter) dataToExport = dataToExport.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
+                    filename = 'assigned_validation_tasks.csv';
+                }
+            } else {
+                // Card 2: Resolved or Unresolved
+                const isResolvedTab = document.getElementById('tab-val-resolved').style.display !== 'none';
+                const skuFilter = document.getElementById('val-filter-sku-2').value.toLowerCase();
+                const validatorFilter = document.getElementById('val-filter-assigned-2').value.toLowerCase();
+                
+                let filtered = tasks;
+                if (skuFilter) filtered = filtered.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
+                
+                if (isResolvedTab) {
+                    dataToExport = filtered.filter(t => t.status === 'Completed');
+                    if (validatorFilter) dataToExport = dataToExport.filter(t => (t.validator || '').toLowerCase().includes(validatorFilter));
+                    filename = 'resolved_validation_tasks.csv';
+                } else {
+                    dataToExport = filtered.filter(t => t.status === 'Unresolved');
+                    if (validatorFilter) dataToExport = dataToExport.filter(t => (t.validator || '').toLowerCase().includes(validatorFilter));
+                    filename = 'unresolved_validation_tasks.csv';
+                }
+            }
             
-            rows.forEach(row => {
-                const cols = Array.from(row.querySelectorAll('td')).slice(1); // Skip checkbox
-                const rowData = cols.map(td => {
-                    // Handle select elements
-                    const select = td.querySelector('select');
-                    if(select) return `"${select.value}"`;
-                    return `"${td.innerText.trim()}"`;
-                });
-                // Remove last column (Actions)
-                rowData.pop();
-                csv.push(rowData.join(','));
+            if (dataToExport.length === 0) { alert('No data to export'); return; }
+            
+            const headers = ['Date', 'SKU', 'Description', 'Qty', 'Reason', 'Validator', 'Status', 'Completed At'];
+            const csv = [headers.join(',')];
+            
+            dataToExport.forEach(t => {
+                const date = new Date(t.timestamp).toLocaleString().replace(',', '');
+                const completedAt = t.completedAt ? new Date(t.completedAt).toLocaleString().replace(',', '') : '';
+                const row = [
+                    `"${date}"`, `"${t.sku || ''}"`, `"${(t.desc || '').replace(/"/g, '""')}"`,
+                    `"${t.qty || ''}"`, `"${(t.reason || '').replace(/"/g, '""')}"`,
+                    `"${t.validator || ''}"`, `"${t.status || ''}"`, `"${completedAt}"`
+                ];
+                csv.push(row.join(','));
             });
             
             const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'validation_tasks.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
         };
 
         if(document.getElementById('val-export-btn-1')) document.getElementById('val-export-btn-1').addEventListener('click', () => exportValCSV(1));
@@ -3322,6 +3371,51 @@
                     localStorage.removeItem('ims_master_desc_v1');
                     showToast('SKU Master List cleared.');
                 }
+            });
+        }
+
+        if(uploadSkuBtn) uploadSkuBtn.addEventListener('click', () => uploadSkuFile.click());
+
+        if(uploadSkuFile) {
+            uploadSkuFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    let text = ev.target.result;
+                    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+                    const lines = text.split(/\r\n|\n/);
+                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
+                    
+                    let skuIdx = headers.indexOf('item code');
+                    if (skuIdx === -1) skuIdx = headers.indexOf('sku');
+                    const descIdx = headers.indexOf('description');
+                    
+                    if(skuIdx === -1 || descIdx === -1) {
+                        alert('CSV must contain "Item Code" (or "SKU") and "Description" columns.');
+                        return;
+                    }
+
+                    let masterMap = {};
+                    try { masterMap = JSON.parse(localStorage.getItem('ims_master_desc_v1') || '{}'); } catch(e) {}
+                    
+                    let count = 0;
+                    for(let i=1; i<lines.length; i++) {
+                        if(!lines[i].trim()) continue;
+                        const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+                        const sku = cols[skuIdx];
+                        const desc = cols[descIdx];
+                        
+                        if(sku) {
+                            masterMap[sku] = desc || '';
+                            count++;
+                        }
+                    }
+                    localStorage.setItem('ims_master_desc_v1', JSON.stringify(masterMap));
+                    showToast(`SKU Master List updated with ${count} items.`);
+                    uploadSkuFile.value = '';
+                };
+                reader.readAsText(file);
             });
         }
 
