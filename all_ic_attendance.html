@@ -2081,6 +2081,8 @@
                         
                         // 1. Change status
                         itemToForward.status = 'Full Counter';
+                        itemToForward.jobDescription = 'Cycle Counter';
+                        itemToForward.area = '';
                         allAttendance[itemIndex].status = 'Full Counter';
                         saveAttendanceData(allAttendance); // Save change in current list
 
@@ -2217,6 +2219,7 @@
                         const alreadyExists = dailyAttendance.some(d => d.date === item.date && d.shift === item.shift && d.userId === item.userId);
                         if (!alreadyExists) {
                             dailyAttendance.push({ ...item });
+                            dailyAttendance.push({ ...item, jobDescription: 'Cycle Counter', area: '' });
                             addedToDailyIds.push(item.id);
                             count++;
                         }
