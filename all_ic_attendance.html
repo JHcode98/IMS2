@@ -378,6 +378,12 @@
             <button id="delete-selected-att-btn" class="icon-btn" title="Delete Selected" style="color:#d9534f; display:none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
             </button>
+            <button id="forward-all-btn" class="icon-btn" title="Forward All Cycle Counters" style="background: #e67e22; color: white; margin-right: 5px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Forward All
+            </button>
+            <button id="undo-forward-btn" class="icon-btn" title="Undo Last Forward" style="background: #7f8c8d; color: white; margin-right: 5px; display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg> Undo
+            </button>
             <button id="export-att-btn" class="icon-btn" title="Export CSV" style="margin-right:5px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </button>
@@ -2170,6 +2176,109 @@
                     updateAttendanceActionButtons();
                     showToast(`${selectedIds.length} attendance records deleted`);
                 });
+            });
+        }
+
+        // Forward All Logic
+        let undoStack = [];
+        const forwardAllBtn = document.getElementById('forward-all-btn');
+        const undoForwardBtn = document.getElementById('undo-forward-btn');
+
+        if (forwardAllBtn) {
+            forwardAllBtn.addEventListener('click', () => {
+                // Use filtered data to respect current view filters
+                const candidates = getFilteredAttendanceData().filter(item => item.area === 'Cycle Counter' && item.status === 'Full-time');
+                
+                if (candidates.length === 0) {
+                    alert('No unforwarded Cycle Counters found in current view.');
+                    return;
+                }
+
+                if (!confirm(`Forward ${candidates.length} Cycle Counters to Daily Count?`)) return;
+
+                const allData = getAttendanceData();
+                const candidateIds = new Set(candidates.map(c => c.id));
+                
+                const dailyCountersAttendanceKey = 'ims_daily_counters_attendance_v1';
+                let dailyAttendance = [];
+                try { dailyAttendance = JSON.parse(localStorage.getItem(dailyCountersAttendanceKey) || '[]'); } catch (err) { dailyAttendance = []; }
+
+                let count = 0;
+                let forwardedIds = [];
+                let addedToDailyIds = [];
+
+                // Clear any existing undo timeout
+                if (undoTimeout) clearTimeout(undoTimeout);
+
+                allData.forEach(item => {
+                    if (candidateIds.has(item.id)) {
+                        forwardedIds.push(item.id);
+                        item.status = 'Full Counter';
+                        const alreadyExists = dailyAttendance.some(d => d.date === item.date && d.shift === item.shift && d.userId === item.userId);
+                        if (!alreadyExists) {
+                            dailyAttendance.push({ ...item });
+                            addedToDailyIds.push(item.id);
+                            count++;
+                        }
+                    }
+                });
+
+                saveAttendanceData(allData);
+                localStorage.setItem(dailyCountersAttendanceKey, JSON.stringify(dailyAttendance));
+                renderAttendanceTable();
+                showToast(`${count} Cycle Counters forwarded.`);
+
+                undoStack.push({
+                    type: 'forward_all',
+                    forwardedIds: forwardedIds,
+                    addedToDailyIds: addedToDailyIds
+                });
+                if (undoForwardBtn) undoForwardBtn.style.display = 'inline-flex';
+
+                // Set a timer to hide the undo button
+                undoTimeout = setTimeout(() => {
+                    if (undoForwardBtn) undoForwardBtn.style.display = 'none';
+                }, 10000); // 10 seconds
+            });
+        }
+
+        if (undoForwardBtn) {
+            undoForwardBtn.addEventListener('click', () => {
+                if (undoTimeout) {
+                    clearTimeout(undoTimeout);
+                    undoTimeout = null;
+                }
+                const lastAction = undoStack.pop();
+                if (!lastAction) return;
+
+                if (lastAction.type === 'forward_all') {
+                    const allData = getAttendanceData();
+                    let revertedCount = 0;
+                    
+                    // Revert status in main attendance
+                    allData.forEach(item => {
+                        if (lastAction.forwardedIds.includes(item.id)) {
+                            item.status = 'Full-time';
+                            revertedCount++;
+                        }
+                    });
+                    saveAttendanceData(allData);
+
+                    // Remove from daily attendance
+                    const dailyCountersAttendanceKey = 'ims_daily_counters_attendance_v1';
+                    let dailyAttendance = [];
+                    try { dailyAttendance = JSON.parse(localStorage.getItem(dailyCountersAttendanceKey) || '[]'); } catch (err) { dailyAttendance = []; }
+                    
+                    dailyAttendance = dailyAttendance.filter(item => !lastAction.addedToDailyIds.includes(item.id));
+                    localStorage.setItem(dailyCountersAttendanceKey, JSON.stringify(dailyAttendance));
+
+                    renderAttendanceTable();
+                    showToast(`Undo successful.`);
+                }
+
+                if (undoStack.length === 0) {
+                    undoForwardBtn.style.display = 'none';
+                }
             });
         }
 
