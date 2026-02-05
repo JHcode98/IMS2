@@ -1904,17 +1904,19 @@
                 const tr = document.createElement('tr');
 
                 let forwardBtnHtml = '';
+                let nameHtml = item.name;
                 if (item.area === 'Cycle Counter' && item.status === 'Full-time') {
                     forwardBtnHtml = `<button class="icon-btn forward-to-daily-btn" data-id="${item.id}" title="Forward to Daily Counters" style="color:#2752a7; margin-right:5px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>`;
+                    nameHtml = `<span style="color:#e74c3c; font-weight:bold; background:#ffebee; padding:2px 5px; border-radius:4px;">${item.name}</span>`;
                 }
                 tr.innerHTML = `
                     <td><input type="checkbox" class="att-row-checkbox" data-id="${item.id}"></td>
                     <td>${item.date}</td>
                     <td>${item.userId || '-'}</td>
                     <td>${item.shift}</td>
-                    <td>${item.name}</td>
+                    <td>${nameHtml}</td>
                     <td>${item.role || '-'}</td>
                     <td>${item.area || '-'}</td>
                     <td>${item.timeIn || '-'}</td>
