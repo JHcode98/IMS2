@@ -4128,6 +4128,23 @@
                     data.push(newEntry);
                 }
                 saveAttendanceData(data);
+
+                // Sync to All IC Attendance (Cycle Counters only)
+                try {
+                    const allIcKey = 'ims_daily_attendance_v1';
+                    let allIcData = JSON.parse(localStorage.getItem(allIcKey) || '[]');
+                    let allIcIdx = allIcData.findIndex(a => a.id === newEntry.id);
+                    if (allIcIdx === -1) {
+                        allIcIdx = allIcData.findIndex(a => a.userId === newEntry.userId && a.date === newEntry.date && a.shift === newEntry.shift);
+                    }
+                    if (allIcIdx > -1 && (allIcData[allIcIdx].area === 'Cycle Counter' || allIcData[allIcIdx].jobDescription === 'Cycle Counter')) {
+                        allIcData[allIcIdx].breakOut = newEntry.breakOut;
+                        allIcData[allIcIdx].breakIn = newEntry.breakIn;
+                        allIcData[allIcIdx].timeOut = newEntry.timeOut;
+                        localStorage.setItem(allIcKey, JSON.stringify(allIcData));
+                    }
+                } catch(e) { console.error("Sync error", e); }
+
                 showToast('Attendance saved successfully!');
                 
                 attModal.classList.add('hidden');
