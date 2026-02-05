@@ -3736,6 +3736,20 @@
 
                 showSupervisorDeleteModal(selectedIds.length, () => {
                     const selectedSet = new Set(selectedIds);
+                    
+                    // Revert status in All IC Attendance (restore forward button)
+                    const allIcKey = 'ims_daily_attendance_v1';
+                    let allIcData = [];
+                    try { allIcData = JSON.parse(localStorage.getItem(allIcKey) || '[]'); } catch(e) {}
+                    let modified = false;
+                    allIcData.forEach(item => {
+                        if (selectedSet.has(item.id) && item.status === 'Full Counter') {
+                            item.status = 'Full-time';
+                            modified = true;
+                        }
+                    });
+                    if (modified) localStorage.setItem(allIcKey, JSON.stringify(allIcData));
+
                     let data = getAttendanceData();
                     data = data.filter(item => !selectedSet.has(item.id));
                     saveAttendanceData(data);
@@ -4157,6 +4171,16 @@
 
                 if (btn.classList.contains('delete-att-btn')) {
                     if(confirm('Remove this person?')) {
+                        // Revert status in All IC Attendance (restore forward button)
+                        const allIcKey = 'ims_daily_attendance_v1';
+                        let allIcData = [];
+                        try { allIcData = JSON.parse(localStorage.getItem(allIcKey) || '[]'); } catch(e) {}
+                        const idx = allIcData.findIndex(item => item.id === id);
+                        if (idx > -1 && allIcData[idx].status === 'Full Counter') {
+                            allIcData[idx].status = 'Full-time';
+                            localStorage.setItem(allIcKey, JSON.stringify(allIcData));
+                        }
+
                         let data = getAttendanceData();
                         data = data.filter(item => item.id !== id);
                         saveAttendanceData(data);
