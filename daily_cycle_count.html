@@ -686,7 +686,7 @@
                     <datalist id="att-name-list"></datalist>
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label for="att-role">Role</label>
                     <select id="att-role" style="width:100%">
@@ -709,10 +709,6 @@
                         <option value="Validator">Validator</option>
                         <option value="HVI Support">HVI Support</option>
                     </select>
-                </div>
-                <div>
-                    <label for="att-area">Assigned Area</label>
-                    <select id="att-area" style="width:100%"><option value="">Select Area</option></select>
                 </div>
             </div>
                 <div>
@@ -4085,7 +4081,7 @@
                     name: document.getElementById('att-name').value.trim().toUpperCase(),
                     role: document.getElementById('att-role').value,
                     jobDescription: document.getElementById('att-job-desc').value,
-                    area: document.getElementById('att-area').value,
+                    area: '',
                     timeIn: document.getElementById('att-time-in').value,
                     breakIn: document.getElementById('att-break-in').value,
                     breakOut: document.getElementById('att-break-out').value,
@@ -4201,7 +4197,6 @@
                         document.getElementById('att-name').value = item.name;
                         document.getElementById('att-role').value = item.role;
                         document.getElementById('att-job-desc').value = item.jobDescription || '';
-                        document.getElementById('att-area').value = item.area || '';
                         document.getElementById('att-time-in').value = item.timeIn || '';
                         document.getElementById('att-break-out').value = item.breakOut;
                         document.getElementById('att-break-in').value = item.breakIn;
