@@ -3205,7 +3205,8 @@
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     
-                    const diffMs = now - new Date(t.timestamp);
+                    const endTime = t.unresolvedAt ? new Date(t.unresolvedAt) : now;
+                    const diffMs = endTime - new Date(t.timestamp);
                     const diffMins = Math.floor(diffMs / 60000);
                     let durationStr = diffMins < 60 ? `${diffMins}m` : `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
                     
@@ -3400,11 +3401,13 @@
                     showToast('Task completed');
                 }
             } else if(btn.classList.contains('mark-unresolved-btn')) {
+                if(!confirm('Are you sure you want to mark this task as Unresolved?')) return;
                 const id = btn.dataset.id;
                 let tasks = getValidationTasks();
                 const taskIndex = tasks.findIndex(t => t.id === id);
                 if(taskIndex > -1) {
                     tasks[taskIndex].status = 'Unresolved';
+                    tasks[taskIndex].unresolvedAt = new Date().toISOString();
                     saveValidationTasks(tasks);
                     renderValidationTasks();
                     showToast('Task marked as Unresolved');
@@ -3416,6 +3419,7 @@
                 if(taskIndex > -1) {
                     tasks[taskIndex].status = 'Pending';
                     delete tasks[taskIndex].completedAt;
+                    delete tasks[taskIndex].unresolvedAt;
                     saveValidationTasks(tasks);
                     renderValidationTasks();
                     showToast('Task reopened (Pending)');
