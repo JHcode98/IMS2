@@ -1503,10 +1503,11 @@
         function saveTimestamps(data) {
             localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
         }
-        function showToast(message) {
+        function showToast(message, type = 'success') {
             const toast = document.getElementById('toast-notification');
             if (toast) {
                 toast.textContent = message;
+                toast.style.backgroundColor = type === 'error' ? '#e74c3c' : '#2ecc71';
                 toast.classList.add('show');
                 setTimeout(() => toast.classList.remove('show'), 3000);
             }
@@ -3770,14 +3771,14 @@
                 const sku = assignSku.value.trim();
                 const qty = assignQty.value.trim();
                 const reason = assignReason.value.trim();
-                if(!sku || !qty) { alert('Please fill in SKU and Qty.'); return; }
+                if(!sku || !qty) { showToast('Please fill in SKU and Qty.', 'error'); return; }
                 
                 // Validate SKU against Master List
                 let masterMap = {};
                 try { masterMap = JSON.parse(localStorage.getItem('ims_master_desc_v1') || '{}'); } catch(e) {}
                 
                 if (Object.keys(masterMap).length > 0 && !masterMap[sku]) {
-                    alert('Invalid SKU: Not found in Master List.');
+                    showToast('Invalid SKU: Not found in Master List.', 'error');
                     return;
                 }
                 
