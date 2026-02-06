@@ -1301,7 +1301,7 @@
                 <!-- Top: Add Task Form -->
                 <div class="card" style="margin:0; padding:15px; overflow-y:auto;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h4 style="margin:0; color:#2752a7;">Add Validation Task</h4>
+                        <h4 style="margin:0; color:#2752a7;">Add Validation Task <span id="sku-master-status" style="font-size:11px; font-weight:normal; margin-left:5px;"></span></h4>
                         <div style="display:flex; gap:5px;">
                             <button id="download-sku-template-btn" class="icon-btn" title="Download Template">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -3591,6 +3591,24 @@
             });
         }
 
+        function updateSkuMasterStatus() {
+            const statusEl = document.getElementById('sku-master-status');
+            if(!statusEl) return;
+            let count = 0;
+            try {
+                const masterMap = JSON.parse(localStorage.getItem('ims_master_desc_v1') || '{}');
+                count = Object.keys(masterMap).length;
+            } catch(e) {}
+            
+            if(count > 0) {
+                statusEl.textContent = `(Master List: ${count} items loaded)`;
+                statusEl.style.color = '#2ecc71';
+            } else {
+                statusEl.textContent = '(No Master List loaded)';
+                statusEl.style.color = '#e74c3c';
+            }
+        }
+
         // SKU Master Template & Clear
         const downloadSkuTemplateBtn = document.getElementById('download-sku-template-btn');
         const clearSkuMasterBtn = document.getElementById('clear-sku-master-btn');
@@ -3617,6 +3635,7 @@
                 if(confirm('Are you sure you want to clear the SKU Master List?')) {
                     localStorage.removeItem('ims_master_desc_v1');
                     showToast('SKU Master List cleared.');
+                    updateSkuMasterStatus();
                 }
             });
         }
@@ -3660,6 +3679,7 @@
                     }
                     localStorage.setItem('ims_master_desc_v1', JSON.stringify(masterMap));
                     showToast(`SKU Master List updated with ${count} items.`);
+                    updateSkuMasterStatus();
                     uploadSkuFile.value = '';
                 };
                 reader.readAsText(file);
@@ -3796,7 +3816,7 @@
                 tasks.push(newTask);
                 saveValidationTasks(tasks);
                 renderValidationTasks();
-                showToast('Task assigned');
+                showToast('Task successfully assigned!');
                 
                 assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = '';
             });
@@ -3809,6 +3829,7 @@
                     validatorsModal.classList.remove('hidden');
                     renderValidatorsModal();
                     renderValidationTasks();
+                    updateSkuMasterStatus();
                 }
             });
         }
