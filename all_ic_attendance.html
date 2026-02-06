@@ -1045,7 +1045,10 @@
     <div class="modal-content card" style="width: 98%; height: 95vh; margin: 1vh auto; display:flex; flex-direction:column; max-width: 1800px; background:#f4f6f8;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eef2f6;">
             <h3 style="margin:0">Validators View</h3>
-            <button class="icon-btn close-modal">&times;</button>
+            <div>
+                <button id="go-to-timestamp-btn" class="icon-btn" title="Go to Timestamp (Daily Cycle Count)" style="margin-right:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button>
+                <button class="icon-btn close-modal">&times;</button>
+            </div>
         </div>
 
         <!-- 1. Top Center: Dashboard -->
@@ -4224,6 +4227,21 @@
                 a.click();
                 document.body.removeChild(a);
             });
+        }
+
+        // Shortcut to Timestamp
+        const goToTimestampBtn = document.getElementById('go-to-timestamp-btn');
+        if(goToTimestampBtn) {
+            goToTimestampBtn.addEventListener('click', () => {
+                sessionStorage.setItem('ims_timestamp_modal_open', 'true');
+                window.location.href = 'daily_cycle_count.html';
+            });
+        }
+
+        // Check for auto-open validators modal
+        if (sessionStorage.getItem('ims_open_validators_modal') === 'true') {
+            sessionStorage.removeItem('ims_open_validators_modal');
+            if(validatorsViewBtn) validatorsViewBtn.click();
         }
     });
   </script>
