@@ -3950,6 +3950,19 @@
                     return;
                 }
                 
+                // Check for duplicates within the same day
+                const tasks = getValidationTasks();
+                const today = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+                const isDuplicate = tasks.some(task => {
+                    const taskDate = new Date(task.timestamp).toISOString().split('T')[0];
+                    return task.sku === sku && taskDate === today;
+                });
+
+                if (isDuplicate) {
+                    showToast(`SKU ${sku} has already been added for validation today.`, 'error');
+                    return;
+                }
+
                 const newTask = {
                     id: Date.now().toString(),
                     timestamp: new Date().toISOString(),
@@ -3960,7 +3973,6 @@
                     validator: 'Unassigned',
                     status: 'Pending'
                 };
-                const tasks = getValidationTasks();
                 tasks.push(newTask);
                 saveValidationTasks(tasks);
                 renderValidationTasks();
