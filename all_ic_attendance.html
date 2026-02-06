@@ -1120,6 +1120,8 @@
                         <div class="att-tabs" style="margin-bottom:0; border-bottom:none;">
                             <button class="att-tab active" onclick="openValTab(event, 'tab-val-pending')">Pending</button>
                             <button class="att-tab" onclick="openValTab(event, 'tab-val-assigned')">Assigned</button>
+                            <button class="att-tab" onclick="openValTab(event, 'tab-val-resolved')">Resolved</button>
+                            <button class="att-tab" onclick="openValTab(event, 'tab-val-unresolved')">Unresolved</button>
                         </div>
                         <div style="display:flex; gap:5px; align-items:center;">
                             <input type="text" id="val-filter-sku-1" placeholder="Filter SKU..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:100px;">
@@ -1201,26 +1203,9 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Table 2: Resolved / Unresolved Tabs -->
-                <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <div class="att-tabs" style="margin-bottom:0; border-bottom:none;">
-                            <button class="att-tab active" onclick="openValTab(event, 'tab-val-resolved')">Resolved</button>
-                            <button class="att-tab" onclick="openValTab(event, 'tab-val-unresolved')">Unresolved</button>
-                        </div>
-                        <div style="display:flex; gap:5px; align-items:center;">
-                            <input type="text" id="val-filter-sku-2" placeholder="Filter SKU..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:100px;">
-                            <input type="text" id="val-filter-assigned-2" placeholder="Filter Validator..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
-                            <button class="icon-btn" id="val-print-btn-2" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
-                            <button class="icon-btn" id="val-export-btn-2" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
-                            <button class="icon-btn" id="val-bulk-delete-btn-2" title="Delete Selected" style="color:#d9534f; display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
-                        </div>
-                    </div>
                     
                     <!-- Resolved Tab -->
-                    <div id="tab-val-resolved" class="val-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                    <div id="tab-val-resolved" class="val-tab-content" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
                         <div style="flex:1; overflow:auto; position:relative;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                             <thead>
@@ -2877,9 +2862,7 @@
         
         // Filters
         let valFilterAssigned1 = '';
-        let valFilterAssigned2 = '';
         let valFilterSku1 = '';
-        let valFilterSku2 = '';
 
         function filterValDashboard(type) {
             if (type === 'total') {
@@ -2929,9 +2912,7 @@
             
             // Get filter values
             valFilterAssigned1 = document.getElementById('val-filter-assigned-1') ? document.getElementById('val-filter-assigned-1').value.toLowerCase() : '';
-            valFilterAssigned2 = document.getElementById('val-filter-assigned-2') ? document.getElementById('val-filter-assigned-2').value.toLowerCase() : '';
             valFilterSku1 = document.getElementById('val-filter-sku-1') ? document.getElementById('val-filter-sku-1').value.toLowerCase() : '';
-            valFilterSku2 = document.getElementById('val-filter-sku-2') ? document.getElementById('val-filter-sku-2').value.toLowerCase() : '';
             
 
             // Get validators for dropdown
@@ -2985,13 +2966,13 @@
             }
 
             // Apply Filters for Card 2 (Resolved/Unresolved)
-            if (valFilterSku2) {
-                resolvedTasks = resolvedTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku2));
-                unresolvedTasks = unresolvedTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku2));
+            if (valFilterSku1) {
+                resolvedTasks = resolvedTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku1));
+                unresolvedTasks = unresolvedTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku1));
             }
-            if (valFilterAssigned2) {
-                resolvedTasks = resolvedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned2));
-                unresolvedTasks = unresolvedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned2));
+            if (valFilterAssigned1) {
+                resolvedTasks = resolvedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned1));
+                unresolvedTasks = unresolvedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned1));
             }
 
             // Pagination for Pending (Unassigned)
@@ -3382,9 +3363,7 @@
             
             const btn1 = document.getElementById('val-bulk-delete-btn-1');
             if(btn1) btn1.style.display = (pCount + aCount) > 0 ? 'inline-flex' : 'none';
-            
-            const btn2 = document.getElementById('val-bulk-delete-btn-2');
-            if(btn2) btn2.style.display = (rCount + uCount) > 0 ? 'inline-flex' : 'none';
+            if(btn1 && (rCount + uCount) > 0) btn1.style.display = 'inline-flex';
         }
 
         // Select All Listeners
@@ -3417,23 +3396,16 @@
         };
 
         const btnBulkDel1 = document.getElementById('val-bulk-delete-btn-1');
-        if(btnBulkDel1) btnBulkDel1.addEventListener('click', () => handleBulkDelete('.pending-cb, .assigned-cb'));
-        
-        const btnBulkDel2 = document.getElementById('val-bulk-delete-btn-2');
-        if(btnBulkDel2) btnBulkDel2.addEventListener('click', () => handleBulkDelete('.resolved-cb, .unresolved-cb'));
+        if(btnBulkDel1) btnBulkDel1.addEventListener('click', () => handleBulkDelete('.pending-cb, .assigned-cb, .resolved-cb, .unresolved-cb'));
 
         // Filter Inputs
         const filterInput1 = document.getElementById('val-filter-assigned-1');
         if(filterInput1) filterInput1.addEventListener('input', renderValidationTasks);
-        const filterInput2 = document.getElementById('val-filter-assigned-2');
-        if(filterInput2) filterInput2.addEventListener('input', renderValidationTasks);
         const filterSku1 = document.getElementById('val-filter-sku-1');
         if(filterSku1) filterSku1.addEventListener('input', renderValidationTasks);
-        const filterSku2 = document.getElementById('val-filter-sku-2');
-        if(filterSku2) filterSku2.addEventListener('input', renderValidationTasks);
 
         // Export CSV
-        const exportValCSV = (selector) => {
+        const exportValCSV = () => {
             let tasks = getValidationTasks();
             
             // Apply Global Date Filter
@@ -3455,9 +3427,11 @@
             let dataToExport = [];
             let filename = 'validation_tasks.csv';
             
-            if (selector === 1) {
-                // Card 1: Pending or Assigned
+            // Determine which tab is active
                 const isPendingTab = document.getElementById('tab-val-pending').style.display !== 'none';
+                const isAssignedTab = document.getElementById('tab-val-assigned').style.display !== 'none';
+                const isResolvedTab = document.getElementById('tab-val-resolved').style.display !== 'none';
+                
                 const skuFilter = document.getElementById('val-filter-sku-1').value.toLowerCase();
                 const assignedFilter = document.getElementById('val-filter-assigned-1').value.toLowerCase();
                 
@@ -3467,30 +3441,23 @@
                 if (isPendingTab) {
                     dataToExport = filtered.filter(t => !t.validator || t.validator === 'Unassigned');
                     filename = 'pending_validation_tasks.csv';
-                } else {
+                } else if (isAssignedTab) {
                     dataToExport = filtered.filter(t => t.validator && t.validator !== 'Unassigned');
                     if (assignedFilter) dataToExport = dataToExport.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
                     filename = 'assigned_validation_tasks.csv';
-                }
-            } else {
-                // Card 2: Resolved or Unresolved
-                const isResolvedTab = document.getElementById('tab-val-resolved').style.display !== 'none';
-                const skuFilter = document.getElementById('val-filter-sku-2').value.toLowerCase();
-                const validatorFilter = document.getElementById('val-filter-assigned-2').value.toLowerCase();
-                
-                let filtered = tasks;
-                if (skuFilter) filtered = filtered.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
-                
-                if (isResolvedTab) {
-                    dataToExport = filtered.filter(t => t.status === 'Completed');
-                    if (validatorFilter) dataToExport = dataToExport.filter(t => (t.validator || '').toLowerCase().includes(validatorFilter));
+                } else if (isResolvedTab) {
+                    let filteredRes = tasks.filter(t => t.status === 'Completed');
+                    if (skuFilter) filteredRes = filteredRes.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
+                    if (assignedFilter) filteredRes = filteredRes.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
+                    dataToExport = filteredRes;
                     filename = 'resolved_validation_tasks.csv';
                 } else {
-                    dataToExport = filtered.filter(t => t.status === 'Unresolved');
-                    if (validatorFilter) dataToExport = dataToExport.filter(t => (t.validator || '').toLowerCase().includes(validatorFilter));
+                    let filteredUnres = tasks.filter(t => t.status === 'Unresolved');
+                    if (skuFilter) filteredUnres = filteredUnres.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
+                    if (assignedFilter) filteredUnres = filteredUnres.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
+                    dataToExport = filteredUnres;
                     filename = 'unresolved_validation_tasks.csv';
                 }
-            }
             
             if (dataToExport.length === 0) { alert('No data to export'); return; }
             
@@ -3514,11 +3481,9 @@
             a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
         };
 
-        if(document.getElementById('val-export-btn-1')) document.getElementById('val-export-btn-1').addEventListener('click', () => exportValCSV(1));
-        if(document.getElementById('val-export-btn-2')) document.getElementById('val-export-btn-2').addEventListener('click', () => exportValCSV(2));
+        if(document.getElementById('val-export-btn-1')) document.getElementById('val-export-btn-1').addEventListener('click', () => exportValCSV());
         // Print buttons can just call window.print() or a specific print function, for now simple alert or print
         if(document.getElementById('val-print-btn-1')) document.getElementById('val-print-btn-1').addEventListener('click', () => window.print());
-        if(document.getElementById('val-print-btn-2')) document.getElementById('val-print-btn-2').addEventListener('click', () => window.print());
 
         // Tab switching for Validator View
         window.openValTab = function(evt, tabId) {
