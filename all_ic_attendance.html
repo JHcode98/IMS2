@@ -1364,7 +1364,7 @@
                             <input type="file" id="upload-bulk-tasks-file" accept=".csv" style="display:none;">
                         </div>
                     </div>
-                    <div style="display:grid; grid-template-columns: 1fr 0.6fr 1.5fr; gap:8px; align-items:end;">
+                    <div style="display:grid; grid-template-columns: 1fr 0.6fr 1fr 1fr; gap:8px; align-items:end;">
                         <div>
                             <label style="font-size:10px; font-weight:bold;">SKU Code</label>
                             <input type="text" id="assign-sku" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
@@ -1387,7 +1387,11 @@
                                 <option value="Others">Others</option>
                             </select>
                         </div>
-                        <div style="grid-column: span 2;">
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">Assign To (Opt)</label>
+                            <select id="assign-validator" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;"><option value="">Unassigned</option></select>
+                        </div>
+                        <div style="grid-column: span 3;">
                             <label style="font-size:10px; font-weight:bold;">Description</label>
                             <input type="text" id="assign-desc" readonly style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; background:#eee; font-size:11px;">
                         </div>
@@ -2885,6 +2889,7 @@
         const assignDesc = document.getElementById('assign-desc');
         const assignQty = document.getElementById('assign-qty');
         const assignReason = document.getElementById('assign-reason');
+        const assignValidator = document.getElementById('assign-validator');
         const btnAssignTask = document.getElementById('btn-assign-task');
         const pendingTasksTbody = document.getElementById('pending-tasks-tbody');
         const resolvedTasksTbody = document.getElementById('resolved-tasks-tbody');
@@ -2913,6 +2918,8 @@
                 return a.shift.localeCompare(b.shift);
             });
 
+            updateValidatorDropdown(data);
+
             validators.forEach(v => {
                 // Calculate stats for this validator
                 const pendingCount = tasks.filter(t => t.validator === v.name && t.status !== 'Completed' && t.status !== 'Unresolved').length;
@@ -2930,7 +2937,7 @@
             if(!assignValidator) return;
             const currentVal = assignValidator.value;
             // Keep first option
-            assignValidator.innerHTML = '<option value="">Select Validator</option>';
+            assignValidator.innerHTML = '<option value="">Unassigned</option>';
             
             const validators = data.filter(item => item.area === 'Validator' && !item.timeOut);
             const uniqueValidators = [...new Set(validators.map(v => v.name))].sort();
@@ -4083,7 +4090,7 @@
                     desc: assignDesc.value,
                     qty: qty,
                     reason: reason,
-                    validator: 'Unassigned',
+                    validator: assignValidator.value || 'Unassigned',
                     status: 'Pending'
                 };
                 tasks.push(newTask);
@@ -4091,7 +4098,7 @@
                 renderValidationTasks();
                 showToast('Task successfully assigned!');
                 
-                assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = '';
+                assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = ''; assignValidator.value = '';
             });
         }
 
@@ -4539,6 +4546,39 @@
             goToTimestampBtn.addEventListener('click', () => {
                 sessionStorage.setItem('ims_timestamp_modal_open', 'true');
                 window.location.href = 'daily_cycle_count.html';
+            });
+        }
+
+        // Check for auto-open validators modal
+        if (sessionStorage.getItem('ims_open_validators_modal') === 'true') {
+            sessionStorage.removeItem('ims_open_validators_modal');
+            if(validatorsViewBtn) validatorsViewBtn.click();
+        }
+    });
+  </script>
+</body>
+</html>
+            sessionStorage.removeItem('ims_open_validators_modal');
+            if(validatorsViewBtn) validatorsViewBtn.click();
+        }
+    });
+  </script>
+</body>
+</html>
+            sessionStorage.removeItem('ims_open_validators_modal');
+            if(validatorsViewBtn) validatorsViewBtn.click();
+        }
+    });
+  </script>
+</body>
+</html>
+            sessionStorage.removeItem('ims_open_validators_modal');
+            if(validatorsViewBtn) validatorsViewBtn.click();
+        }
+    });
+  </script>
+</body>
+</html>
             });
         }
 
