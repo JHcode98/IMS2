@@ -183,27 +183,6 @@
     #unresolved-tasks-tbody tr:hover .icon-btn {
         opacity: 1;
     }
-
-    /* Flip Card Styles for Charts */
-    .flip-card {
-      background-color: transparent;
-      perspective: 1000px;
-      height: 220px;
-    }
-    .flip-card-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      text-align: center;
-      transition: transform 0.6s;
-      transform-style: preserve-3d;
-    }
-    .flip-card.flipped .flip-card-inner {
-      transform: rotateY(180deg);
-    }
-    .flip-card-back {
-      transform: rotateY(180deg);
-    }
   </style>
 </head>
 <body class="inventory-mode">
@@ -1159,7 +1138,6 @@
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
                                     <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                     <th style="position:sticky; top:0; z-index:1;">Reason</th>
-                                    <th style="position:sticky; top:0; z-index:1;">Expiry</th>
                                     <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
                                     <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                     <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -1196,7 +1174,6 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
-                                        <th style="position:sticky; top:0; z-index:1;">Expiry</th>
                                         <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
                                         <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                         <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -1251,7 +1228,6 @@
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
                                     <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                     <th style="position:sticky; top:0; z-index:1;">Reason</th>
-                                    <th style="position:sticky; top:0; z-index:1;">Expiry</th>
                                     <th style="position:sticky; top:0; z-index:1;">Validator</th>
                                     <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                     <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -1289,7 +1265,6 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
-                                        <th style="position:sticky; top:0; z-index:1;">Expiry</th>
                                         <th style="position:sticky; top:0; z-index:1;">Validator</th>
                                         <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                         <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -2819,7 +2794,6 @@
         const assignDesc = document.getElementById('assign-desc');
         const assignQty = document.getElementById('assign-qty');
         const assignReason = document.getElementById('assign-reason');
-        const assignExpiry = document.getElementById('assign-expiry');
         const btnAssignTask = document.getElementById('btn-assign-task');
         const pendingTasksTbody = document.getElementById('pending-tasks-tbody');
         const resolvedTasksTbody = document.getElementById('resolved-tasks-tbody');
@@ -2987,7 +2961,6 @@
             if(document.getElementById('val-completion-rate')) document.getElementById('val-completion-rate').textContent = rate + '%';
 
             updateValStatusChart(resolvedCount, pendingCount, unresolvedCount, assignedCount);
-            updateValReasonChart(tasks);
             
             // --- 2. Prepare Data for Tables ---
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -3034,13 +3007,12 @@
             if(pendingNext) pendingNext.disabled = valPendingPage >= totalPendingPages;
 
             if(paginatedPending.length === 0) {
-                pendingTasksTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
+                pendingTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No pending tasks.</td></tr>';
             } else {
                 const now = new Date();
                 paginatedPending.forEach(t => {
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
-                    const expiry = t.expiry ? t.expiry : '-';
                     
                     const diffMs = now - new Date(t.timestamp);
                     const diffMins = Math.floor(diffMs / 60000);
@@ -3071,7 +3043,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiry}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
@@ -3093,13 +3065,12 @@
             if(assignedNext) assignedNext.disabled = valAssignedPage >= totalAssignedPages;
 
             if(paginatedAssigned.length === 0) {
-                assignedTasksTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
+                assignedTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
             } else {
                 const now = new Date();
                 paginatedAssigned.forEach(t => {
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
-                    const expiry = t.expiry ? t.expiry : '-';
                     
                     const diffMs = now - new Date(t.timestamp);
                     const diffMins = Math.floor(diffMs / 60000);
@@ -3130,7 +3101,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiry}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     assignedTasksTbody.appendChild(tr);
                 });
             }
@@ -3271,45 +3242,6 @@
                                 }
                             }
                         }
-                    }
-                });
-            }
-        }
-
-        let valReasonChart = null;
-        function updateValReasonChart(tasks) {
-            const ctx = document.getElementById('val-reason-chart');
-            if (!ctx || typeof Chart === 'undefined') return;
-            
-            const reasons = {};
-            tasks.forEach(t => {
-                const r = t.reason || 'Unspecified';
-                reasons[r] = (reasons[r] || 0) + 1;
-            });
-            
-            const labels = Object.keys(reasons);
-            const data = Object.values(reasons);
-            
-            if (valReasonChart) {
-                valReasonChart.data.labels = labels;
-                valReasonChart.data.datasets[0].data = data;
-                valReasonChart.update();
-            } else {
-                valReasonChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Tasks by Reason',
-                            data: data,
-                            backgroundColor: '#36b9cc',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
                     }
                 });
             }
@@ -3830,24 +3762,11 @@
             });
         }
 
-        const assignReasonOther = document.getElementById('assign-reason-other');
-        if (assignReason && assignReasonOther) {
-            assignReason.addEventListener('change', () => {
-                assignReasonOther.style.display = (assignReason.value === 'Others') ? 'block' : 'none';
-                if (assignReason.value !== 'Others') assignReasonOther.value = '';
-            });
-        }
-
         if(btnAssignTask) {
             btnAssignTask.addEventListener('click', () => {
                 const sku = assignSku.value.trim();
                 const qty = assignQty.value.trim();
-                let reason = assignReason.value;
-                if (reason === 'Others') {
-                    reason = assignReasonOther.value.trim();
-                }
-                const expiry = assignExpiry ? assignExpiry.value : '';
-
+                const reason = assignReason.value.trim();
                 if(!sku || !qty) { alert('Please fill in SKU and Qty.'); return; }
                 
                 const newTask = {
@@ -3857,7 +3776,6 @@
                     desc: assignDesc.value,
                     qty: qty,
                     reason: reason,
-                    expiry: expiry,
                     validator: 'Unassigned',
                     status: 'Pending'
                 };
@@ -3867,11 +3785,7 @@
                 renderValidationTasks();
                 showToast('Task assigned');
                 
-                assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = ''; if(assignExpiry) assignExpiry.value = '';
-                if (assignReasonOther) {
-                    assignReasonOther.value = '';
-                    assignReasonOther.style.display = 'none';
-                }
+                assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = '';
             });
         }
 
