@@ -1357,10 +1357,26 @@
                 </div>
 
                 <!-- Middle: Status Chart -->
-                <div class="card" style="margin:0; padding:10px; min-height: 200px;">
-                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Task Status Distribution</h4>
-                    <div style="position:relative; height:160px; width:100%;">
-                        <canvas id="val-status-chart"></canvas>
+                <div class="card" style="margin:0; padding:10px; min-height: 220px; display:flex; flex-direction:column;">
+                    <div style="display:flex; gap:15px; flex:1;">
+                        <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+                            <h4 style="margin:0 0 5px 0; color:#2752a7; font-size:13px;">Task Status</h4>
+                            <div style="position:relative; flex:1; min-height:0;">
+                                <canvas id="val-status-chart"></canvas>
+                            </div>
+                        </div>
+                        <div style="width:1px; background:#eee;"></div>
+                        <div style="flex:1.2; display:flex; flex-direction:column; min-width:0;">
+                            <h4 style="margin:0 0 5px 0; color:#e74c3c; font-size:13px;">Overdue (>1h)</h4>
+                            <div style="flex:1; overflow-y:auto; border:1px solid #eee; border-radius:4px; background:#fff;">
+                                <table class="report-table" style="width:100%; font-size:10px;">
+                                    <thead style="position:sticky; top:0; background:#f9f9f9; z-index:1;">
+                                        <tr><th style="padding:4px;">SKU</th><th style="padding:4px;">Validator</th><th style="padding:4px;">Time</th></tr>
+                                    </thead>
+                                    <tbody id="val-overdue-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2992,6 +3008,32 @@
 
             updateValStatusChart(resolvedCount, pendingCount, unresolvedCount, assignedCount);
             
+            // Populate Overdue Table
+            const overdueTbody = document.getElementById('val-overdue-tbody');
+            if (overdueTbody) {
+                overdueTbody.innerHTML = '';
+                const now = new Date();
+                const activeAssigned = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved' && t.validator && t.validator !== 'Unassigned');
+                const overdueTasks = activeAssigned.filter(t => {
+                    const diffMs = now - new Date(t.timestamp);
+                    return diffMs > 3600000; // > 1 hour
+                });
+                overdueTasks.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                if (overdueTasks.length === 0) {
+                    overdueTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#999; padding:10px;">No overdue tasks</td></tr>';
+                } else {
+                    overdueTasks.forEach(t => {
+                        const diffMs = now - new Date(t.timestamp);
+                        const diffMins = Math.floor(diffMs / 60000);
+                        const durStr = `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td style="padding:4px;">${t.sku}</td><td style="padding:4px;">${t.validator}</td><td style="padding:4px; color:#e74c3c; font-weight:bold;">${durStr}</td>`;
+                        overdueTbody.appendChild(tr);
+                    });
+                }
+            }
+
             // --- 2. Prepare Data for Tables ---
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
@@ -3252,7 +3294,7 @@
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } },
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
                         cutout: '60%',
                         onHover: (event, chartElement) => {
                             event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
