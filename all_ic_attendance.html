@@ -1044,8 +1044,11 @@
     <div class="modal-overlay"></div>
     <div class="modal-content card" style="width: 98%; height: 95vh; margin: 1vh auto; display:flex; flex-direction:column; max-width: 1800px; background:#f4f6f8;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eef2f6;">
-            <h3 style="margin:0">Validators View</h3>
-            <div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <h3 style="margin:0">Validators View</h3>
+                <span id="validator-notification" style="display:none; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; transition: opacity 0.3s;"></span>
+            </div>
+            <div style="display:flex; align-items:center;">
                 <button id="go-to-timestamp-btn" class="icon-btn" title="Go to Timestamp (Daily Cycle Count)" style="margin-right:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button>
                 <button class="icon-btn close-modal">&times;</button>
             </div>
@@ -1510,12 +1513,32 @@
             localStorage.setItem(STORAGE_KEY_TIMESTAMPS, JSON.stringify(data));
         }
         function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast-notification');
-            if (toast) {
-                toast.textContent = message;
-                toast.style.backgroundColor = type === 'error' ? '#e74c3c' : '#2ecc71';
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 3000);
+            const validatorsModal = document.getElementById('validators-modal');
+            const isValidatorView = validatorsModal && !validatorsModal.classList.contains('hidden');
+
+            if (isValidatorView) {
+                const notification = document.getElementById('validator-notification');
+                if (notification) {
+                    notification.textContent = message;
+                    notification.style.backgroundColor = type === 'error' ? '#ffebee' : '#e8f5e9';
+                    notification.style.color = type === 'error' ? '#d9534f' : '#2ecc71';
+                    notification.style.display = 'inline-block';
+                    notification.style.opacity = 1;
+
+                    if (notification.hideTimeout) clearTimeout(notification.hideTimeout);
+                    notification.hideTimeout = setTimeout(() => {
+                        notification.style.opacity = 0;
+                        setTimeout(() => { notification.style.display = 'none'; }, 300);
+                    }, 3000);
+                }
+            } else {
+                const toast = document.getElementById('toast-notification');
+                if (toast) {
+                    toast.textContent = message;
+                    toast.style.backgroundColor = type === 'error' ? '#e74c3c' : '#2ecc71';
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 3000);
+                }
             }
         }
         function getDuration(start, end) {
