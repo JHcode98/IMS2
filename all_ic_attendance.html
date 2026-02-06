@@ -3772,6 +3772,15 @@
                 const reason = assignReason.value.trim();
                 if(!sku || !qty) { alert('Please fill in SKU and Qty.'); return; }
                 
+                // Validate SKU against Master List
+                let masterMap = {};
+                try { masterMap = JSON.parse(localStorage.getItem('ims_master_desc_v1') || '{}'); } catch(e) {}
+                
+                if (Object.keys(masterMap).length > 0 && !masterMap[sku]) {
+                    alert('Invalid SKU: Not found in Master List.');
+                    return;
+                }
+                
                 const newTask = {
                     id: Date.now().toString(),
                     timestamp: new Date().toISOString(),
