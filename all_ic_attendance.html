@@ -1333,25 +1333,35 @@
                             <input type="file" id="upload-bulk-tasks-file" accept=".csv" style="display:none;">
                         </div>
                     </div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <div style="grid-column: span 1;">
-                            <label style="font-size:11px; font-weight:bold;">SKU Code</label>
-                            <input type="text" id="assign-sku" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                    <div style="display:grid; grid-template-columns: 1fr 0.6fr 1.5fr; gap:8px; align-items:end;">
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">SKU Code</label>
+                            <input type="text" id="assign-sku" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
                         </div>
-                        <div style="grid-column: span 1;">
-                            <label style="font-size:11px; font-weight:bold;">Qty</label>
-                            <input type="number" id="assign-qty" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">Qty</label>
+                            <input type="number" id="assign-qty" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+                        </div>
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">Reason</label>
+                            <select id="assign-reason" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+                                <option value="">Select Reason</option>
+                                <option value="Missing">Missing</option>
+                                <option value="Oversell">Oversell</option>
+                                <option value="Damaged">Damaged</option>
+                                <option value="Expired">Expired</option>
+                                <option value="Near Expiry">Near Expiry</option>
+                                <option value="Website Issue">Website Issue</option>
+                                <option value="Supplier Issue">Supplier Issue</option>
+                                <option value="Others">Others</option>
+                            </select>
                         </div>
                         <div style="grid-column: span 2;">
-                            <label style="font-size:11px; font-weight:bold;">Description</label>
-                            <input type="text" id="assign-desc" readonly style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; background:#eee;">
+                            <label style="font-size:10px; font-weight:bold;">Description</label>
+                            <input type="text" id="assign-desc" readonly style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; background:#eee; font-size:11px;">
                         </div>
-                        <div style="grid-column: span 2;">
-                            <label style="font-size:11px; font-weight:bold;">Reason for Validation</label>
-                            <input type="text" id="assign-reason" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;" placeholder="e.g. Variance, Damage check">
-                        </div>
-                        <div style="grid-column: span 2; text-align:right;">
-                            <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:8px 16px;">Add Task</button>
+                        <div style="text-align:right;">
+                            <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:4px 12px; font-size:11px;">Add</button>
                         </div>
                     </div>
                 </div>
