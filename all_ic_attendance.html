@@ -1339,6 +1339,27 @@
                     </div>
                 </div>
 
+                <!-- Analytics Overview -->
+                <div class="card" style="margin:0; padding:10px; min-height: 200px; display:flex; flex-direction:column;">
+                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Analytics Overview</h4>
+                    <div class="att-tabs" style="margin-bottom:5px; border-bottom:1px solid #eee;">
+                        <button class="att-tab active" onclick="openValAnalyticsTab(event, 'tab-val-top-sku')" style="padding:4px 8px; font-size:11px;">Top SKUs</button>
+                        <button class="att-tab" onclick="openValAnalyticsTab(event, 'tab-val-top-validator')" style="padding:4px 8px; font-size:11px;">Top Validators</button>
+                    </div>
+                    <div id="tab-val-top-sku" class="val-analytics-tab-content" style="flex:1; overflow:auto; max-height:150px;">
+                        <table class="report-table" style="width:100%; font-size:10px;">
+                            <thead><tr><th>SKU</th><th>Count</th></tr></thead>
+                            <tbody id="val-analytics-sku-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="tab-val-top-validator" class="val-analytics-tab-content" style="display:none; flex:1; overflow:auto; max-height:150px;">
+                        <table class="report-table" style="width:100%; font-size:10px;">
+                            <thead><tr><th>Validator</th><th>Resolved</th></tr></thead>
+                            <tbody id="val-analytics-validator-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Bottom: Available Validators -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <h4 style="margin:0 0 10px 0; color:#2752a7;">Available Validators</h4>
@@ -3182,6 +3203,7 @@
                 });
             }
             updateValBulkButtons();
+            renderValAnalytics();
         }
 
         let valStatusChart = null;
@@ -3231,6 +3253,66 @@
                 });
             }
         }
+
+        function renderValAnalytics() {
+            let tasks = getValidationTasks();
+            
+            // Apply Global Date Filter (same as renderValidationTasks)
+            if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+                if(start) start.setHours(0,0,0,0);
+                const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+                if(end) end.setHours(23,59,59,999);
+
+                tasks = tasks.filter(t => {
+                    const d = new Date(t.timestamp);
+                    return (!start || d >= start) && (!end || d <= end);
+                });
+            }
+
+            // Top SKUs
+            const skuCounts = {};
+            tasks.forEach(t => {
+                const sku = t.sku || 'Unknown';
+                skuCounts[sku] = (skuCounts[sku] || 0) + 1;
+            });
+            const sortedSkus = Object.entries(skuCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            
+            const skuTbody = document.getElementById('val-analytics-sku-tbody');
+            if(skuTbody) {
+                skuTbody.innerHTML = '';
+                if(sortedSkus.length === 0) skuTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999;">No data</td></tr>';
+                sortedSkus.forEach(([sku, count]) => {
+                    skuTbody.innerHTML += `<tr><td>${sku}</td><td>${count}</td></tr>`;
+                });
+            }
+
+            // Top Validators (Resolved count)
+            const valCounts = {};
+            tasks.forEach(t => {
+                if(t.status === 'Completed' && t.validator && t.validator !== 'Unassigned') {
+                    valCounts[t.validator] = (valCounts[t.validator] || 0) + 1;
+                }
+            });
+            const sortedVals = Object.entries(valCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            
+            const valTbody = document.getElementById('val-analytics-validator-tbody');
+            if(valTbody) {
+                valTbody.innerHTML = '';
+                if(sortedVals.length === 0) valTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999;">No data</td></tr>';
+                sortedVals.forEach(([val, count]) => {
+                    valTbody.innerHTML += `<tr><td>${val}</td><td>${count}</td></tr>`;
+                });
+            }
+        }
+
+        window.openValAnalyticsTab = function(evt, tabId) {
+            const parent = evt.target.closest('.card');
+            parent.querySelectorAll('.val-analytics-tab-content').forEach(c => c.style.display = 'none');
+            parent.querySelectorAll('.att-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            evt.target.classList.add('active');
+        };
 
         // Validation Tasks Pagination Listeners
         const valPendingPrev = document.getElementById('val-pending-prev');
