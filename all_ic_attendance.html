@@ -3028,6 +3028,17 @@
                         const diffMins = Math.floor(diffMs / 60000);
                         const durStr = `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
                         const tr = document.createElement('tr');
+                        tr.style.cursor = 'pointer';
+                        tr.title = 'Click to filter by SKU';
+                        tr.onclick = () => {
+                            const skuInput = document.getElementById('val-filter-sku-1');
+                            if(skuInput) {
+                                skuInput.value = t.sku;
+                                const btn = document.querySelector("button[onclick*='tab-val-assigned']");
+                                if(btn) btn.click();
+                                renderValidationTasks();
+                            }
+                        };
                         tr.innerHTML = `<td style="padding:4px;">${t.sku}</td><td style="padding:4px;">${t.validator}</td><td style="padding:4px; color:#e74c3c; font-weight:bold;">${durStr}</td>`;
                         overdueTbody.appendChild(tr);
                     });
@@ -3294,6 +3305,7 @@
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
+                        layout: { padding: 20 },
                         plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
                         cutout: '60%',
                         onHover: (event, chartElement) => {
