@@ -1288,7 +1288,7 @@
                     </div>
                     <div id="tab-val-top-sku" class="val-analytics-tab-content" style="flex:1; overflow:auto; max-height:150px;">
                         <table class="report-table" style="width:100%; font-size:10px;">
-                            <thead><tr><th>SKU</th><th>Count</th></tr></thead>
+                            <thead><tr><th>SKU</th><th>Description</th><th>Count</th></tr></thead>
                             <tbody id="val-analytics-sku-tbody"></tbody>
                         </table>
                     </div>
@@ -3278,12 +3278,17 @@
             });
             const sortedSkus = Object.entries(skuCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
             
+            // Get Master Descriptions
+            let masterMap = {};
+            try { masterMap = JSON.parse(localStorage.getItem('ims_master_desc_v1') || '{}'); } catch(e) {}
+
             const skuTbody = document.getElementById('val-analytics-sku-tbody');
             if(skuTbody) {
                 skuTbody.innerHTML = '';
-                if(sortedSkus.length === 0) skuTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999;">No data</td></tr>';
+                if(sortedSkus.length === 0) skuTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#999;">No data</td></tr>';
                 sortedSkus.forEach(([sku, count]) => {
-                    skuTbody.innerHTML += `<tr><td>${sku}</td><td>${count}</td></tr>`;
+                    const desc = masterMap[sku] || '-';
+                    skuTbody.innerHTML += `<tr><td>${sku}</td><td>${desc}</td><td>${count}</td></tr>`;
                 });
             }
 
