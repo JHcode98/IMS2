@@ -1278,6 +1278,27 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Analytics Overview -->
+                <div class="card" style="margin:0; padding:10px; min-height: 200px; display:flex; flex-direction:column;">
+                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Analytics Overview</h4>
+                    <div class="att-tabs" style="margin-bottom:5px; border-bottom:1px solid #eee;">
+                        <button class="att-tab active" onclick="openValAnalyticsTab(event, 'tab-val-top-sku')" style="padding:4px 8px; font-size:11px;">Top SKUs</button>
+                        <button class="att-tab" onclick="openValAnalyticsTab(event, 'tab-val-top-validator')" style="padding:4px 8px; font-size:11px;">Top Validators</button>
+                    </div>
+                    <div id="tab-val-top-sku" class="val-analytics-tab-content" style="flex:1; overflow:auto; max-height:150px;">
+                        <table class="report-table" style="width:100%; font-size:10px;">
+                            <thead><tr><th>SKU</th><th>Count</th></tr></thead>
+                            <tbody id="val-analytics-sku-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="tab-val-top-validator" class="val-analytics-tab-content" style="display:none; flex:1; overflow:auto; max-height:150px;">
+                        <table class="report-table" style="width:100%; font-size:10px;">
+                            <thead><tr><th>Validator</th><th>Resolved</th></tr></thead>
+                            <tbody id="val-analytics-validator-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- 3. Right Side (40%) -->
@@ -1336,27 +1357,6 @@
                     <h4 style="margin:0 0 10px 0; color:#2752a7;">Task Status Distribution</h4>
                     <div style="position:relative; height:160px; width:100%;">
                         <canvas id="val-status-chart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Analytics Overview -->
-                <div class="card" style="margin:0; padding:10px; min-height: 200px; display:flex; flex-direction:column;">
-                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Analytics Overview</h4>
-                    <div class="att-tabs" style="margin-bottom:5px; border-bottom:1px solid #eee;">
-                        <button class="att-tab active" onclick="openValAnalyticsTab(event, 'tab-val-top-sku')" style="padding:4px 8px; font-size:11px;">Top SKUs</button>
-                        <button class="att-tab" onclick="openValAnalyticsTab(event, 'tab-val-top-validator')" style="padding:4px 8px; font-size:11px;">Top Validators</button>
-                    </div>
-                    <div id="tab-val-top-sku" class="val-analytics-tab-content" style="flex:1; overflow:auto; max-height:150px;">
-                        <table class="report-table" style="width:100%; font-size:10px;">
-                            <thead><tr><th>SKU</th><th>Count</th></tr></thead>
-                            <tbody id="val-analytics-sku-tbody"></tbody>
-                        </table>
-                    </div>
-                    <div id="tab-val-top-validator" class="val-analytics-tab-content" style="display:none; flex:1; overflow:auto; max-height:150px;">
-                        <table class="report-table" style="width:100%; font-size:10px;">
-                            <thead><tr><th>Validator</th><th>Resolved</th></tr></thead>
-                            <tbody id="val-analytics-validator-tbody"></tbody>
-                        </table>
                     </div>
                 </div>
 
