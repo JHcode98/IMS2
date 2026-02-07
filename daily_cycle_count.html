@@ -878,6 +878,32 @@
     </div>
   </div>
 
+  <!-- Clear Logs Modal -->
+  <div id="clear-logs-modal" class="modal hidden" style="z-index: 10030;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 150px auto;">
+        <h3 style="margin-top:0">Clear Logs</h3>
+        <p class="muted">Select Date and Shift to clear logs.</p>
+        <div style="margin-bottom:15px;">
+            <label for="clear-logs-date" style="font-weight:bold; display:block; margin-bottom:5px;">Date</label>
+            <input type="date" id="clear-logs-date" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label for="clear-logs-shift" style="font-weight:bold; display:block; margin-bottom:5px;">Shift</label>
+            <select id="clear-logs-shift" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <option value="All">All Shifts</option>
+                <option value="1st Shift">1st Shift</option>
+                <option value="2nd Shift">2nd Shift</option>
+                <option value="3rd Shift">3rd Shift</option>
+            </select>
+        </div>
+        <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
+            <button id="cancel-clear-logs-btn" class="icon-btn" style="border:1px solid #ccc;">Cancel</button>
+            <button id="confirm-clear-logs-btn" class="icon-btn" style="background:#d9534f; color:white;">Clear</button>
+        </div>
+    </div>
+  </div>
+
   <!-- Edit Timestamp Modal -->
   <div id="edit-time-modal" class="modal hidden" style="z-index: 10015;">
     <div class="modal-overlay"></div>
@@ -1888,13 +1914,51 @@
         }
 
         const tsClearLogsBtn = document.getElementById('ts-clear-logs-btn');
+        const clearLogsModal = document.getElementById('clear-logs-modal');
+        const cancelClearLogsBtn = document.getElementById('cancel-clear-logs-btn');
+        const confirmClearLogsBtn = document.getElementById('confirm-clear-logs-btn');
+        const clearLogsDateInput = document.getElementById('clear-logs-date');
+        const clearLogsShiftSelect = document.getElementById('clear-logs-shift');
+
         if(tsClearLogsBtn) {
             tsClearLogsBtn.addEventListener('click', () => {
                 if(confirm('Are you sure you want to clear ALL timestamp logs? This cannot be undone.')) {
                     saveTimestamps([]);
                     renderTimestamps();
                     showToast('All logs cleared.');
+                if (clearLogsModal) {
+                    clearLogsDateInput.value = new Date().toISOString().split('T')[0];
+                    clearLogsModal.classList.remove('hidden');
                 }
+            });
+        }
+
+        if (cancelClearLogsBtn) {
+            cancelClearLogsBtn.addEventListener('click', () => {
+                clearLogsModal.classList.add('hidden');
+            });
+        }
+
+        if (confirmClearLogsBtn) {
+            confirmClearLogsBtn.addEventListener('click', () => {
+                const dateVal = clearLogsDateInput.value;
+                const shiftVal = clearLogsShiftSelect.value;
+                if (!dateVal) { alert('Please select a date.'); return; }
+                if (!confirm(`Are you sure you want to clear logs for ${dateVal} (${shiftVal})? This cannot be undone.`)) return;
+
+                let data = getTimestamps();
+                const initialCount = data.length;
+                data = data.filter(log => {
+                    const info = getShiftFromTimestamp(log.timestamp);
+                    if (info.date !== dateVal) return true;
+                    if (shiftVal !== 'All' && !info.shift.includes(shiftVal)) return true;
+                    return false;
+                });
+                const deletedCount = initialCount - data.length;
+                saveTimestamps(data);
+                renderTimestamps();
+                showToast(`Cleared ${deletedCount} logs.`);
+                clearLogsModal.classList.add('hidden');
             });
         }
 
