@@ -2927,7 +2927,7 @@
                      labels: Object.keys(hourlyData),
                     datasets: [
                         { label: 'Hourly Output', data: hourlyValues, backgroundColor: '#36b9cc', order: 2 },
-                        { label: 'Cumulative Total', data: cumulativeData, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', order: 1 },
+                        { label: 'Total Output', data: cumulativeData, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', order: 1 },
                         { label: 'Target', data: targetLineData, type: 'line', borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [5, 5], order: 0 }
                     ]
                  },
@@ -6496,7 +6496,7 @@
                                 order: 3 
                             },
                             { 
-                                label: 'Cumulative Actual', 
+                                label: 'Total Output', 
                                 data: cumulativeData, 
                                 type: 'line',
                                 borderColor: '#e74c3c', 
