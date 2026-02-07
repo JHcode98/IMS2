@@ -2917,6 +2917,14 @@
              }
 
              const targetLineData = Object.values(hourlyTargets);
+
+             // Calculate Glide Path (Cumulative Target)
+             const glidePathData = [];
+             let targetSum = 0;
+             for (const val of targetLineData) {
+                 targetSum += val;
+                 glidePathData.push(targetSum);
+             }
  
              const ctx = document.getElementById('hourly-chart');
              if (typeof Chart !== 'undefined') {
@@ -2926,9 +2934,10 @@
                  data: {
                      labels: Object.keys(hourlyData),
                     datasets: [
-                        { label: 'Hourly Output', data: hourlyValues, backgroundColor: '#36b9cc', order: 2 },
+                        { label: 'Hourly Output', data: hourlyValues, backgroundColor: '#36b9cc', order: 3 },
                         { label: 'Total Output', data: cumulativeData, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', order: 1 },
-                        { label: 'Target', data: targetLineData, type: 'line', borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [5, 5], order: 0 }
+                        { label: 'Glide Path', data: glidePathData, type: 'line', borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [5, 5], order: 2 },
+                        { label: 'Hourly Target', data: targetLineData, type: 'line', borderColor: '#3498db', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [2, 2], borderWidth: 1, order: 4 }
                     ]
                  },
                  options: { 
