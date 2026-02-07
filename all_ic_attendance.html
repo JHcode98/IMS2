@@ -1132,6 +1132,7 @@
                             <input type="text" id="val-filter-assigned-1" placeholder="Filter Assigned To..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
                             <button class="icon-btn" id="val-print-btn-1" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                             <button class="icon-btn" id="val-export-btn-1" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                            <button class="icon-btn" id="val-bulk-reassign-btn-1" title="Bulk Reassign" style="color:#f39c12; display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></button>
                             <button class="icon-btn" id="val-bulk-delete-btn-1" title="Delete Selected" style="color:#d9534f; display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
                         </div>
                     </div>
@@ -3895,8 +3896,12 @@
                                 validator: newValidator,
                                 status: 'Pending', // Will move to Assigned automatically
                                 completedAt: undefined,
-                                unresolvedAt: undefined
+                                unresolvedAt: undefined,
+                                reassignedTo: undefined,
+                                reassignedAt: undefined
                             };
+                            tasks.push(newTask);
+
                             // Update old task
                             oldTask.status = 'Reassigned';
                             oldTask.reassignedTo = newValidator;
@@ -3926,6 +3931,9 @@
             
             const btn1 = document.getElementById('val-bulk-delete-btn-1');
             if(btn1) btn1.style.display = (pCount + aCount + rCount + uCount + hCount) > 0 ? 'inline-flex' : 'none';
+
+            const btnReassign = document.getElementById('val-bulk-reassign-btn-1');
+            if(btnReassign) btnReassign.style.display = uCount > 0 ? 'inline-flex' : 'none';
         }
 
         // Select All Listeners
@@ -3959,6 +3967,43 @@
 
         const btnBulkDel1 = document.getElementById('val-bulk-delete-btn-1');
         if(btnBulkDel1) btnBulkDel1.addEventListener('click', () => handleBulkDelete('.pending-cb, .assigned-cb, .resolved-cb, .unresolved-cb, .history-cb'));
+
+        const btnBulkReassign = document.getElementById('val-bulk-reassign-btn-1');
+        if(btnBulkReassign) {
+            btnBulkReassign.addEventListener('click', () => {
+                const selected = Array.from(document.querySelectorAll('.unresolved-cb:checked')).map(cb => cb.value);
+                if(selected.length === 0) return;
+                
+                const newValidator = prompt(`Reassign ${selected.length} tasks to validator:`);
+                if(!newValidator) return;
+
+                if(confirm(`Confirm reassigning ${selected.length} tasks to "${newValidator}"?`)) {
+                    let tasks = getValidationTasks();
+                    let count = 0;
+                    
+                    selected.forEach(id => {
+                        const taskIndex = tasks.findIndex(t => t.id === id);
+                        if(taskIndex > -1) {
+                            const oldTask = tasks[taskIndex];
+                            if(oldTask.status === 'Unresolved') {
+                                const newTask = { ...oldTask, id: Date.now().toString() + Math.random().toString(36).substr(2, 5), timestamp: new Date().toISOString(), validator: newValidator, status: 'Pending', completedAt: undefined, unresolvedAt: undefined, reassignedTo: undefined, reassignedAt: undefined };
+                                tasks.push(newTask);
+
+                                oldTask.status = 'Reassigned';
+                                oldTask.reassignedTo = newValidator;
+                                oldTask.reassignedAt = new Date().toISOString();
+                                count++;
+                            }
+                        }
+                    });
+                    
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
+                    renderValidatorsModal();
+                    showToast(`${count} tasks reassigned to ${newValidator}`);
+                }
+            });
+        }
 
         // Filter Inputs
         const filterInput1 = document.getElementById('val-filter-assigned-1');
