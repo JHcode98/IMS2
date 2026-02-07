@@ -4434,7 +4434,14 @@
                 const sku = assignSku.value.trim();
                 const qty = assignQty.value.trim();
                 const reason = assignReason.value.trim();
+                
                 if(!sku || !qty) { showToast('Please fill in SKU and Qty.', 'error'); return; }
+                if(!reason) { showToast('Please select a Reason.', 'error'); return; }
+
+                if ((reason === 'Expired' || reason === 'Near Expiry') && (!assignExpiry || !assignExpiry.value)) {
+                    showToast('Please enter Expiry Date.', 'error');
+                    return;
+                }
                 
                 // Validate SKU against Master List
                 let masterMap = {};
@@ -4983,6 +4990,20 @@
         }
 
             const exportValAnalyticsBtn = document.getElementById('export-val-analytics-btn');
+            if(exportValAnalyticsBtn) {
+                exportValAnalyticsBtn.addEventListener('click', exportValAnalytics);
+            }
+    });
+  </script>
+</body>
+</html>
+            if(exportValAnalyticsBtn) {
+                exportValAnalyticsBtn.addEventListener('click', exportValAnalytics);
+            }
+    });
+  </script>
+</body>
+</html>
             if(exportValAnalyticsBtn) {
                 exportValAnalyticsBtn.addEventListener('click', exportValAnalytics);
             }
