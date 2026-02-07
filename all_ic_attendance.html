@@ -1049,8 +1049,6 @@
                 <span id="validator-notification" style="display:none; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; transition: opacity 0.3s;"></span>
             </div>
             <div style="display:flex; align-items:center; gap: 5px;">
-                <button id="toggle-add-task-widget-btn" class="icon-btn" title="Open Add Task Widget" style="background:#2752a7; color:white;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
-                <div style="width:1px; height:20px; background:#ddd; margin:0 2px;"></div>
                 <button id="download-sku-template-btn" class="icon-btn" title="Download SKU Template"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                 <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></button>
                 <button id="clear-sku-master-btn" class="icon-btn" title="Clear SKU Master List" style="color:#d9534f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
@@ -1393,6 +1391,51 @@
             <!-- 3. Right Side (40%) -->
             <div style="flex:4; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
                 
+                <!-- Top: Add Task Form -->
+                <div class="card" style="margin:0; padding:10px; overflow-y:auto; flex-shrink: 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                             <button class="icon-btn toggle-section-btn" title="Toggle Form" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                             <h4 style="margin:0; color:#2752a7; font-size:13px;">Add Validation Task</h4>
+                        </div>
+                    </div>
+                    <div class="section-content" style="display:grid; grid-template-columns: 1fr 0.6fr 1fr 1fr; gap:8px; align-items:end;">
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">SKU Code</label>
+                            <input type="text" id="assign-sku" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+                        </div>
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">Qty</label>
+                            <input type="number" id="assign-qty" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+                        </div>
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">Reason</label>
+                            <select id="assign-reason" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+                                <option value="">Select Reason</option>
+                                <option value="Missing">Missing</option>
+                                <option value="Oversell">Oversell</option>
+                                <option value="Damaged">Damaged</option>
+                                <option value="Expired">Expired</option>
+                                <option value="Near Expiry">Near Expiry</option>
+                                <option value="Website Issue">Website Issue</option>
+                                <option value="Supplier Issue">Supplier Issue</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:10px; font-weight:bold;">Assign To (Opt)</label>
+                            <select id="assign-validator" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;"><option value="">Unassigned</option></select>
+                        </div>
+                        <div style="grid-column: span 3;">
+                            <label style="font-size:10px; font-weight:bold;">Description</label>
+                            <input type="text" id="assign-desc" readonly style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; background:#eee; font-size:11px;">
+                        </div>
+                        <div style="text-align:right;">
+                            <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:4px 12px; font-size:11px;">Add</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Middle: Status Chart -->
                 <div class="card" style="margin:0; padding:10px; min-height: 220px; display:flex; flex-direction:column;">
                     <div style="display:flex; gap:15px; flex:1;">
@@ -1419,8 +1462,13 @@
 
                 <!-- Bottom: Available Validators -->
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
-                    <h4 style="margin:0 0 10px 0; color:#2752a7;">Available Validators</h4>
-                    <div style="flex:1; overflow:auto;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                             <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                             <h4 style="margin:0; color:#2752a7;">Available Validators</h4>
+                        </div>
+                    </div>
+                    <div class="section-content" style="flex:1; overflow:auto;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                     <thead>
                         <tr>
@@ -1439,51 +1487,6 @@
         </div>
     </div>
   </div>
-
-  <!-- Floating Add Task Widget -->
-  <div id="add-task-widget" class="card hidden" style="position:fixed; top:100px; right:20px; width:320px; z-index:10002; box-shadow: 0 4px 12px rgba(0,0,0,0.2); padding:0; border:1px solid #ccc;">
-        <div id="add-task-header" style="padding:10px; background:#f1f1f1; cursor:move; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; border-radius: 8px 8px 0 0;">
-            <span style="font-weight:bold; font-size:13px; color:#333;">Add Validation Task</span>
-            <button class="icon-btn close-widget-btn" style="padding:2px; width:20px; height:20px;">&times;</button>
-        </div>
-        <div style="padding:10px;">
-             <div style="display:grid; grid-template-columns: 1fr 0.6fr; gap:8px; align-items:end; margin-bottom:8px;">
-                <div>
-                    <label style="font-size:10px; font-weight:bold;">SKU Code</label>
-                    <input type="text" id="assign-sku" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
-                </div>
-                <div>
-                    <label style="font-size:10px; font-weight:bold;">Qty</label>
-                    <input type="number" id="assign-qty" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
-                </div>
-            </div>
-            <div style="margin-bottom:8px;">
-                 <label style="font-size:10px; font-weight:bold;">Description</label>
-                 <input type="text" id="assign-desc" readonly style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; background:#eee; font-size:11px;">
-            </div>
-            <div style="margin-bottom:8px;">
-                <label style="font-size:10px; font-weight:bold;">Reason</label>
-                <select id="assign-reason" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
-                    <option value="">Select Reason</option>
-                    <option value="Missing">Missing</option>
-                    <option value="Oversell">Oversell</option>
-                    <option value="Damaged">Damaged</option>
-                    <option value="Expired">Expired</option>
-                    <option value="Near Expiry">Near Expiry</option>
-                    <option value="Website Issue">Website Issue</option>
-                    <option value="Supplier Issue">Supplier Issue</option>
-                    <option value="Others">Others</option>
-                </select>
-            </div>
-            <div style="margin-bottom:8px;">
-                <label style="font-size:10px; font-weight:bold;">Assign To (Opt)</label>
-                <select id="assign-validator" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;"><option value="">Unassigned</option></select>
-            </div>
-            <div style="text-align:right;">
-                <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:6px 12px; font-size:11px;">Add Task</button>
-            </div>
-        </div>
-    </div>
 
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
@@ -4801,41 +4804,31 @@
             }
         }, 5000);
 
-        // Floating Widget Logic
-        const addTaskWidget = document.getElementById('add-task-widget');
-        const toggleAddTaskBtn = document.getElementById('toggle-add-task-widget-btn');
-        const closeWidgetBtn = document.querySelector('.close-widget-btn');
-        const widgetHeader = document.getElementById('add-task-header');
-
-        if(toggleAddTaskBtn && addTaskWidget) {
-            toggleAddTaskBtn.addEventListener('click', () => {
-                addTaskWidget.classList.toggle('hidden');
-            });
-        }
-        if(closeWidgetBtn && addTaskWidget) {
-            closeWidgetBtn.addEventListener('click', () => {
-                addTaskWidget.classList.add('hidden');
-            });
-        }
-
-        // Drag Logic
-        if(addTaskWidget && widgetHeader) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            widgetHeader.onmousedown = dragMouseDown;
-            function dragMouseDown(e) {
-                e = e || window.event; e.preventDefault();
-                pos3 = e.clientX; pos4 = e.clientY;
-                document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
+        // Toggle Section Logic for Validators View
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-section-btn');
+            if (btn) {
+                const card = btn.closest('.card');
+                const content = card.querySelector('.section-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const isHidden = content.classList.contains('hidden');
+                    btn.innerHTML = isHidden 
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    
+                    // Adjust card flex/height when collapsed
+                    if (isHidden) {
+                        card.dataset.originalFlex = card.style.flex;
+                        card.style.flex = '0 0 auto';
+                        card.style.minHeight = 'auto';
+                    } else {
+                        card.style.flex = card.dataset.originalFlex || '1';
+                        card.style.minHeight = '';
+                    }
+                }
             }
-            function elementDrag(e) {
-                e = e || window.event; e.preventDefault();
-                pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
-                pos3 = e.clientX; pos4 = e.clientY;
-                addTaskWidget.style.top = (addTaskWidget.offsetTop - pos2) + "px";
-                addTaskWidget.style.left = (addTaskWidget.offsetLeft - pos1) + "px";
-            }
-            function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
-        }
+        });
 
         // Initial Render
         renderAttendanceTable();
