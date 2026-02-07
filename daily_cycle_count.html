@@ -782,6 +782,7 @@
                 <button id="hourly-back-timestamp-btn" class="icon-btn" title="Back to Timestamp" style="margin-right:5px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 </button>
+                <button id="hourly-chart-toggle-btn" class="icon-btn" title="Toggle View" style="font-size:12px; padding:2px 8px; margin-right:5px; border:1px solid #ccc; background:#f9f9f9;">View: Hourly</button>
                 <button id="email-hourly-btn" class="icon-btn" title="Email Report (Text)" style="margin-right:5px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </button>
@@ -2759,6 +2760,8 @@
             });
         }
 
+        let hourlyChartViewMode = 'hourly';
+
         function openHourlyModal(dateStr, shift) {
              const tsModal = document.getElementById('timestamp-modal');
              if(tsModal) {
@@ -2770,6 +2773,10 @@
              hourlyModal.classList.remove('hidden');
              document.getElementById('hourly-date-val').value = dateStr;
              document.getElementById('hourly-shift-val').value = shift;
+
+             // Update toggle button text
+             const toggleBtn = document.getElementById('hourly-chart-toggle-btn');
+             if(toggleBtn) toggleBtn.textContent = hourlyChartViewMode === 'hourly' ? 'View: Hourly' : 'View: Cumulative';
              
              // Find the counter entry to get the main target
              const counters = getCountersData();
@@ -2947,10 +2954,10 @@
                  data: {
                      labels: Object.keys(hourlyData),
                     datasets: [
-                        { label: 'Hourly Output', data: hourlyValues, backgroundColor: '#36b9cc', order: 3 },
-                        { label: 'Total Output', data: cumulativeData, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', order: 1 },
-                        { label: 'Glide Path', data: glidePathData, type: 'line', borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [5, 5], order: 2 },
-                        { label: 'Hourly Target', data: targetLineData, type: 'line', borderColor: '#3498db', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [2, 2], borderWidth: 1, order: 4 }
+                        { label: 'Hourly Output', data: hourlyValues, backgroundColor: '#36b9cc', order: 3, hidden: hourlyChartViewMode !== 'hourly' },
+                        { label: 'Total Output', data: cumulativeData, type: 'line', borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', order: 1, hidden: hourlyChartViewMode !== 'cumulative' },
+                        { label: 'Glide Path', data: glidePathData, type: 'line', borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [5, 5], order: 2, hidden: hourlyChartViewMode !== 'cumulative' },
+                        { label: 'Hourly Target', data: targetLineData, type: 'line', borderColor: '#3498db', backgroundColor: 'transparent', tension: 0.1, yAxisID: 'y', borderDash: [2, 2], borderWidth: 1, order: 4, hidden: hourlyChartViewMode !== 'hourly' }
                     ]
                  },
                  options: { 
@@ -2961,6 +2968,24 @@
              }
         }
         window.openHourlyModal = openHourlyModal;
+
+        const hourlyChartToggleBtn = document.getElementById('hourly-chart-toggle-btn');
+        if (hourlyChartToggleBtn) {
+            hourlyChartToggleBtn.addEventListener('click', () => {
+                hourlyChartViewMode = hourlyChartViewMode === 'hourly' ? 'cumulative' : 'hourly';
+                hourlyChartToggleBtn.textContent = hourlyChartViewMode === 'hourly' ? 'View: Hourly' : 'View: Cumulative';
+                
+                if (hourlyChart) {
+                    // Toggle visibility based on mode
+                    // 0: Hourly Output, 1: Total Output, 2: Glide Path, 3: Hourly Target
+                    hourlyChart.getDatasetMeta(0).hidden = hourlyChartViewMode !== 'hourly';
+                    hourlyChart.getDatasetMeta(3).hidden = hourlyChartViewMode !== 'hourly';
+                    hourlyChart.getDatasetMeta(1).hidden = hourlyChartViewMode !== 'cumulative';
+                    hourlyChart.getDatasetMeta(2).hidden = hourlyChartViewMode !== 'cumulative';
+                    hourlyChart.update();
+                }
+            });
+        }
 
         // Daily Output Modal Logic
         const dailyOutputModal = document.getElementById('daily-output-modal');
@@ -3209,8 +3234,10 @@
                         const rows = document.querySelectorAll('#hourly-details .hourly-row');
                         const actuals = [];
                         const targets = [];
-                        let cumulative = [];
-                        let sum = 0;
+                        const cumulative = [];
+                        const glidePath = [];
+                        let actSum = 0;
+                        let tgtSum = 0;
                         
                         rows.forEach(r => {
                             const aIn = r.querySelector('.hourly-actual-input');
@@ -3220,14 +3247,17 @@
                                 const tVal = parseInt(tIn.value) || 0;
                                 actuals.push(aVal);
                                 targets.push(tVal);
-                                sum += aVal;
-                                cumulative.push(sum);
+                                actSum += aVal;
+                                tgtSum += tVal;
+                                cumulative.push(actSum);
+                                glidePath.push(tgtSum);
                             }
                         });
                         
                         if (hourlyChart.data.datasets[0]) hourlyChart.data.datasets[0].data = actuals;
                         if (hourlyChart.data.datasets[1]) hourlyChart.data.datasets[1].data = cumulative;
-                        if (hourlyChart.data.datasets[2]) hourlyChart.data.datasets[2].data = targets;
+                        if (hourlyChart.data.datasets[2]) hourlyChart.data.datasets[2].data = glidePath;
+                        if (hourlyChart.data.datasets[3]) hourlyChart.data.datasets[3].data = targets;
                         hourlyChart.update('none');
                     }
                 }
