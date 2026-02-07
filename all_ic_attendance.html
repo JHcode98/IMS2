@@ -4794,6 +4794,19 @@
             }
         }, 15000);
 
+        // Auto Refresh Validators View (5s)
+        setInterval(() => {
+            const valModal = document.getElementById('validators-modal');
+            if (valModal && !valModal.classList.contains('hidden')) {
+                if (document.activeElement && valModal.contains(document.activeElement) && 
+                   (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA')) {
+                    return;
+                }
+                renderValidatorsModal();
+                renderValidationTasks();
+            }
+        }, 5000);
+
         // Initial Render
         renderAttendanceTable();
 
