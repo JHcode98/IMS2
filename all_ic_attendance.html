@@ -24,9 +24,11 @@
     /* Fix tooltips inside modal */
     .modal-content .icon-btn[data-tooltip]::after { top: 100%; bottom: auto; margin-top: 8px; margin-bottom: 0; }
     .modal-content .icon-btn[data-tooltip]::before { top: 100%; bottom: auto; margin-top: 3px; margin-bottom: 0; border-top-color: transparent; border-bottom-color: #2c3e50; }
+    .modal-content .icon-btn[data-tooltip]:hover { z-index: 10002; }
     .modal-content .icon-btn[data-tooltip]:hover::after,
     .modal-content .icon-btn[data-tooltip]:hover::before {
         transform: translateX(-50%) translateY(4px);
+        z-index: 10003;
     }
     /* Add hover effect for action icons in modal */
     .modal-content .icon-btn:hover {
