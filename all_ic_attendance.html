@@ -1178,6 +1178,7 @@
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
                                     <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                     <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                     <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
                                     <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                     <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -1214,6 +1215,7 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                         <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
                                         <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                         <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -1251,6 +1253,7 @@
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
                                     <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                     <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                     <th style="position:sticky; top:0; z-index:1;">Validator</th>
                                     <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                     <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -1288,6 +1291,7 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                         <th style="position:sticky; top:0; z-index:1;">Validator</th>
                                         <th style="position:sticky; top:0; z-index:1;">Unresolved Time</th>
                                         <th style="position:sticky; top:0; z-index:1;">Duration</th>
@@ -1326,6 +1330,7 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                         <th style="position:sticky; top:0; z-index:1;">Validator</th>
                                         <th style="position:sticky; top:0; z-index:1;">Status</th>
                                         <th style="position:sticky; top:0; z-index:1;">Sub Status</th>
@@ -1474,6 +1479,10 @@
                     <option value="Supplier Issue">Supplier Issue</option>
                     <option value="Others">Others</option>
                 </select>
+            </div>
+            <div id="assign-expiry-container" style="margin-bottom:8px; display:none;">
+                 <label style="font-size:10px; font-weight:bold;">Expiry Date</label>
+                 <input type="date" id="assign-expiry" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
             </div>
             <div style="margin-bottom:8px;">
                 <label style="font-size:10px; font-weight:bold;">Assign To (Opt)</label>
@@ -2926,6 +2935,7 @@
         const assignDesc = document.getElementById('assign-desc');
         const assignQty = document.getElementById('assign-qty');
         const assignReason = document.getElementById('assign-reason');
+        const assignExpiry = document.getElementById('assign-expiry');
         const assignValidator = document.getElementById('assign-validator');
         const btnAssignTask = document.getElementById('btn-assign-task');
         const pendingTasksTbody = document.getElementById('pending-tasks-tbody');
@@ -3229,6 +3239,7 @@
                     const diffMins = Math.floor(diffMs / 60000);
                     let durationStr = diffMins < 60 ? `${diffMins}m` : `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
                     
+                    const expiryStr = t.expiryDate || '-';
                     if (diffMs > 3600000) {
                         tr.style.boxShadow = "inset 4px 0 0 #e74c3c";
                         tr.style.backgroundColor = "#fff5f5";
@@ -3259,7 +3270,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
@@ -3292,6 +3303,7 @@
                     const diffMins = Math.floor(diffMs / 60000);
                     let durationStr = diffMins < 60 ? `${diffMins}m` : `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
                     
+                    const expiryStr = t.expiryDate || '-';
                     if(diffMins > 60) durationStr = `<span style="color:#e74c3c; font-weight:bold;">${durationStr}</span>`;
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
@@ -3317,7 +3329,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     assignedTasksTbody.appendChild(tr);
                 });
             }
@@ -3346,6 +3358,7 @@
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     const resolvedTime = t.completedAt ? new Date(t.completedAt).toLocaleString() : '-';
+                    const expiryStr = t.expiryDate || '-';
                     
                     let durationStr = '-';
                     if (t.completedAt && t.timestamp) {
@@ -3361,8 +3374,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox resolved-cb" value="${t.id}"></td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${actionHtml}</td>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox resolved-cb" value="${t.id}"></td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox resolved-cb" value="${t.id}"></td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     resolvedTasksTbody.appendChild(tr);
                 });
             }
@@ -3391,6 +3403,7 @@
                     const tr = document.createElement('tr');
                     const assignedTime = new Date(t.timestamp).toLocaleString();
                     const unresolvedTime = t.unresolvedAt ? new Date(t.unresolvedAt).toLocaleString() : '-';
+                    const expiryStr = t.expiryDate || '-';
                     
                     const endTime = t.unresolvedAt ? new Date(t.unresolvedAt) : now;
                     const diffMs = endTime - new Date(t.timestamp);
@@ -3419,7 +3432,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${unresolvedTime}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${unresolvedTime}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     unresolvedTasksTbody.appendChild(tr);
                 });
             }
@@ -3445,6 +3458,7 @@
                 paginatedHistory.forEach(t => {
                     const tr = document.createElement('tr');
                     const dateStr = new Date(t.timestamp).toLocaleString();
+                    const expiryStr = t.expiryDate || '-';
                     
                     let durationStr = '-';
                     const endTime = t.completedAt ? new Date(t.completedAt) : (t.unresolvedAt ? new Date(t.unresolvedAt) : null);
@@ -3462,7 +3476,7 @@
                         displaySubStatus = 'Reassigned';
                     }
 
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox history-cb" value="${t.id}"></td><td>${dateStr}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${displayStatus}</td><td>${displaySubStatus}</td><td>${durationStr}</td><td><button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button></td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox history-cb" value="${t.id}"></td><td>${dateStr}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${t.validator}</td><td>${displayStatus}</td><td>${displaySubStatus}</td><td>${durationStr}</td><td><button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button></td>`;
                     historyTasksTbody.appendChild(tr);
                 });
             }
@@ -4402,6 +4416,19 @@
             });
         }
 
+        if(assignReason && document.getElementById('assign-expiry-container')) {
+            assignReason.addEventListener('change', () => {
+                const val = assignReason.value;
+                const container = document.getElementById('assign-expiry-container');
+                if(val === 'Expired' || val === 'Near Expiry') {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                    if(assignExpiry) assignExpiry.value = '';
+                }
+            });
+        }
+
         if(btnAssignTask) {
             btnAssignTask.addEventListener('click', () => {
                 const sku = assignSku.value.trim();
@@ -4438,6 +4465,7 @@
                     desc: assignDesc.value,
                     qty: qty,
                     reason: reason,
+                    expiryDate: assignExpiry ? assignExpiry.value : '',
                     validator: assignValidator.value || 'Unassigned',
                     status: 'Pending'
                 };
@@ -4447,6 +4475,8 @@
                 showToast('Task successfully assigned!');
                 
                 assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = ''; assignValidator.value = '';
+                if(assignExpiry) assignExpiry.value = '';
+                if(document.getElementById('assign-expiry-container')) document.getElementById('assign-expiry-container').style.display = 'none';
             });
         }
 
