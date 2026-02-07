@@ -1061,6 +1061,7 @@
                 <div style="width:1px; height:20px; background:#ddd; margin:0 2px;"></div>
                 <button id="download-task-template-btn" class="icon-btn" title="Download Task Template"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></button>
                 <button id="upload-bulk-tasks-btn" class="icon-btn" title="Bulk Assign Tasks (CSV)" style="color:#2752a7;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></button>
+                <button id="clear-val-tasks-btn" class="icon-btn" title="Clear Tasks" style="color:#d9534f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 <input type="file" id="upload-bulk-tasks-file" accept=".csv" style="display:none;">
                 <div style="width:1px; height:20px; background:#ddd; margin:0 2px;"></div>
                 <button id="go-to-timestamp-btn" class="icon-btn" title="Go to Timestamp (Daily Cycle Count)" style="margin-right:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button>
@@ -4431,6 +4432,27 @@
                     uploadBulkTasksFile.value = '';
                 };
                 reader.readAsText(file);
+            });
+        }
+
+        const clearValTasksBtn = document.getElementById('clear-val-tasks-btn');
+        if(clearValTasksBtn) {
+            clearValTasksBtn.addEventListener('click', () => {
+                const dateVal = document.getElementById('val-view-date').value;
+                let msg = 'Are you sure you want to clear ALL validation tasks? This cannot be undone.';
+                if (dateVal) {
+                    msg = `Are you sure you want to clear validation tasks for ${dateVal}? This cannot be undone.`;
+                }
+                
+                if(confirm(msg)) {
+                    let tasks = getValidationTasks();
+                    if (dateVal) tasks = tasks.filter(t => !t.timestamp.startsWith(dateVal));
+                    else tasks = [];
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
+                    renderValidatorsModal();
+                    showToast('Validation tasks cleared.');
+                }
             });
         }
 
