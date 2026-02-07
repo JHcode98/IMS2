@@ -1092,6 +1092,15 @@
                 <div class="stat-label">Assigned</div>
             </div>
         </div>
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #2e7d32;" onclick="filterValDashboard('resolved')">
+                <div class="stat-icon" style="background: #e8f5e9; color: #2e7d32;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-completed-tasks">0</div>
+                <div class="stat-label">Resolved</div>
+                </div>
+            </div>
         <div class="stat-card" style="padding:15px; border-left: 4px solid #d9534f;" onclick="filterValDashboard('unresolved')">
                 <div class="stat-icon" style="background: #ffebee; color: #d9534f;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
@@ -1108,6 +1117,24 @@
                 <div class="stat-info">
                     <div class="stat-value" id="val-completion-rate">0%</div>
                     <div class="stat-label">Completion Rate</div>
+                </div>
+            </div>
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #009688;" onclick="filterValDashboard('resolved')">
+                <div class="stat-icon" style="background: #e0f2f1; color: #009688;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-pct-resolved">0%</div>
+                    <div class="stat-label">% by Resolved</div>
+                </div>
+            </div>
+        <div class="stat-card" style="padding:15px; border-left: 4px solid #e91e63;" onclick="filterValDashboard('unresolved')">
+                <div class="stat-icon" style="background: #fce4ec; color: #e91e63;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-value" id="val-pct-unresolved">0%</div>
+                    <div class="stat-label">% by Unresolved</div>
                 </div>
             </div>
         </div>
@@ -3076,6 +3103,10 @@
             const pendingCount = allActive.length - assignedCount;
 
             const rate = total > 0 ? Math.round((resolvedCount / total) * 100) : 0;
+            const processedCount = resolvedCount + unresolvedCount;
+            const completionRate = total > 0 ? Math.round((processedCount / total) * 100) : 0;
+            const pctResolved = total > 0 ? Math.round((resolvedCount / total) * 100) : 0;
+            const pctUnresolved = total > 0 ? Math.round((unresolvedCount / total) * 100) : 0;
 
             if(document.getElementById('val-total-tasks')) document.getElementById('val-total-tasks').textContent = total;
             if(document.getElementById('val-completed-tasks')) document.getElementById('val-completed-tasks').textContent = resolvedCount;
@@ -3083,6 +3114,9 @@
             if(document.getElementById('val-assigned-tasks')) document.getElementById('val-assigned-tasks').textContent = assignedCount;
             if(document.getElementById('val-unresolved-tasks')) document.getElementById('val-unresolved-tasks').textContent = unresolvedCount;
             if(document.getElementById('val-completion-rate')) document.getElementById('val-completion-rate').textContent = rate + '%';
+            if(document.getElementById('val-completion-rate')) document.getElementById('val-completion-rate').textContent = completionRate + '%';
+            if(document.getElementById('val-pct-resolved')) document.getElementById('val-pct-resolved').textContent = pctResolved + '%';
+            if(document.getElementById('val-pct-unresolved')) document.getElementById('val-pct-unresolved').textContent = pctUnresolved + '%';
 
             updateValStatusChart(resolvedCount, pendingCount, unresolvedCount, assignedCount);
             
