@@ -1393,51 +1393,6 @@
             <!-- 3. Right Side (40%) -->
             <div style="flex:4; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
                 
-                <!-- Top: Add Task Form -->
-                <div class="card" style="margin:0; padding:10px; overflow-y:auto; flex-shrink: 0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <div style="display:flex; align-items:center; gap:5px;">
-                             <button class="icon-btn toggle-section-btn" title="Toggle Form" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-                             <h4 style="margin:0; color:#2752a7; font-size:13px;">Add Validation Task</h4>
-                        </div>
-                    </div>
-                    <div class="section-content" style="display:grid; grid-template-columns: 1fr 0.6fr 1fr 1fr; gap:8px; align-items:end;">
-                        <div>
-                            <label style="font-size:10px; font-weight:bold;">SKU Code</label>
-                            <input type="text" id="assign-sku" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
-                        </div>
-                        <div>
-                            <label style="font-size:10px; font-weight:bold;">Qty</label>
-                            <input type="number" id="assign-qty" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
-                        </div>
-                        <div>
-                            <label style="font-size:10px; font-weight:bold;">Reason</label>
-                            <select id="assign-reason" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
-                                <option value="">Select Reason</option>
-                                <option value="Missing">Missing</option>
-                                <option value="Oversell">Oversell</option>
-                                <option value="Damaged">Damaged</option>
-                                <option value="Expired">Expired</option>
-                                <option value="Near Expiry">Near Expiry</option>
-                                <option value="Website Issue">Website Issue</option>
-                                <option value="Supplier Issue">Supplier Issue</option>
-                                <option value="Others">Others</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:10px; font-weight:bold;">Assign To (Opt)</label>
-                            <select id="assign-validator" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;"><option value="">Unassigned</option></select>
-                        </div>
-                        <div style="grid-column: span 3;">
-                            <label style="font-size:10px; font-weight:bold;">Description</label>
-                            <input type="text" id="assign-desc" readonly style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; background:#eee; font-size:11px;">
-                        </div>
-                        <div style="text-align:right;">
-                            <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:4px 12px; font-size:11px;">Add</button>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Middle: Status Chart -->
                 <div class="card" style="margin:0; padding:10px; min-height: 220px; display:flex; flex-direction:column;">
                     <div style="display:flex; gap:15px; flex:1;">
@@ -1466,13 +1421,6 @@
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <h4 style="margin:0 0 10px 0; color:#2752a7;">Available Validators</h4>
                     <div style="flex:1; overflow:auto;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <div style="display:flex; align-items:center; gap:5px;">
-                             <button class="icon-btn toggle-section-btn" title="Toggle Table" style="padding:2px; height:24px; width:24px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-                             <h4 style="margin:0; color:#2752a7;">Available Validators</h4>
-                        </div>
-                    </div>
-                    <div class="section-content" style="flex:1; overflow:auto;">
                         <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
                     <thead>
                         <tr>
@@ -4878,29 +4826,6 @@
                 e = e || window.event; e.preventDefault();
                 pos3 = e.clientX; pos4 = e.clientY;
                 document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
-        // Toggle Section Logic for Validators View
-        document.addEventListener('click', (e) => {
-            const btn = e.target.closest('.toggle-section-btn');
-            if (btn) {
-                const card = btn.closest('.card');
-                const content = card.querySelector('.section-content');
-                if (content) {
-                    content.classList.toggle('hidden');
-                    const isHidden = content.classList.contains('hidden');
-                    btn.innerHTML = isHidden 
-                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="9 18 15 12 9 6"></polyline></svg>' 
-                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                    
-                    // Adjust card flex/height when collapsed
-                    if (isHidden) {
-                        card.dataset.originalFlex = card.style.flex;
-                        card.style.flex = '0 0 auto';
-                        card.style.minHeight = 'auto';
-                    } else {
-                        card.style.flex = card.dataset.originalFlex || '1';
-                        card.style.minHeight = '';
-                    }
-                }
             }
             function elementDrag(e) {
                 e = e || window.event; e.preventDefault();
@@ -4911,7 +4836,6 @@
             }
             function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
         }
-        });
 
         // Initial Render
         renderAttendanceTable();
