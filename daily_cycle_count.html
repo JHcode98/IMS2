@@ -1251,7 +1251,10 @@
                 <div class="card" style="margin:0; padding:10px; display:flex; flex-direction:column; border:1px solid #eee; box-shadow:none; flex-shrink:0; max-height:380px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <h4 style="margin:0; font-size:13px; color:#2752a7;" id="ts-hourly-chart-title">Hourly Output (Today)</h4>
-                        <button id="ts-view-hourly-full-btn" class="icon-btn" title="View Full Report" style="background:#2752a7; color:white; font-size:10px; padding:3px 6px; border-radius:3px; cursor:pointer;">Full Report</button>
+                        <div style="display:flex; gap:5px;">
+                            <button id="ts-hourly-chart-toggle-btn" class="icon-btn" title="Toggle View" style="font-size:10px; padding:3px 6px; border-radius:3px; cursor:pointer; border:1px solid #ccc; background:#f9f9f9;">View: Hourly</button>
+                            <button id="ts-view-hourly-full-btn" class="icon-btn" title="View Full Report" style="background:#2752a7; color:white; font-size:10px; padding:3px 6px; border-radius:3px; cursor:pointer;">Full Report</button>
+                        </div>
                     </div>
                     <div style="display:flex; justify-content:center; gap:10px; margin-bottom:5px; font-size:10px;">
                         <div style="display:flex; align-items:center;"><span style="width:8px; height:8px; background:rgba(54, 185, 204, 0.8); display:inline-block; margin-right:3px;"></span> 1st Shift</div>
@@ -1899,6 +1902,16 @@
             tsViewHourlyFullBtn.addEventListener('click', () => {
                 const date = document.getElementById('ts-analytics-date-filter').value || new Date().toISOString().split('T')[0];
                 openHourlyModal(date, "1st Shift-(6am-2pm)");
+            });
+        }
+
+        const tsHourlyChartToggleBtn = document.getElementById('ts-hourly-chart-toggle-btn');
+        if (tsHourlyChartToggleBtn) {
+            tsHourlyChartToggleBtn.addEventListener('click', () => {
+                tsHourlyChartViewMode = tsHourlyChartViewMode === 'hourly' ? 'cumulative' : 'hourly';
+                tsHourlyChartToggleBtn.textContent = tsHourlyChartViewMode === 'hourly' ? 'View: Hourly' : 'View: Cumulative';
+                const date = document.getElementById('ts-analytics-date-filter').value || new Date().toISOString().split('T')[0];
+                renderTsHourlyChart(date);
             });
         }
         
@@ -6386,6 +6399,7 @@
             document.getElementById('history-break-table').addEventListener('change', (e) => { if(e.target.classList.contains('break-row-checkbox')) updateBreakDeleteButton(); });
         }
 
+        let tsHourlyChartViewMode = 'hourly'; // 'hourly' or 'cumulative'
 
         function renderTsHourlyChart(date) {
             const ctx = document.getElementById('ts-hourly-chart');
@@ -6490,53 +6504,61 @@
             
             if (window.tsHourlyChart) window.tsHourlyChart.destroy();
             
+            let datasets = [];
+            if (tsHourlyChartViewMode === 'hourly') {
+                datasets = [
+                    { 
+                        label: 'Hourly Output', 
+                        data: values, 
+                        backgroundColor: backgroundColors, 
+                        borderColor: borderColors,
+                        borderWidth: 1,
+                        order: 2 
+                    },
+                    { 
+                        label: 'Hourly Target', 
+                        data: targetValues, 
+                        type: 'line',
+                        borderColor: '#3498db', 
+                        backgroundColor: 'transparent', 
+                        tension: 0.2,
+                        borderDash: [2, 2],
+                        borderWidth: 1,
+                        order: 1 
+                    }
+                ];
+            } else {
+                datasets = [
+                    { 
+                        label: 'Total Output', 
+                        data: cumulativeData, 
+                        type: 'line',
+                        borderColor: '#e74c3c', 
+                        backgroundColor: 'transparent', 
+                        tension: 0.2,
+                        borderWidth: 2,
+                        order: 1 
+                    },
+                    { 
+                        label: 'Glide Path', 
+                        data: glidePathData, 
+                        type: 'line',
+                        borderColor: '#27ae60', 
+                        backgroundColor: 'transparent', 
+                        tension: 0.2,
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        order: 2 
+                    }
+                ];
+            }
+
             try {
                 window.tsHourlyChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
-                        datasets: [
-                            { 
-                                label: 'Hourly Output', 
-                                data: values, 
-                                backgroundColor: backgroundColors, 
-                                borderColor: borderColors,
-                                borderWidth: 1,
-                                order: 3 
-                            },
-                            { 
-                                label: 'Total Output', 
-                                data: cumulativeData, 
-                                type: 'line',
-                                borderColor: '#e74c3c', 
-                                backgroundColor: 'transparent', 
-                                tension: 0.2,
-                                borderWidth: 2,
-                                order: 1 
-                            },
-                            { 
-                                label: 'Glide Path', 
-                                data: glidePathData, 
-                                type: 'line',
-                                borderColor: '#27ae60', 
-                                backgroundColor: 'transparent', 
-                                tension: 0.2,
-                                borderDash: [5, 5],
-                                borderWidth: 2,
-                                order: 2 
-                            },
-                            { 
-                                label: 'Hourly Target', 
-                                data: targetValues, 
-                                type: 'line',
-                                borderColor: '#3498db', 
-                                backgroundColor: 'transparent', 
-                                tension: 0.2,
-                                borderDash: [2, 2],
-                                borderWidth: 1,
-                                order: 4 
-                            }
-                        ]
+                        datasets: datasets
                     },
                     options: {
                         responsive: true,
