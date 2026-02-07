@@ -2432,14 +2432,35 @@
         // Set default date
         setLocalDate(dateInput);
 
-        // Auto-calc target in form
-        function autoCalcTarget() {
+        // Auto-calc logic (Bidirectional)
+        let lastEditedField = 'req'; // default
+
+        if (reqInput) reqInput.addEventListener('focus', () => lastEditedField = 'req');
+        if (targetInput) targetInput.addEventListener('focus', () => lastEditedField = 'target');
+
+        function performAutoCalc(source) {
             const req = parseInt(reqInput.value) || 0;
             const rate = parseInt(rateInput.value) || 0;
-            if (req > 0 && rate > 0) targetInput.value = req * rate;
+            const target = parseInt(targetInput.value) || 0;
+
+            if (source === 'req') {
+                if (req > 0 && rate > 0) targetInput.value = req * rate;
+                lastEditedField = 'req';
+            } else if (source === 'target') {
+                if (target > 0 && rate > 0) reqInput.value = Math.ceil(target / rate);
+                lastEditedField = 'target';
+            } else if (source === 'rate') {
+                if (lastEditedField === 'target') {
+                    if (target > 0 && rate > 0) reqInput.value = Math.ceil(target / rate);
+                } else {
+                    if (req > 0 && rate > 0) targetInput.value = req * rate;
+                }
+            }
         }
-        if(rateInput) rateInput.addEventListener('input', autoCalcTarget);
-        if(reqInput) reqInput.addEventListener('input', autoCalcTarget);
+
+        if(reqInput) reqInput.addEventListener('input', () => performAutoCalc('req'));
+        if(targetInput) targetInput.addEventListener('input', () => performAutoCalc('target'));
+        if(rateInput) rateInput.addEventListener('input', () => performAutoCalc('rate'));
 
         // Global functions for hover popup
         window.showSummaryPopup = function(el) {
