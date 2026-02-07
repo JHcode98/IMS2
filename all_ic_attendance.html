@@ -3125,7 +3125,7 @@
             // --- 2. Prepare Data for Tables ---
             tasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            const allActiveForTables = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
+            const allActiveForTables = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved' && t.status !== 'Reassigned');
             let pendingTasks = allActiveForTables.filter(t => !t.validator || t.validator === 'Unassigned');
             let assignedTasks = allActiveForTables.filter(t => t.validator && t.validator !== 'Unassigned');
             
@@ -3143,6 +3143,7 @@
             let resolvedTasks = [];
             let unresolvedTasks = [];
             let historyTasks = [];
+            let reassignedTasks = tasks.filter(t => t.status === 'Reassigned');
 
             allResolved.forEach(t => {
                 if (new Date(t.completedAt || t.timestamp) < cutoff) historyTasks.push(t); else resolvedTasks.push(t);
@@ -3150,6 +3151,8 @@
             allUnresolved.forEach(t => {
                 if (new Date(t.unresolvedAt || t.timestamp) < cutoff) historyTasks.push(t); else unresolvedTasks.push(t);
             });
+            historyTasks.push(...reassignedTasks);
+            historyTasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             // Apply Filters for Card 1 (Pending/Assigned)
             if (valFilterSku1) {
@@ -3376,6 +3379,17 @@
                     else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
                     else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
 
+                    let options = `<option value="Unassigned">Unassign</option>`;
+                    validatorNames.forEach(v => {
+                        const selected = (t.validator === v) ? 'selected' : '';
+                        options += `<option value="${v}" ${selected}>${v}</option>`;
+                    });
+                    if (t.validator && !validatorNames.includes(t.validator)) {
+                        options += `<option value="${t.validator}" selected>${t.validator} (inactive)</option>`;
+                    }
+                    // Dropdown for reassignment
+                    const validatorInput = `<select class="task-validator-input" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #e0e0e0; border-radius:4px; font-size:11px; background:#fff; color:#333;">${options}</select>`;
+
                     const actionHtml = `
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -3383,7 +3397,7 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${t.validator}</td><td>${unresolvedTime}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${validatorInput}</td><td>${unresolvedTime}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     unresolvedTasksTbody.appendChild(tr);
                 });
             }
@@ -3862,7 +3876,43 @@
         }
         if(resolvedTasksTbody) resolvedTasksTbody.addEventListener('click', handleTaskAction);
         const unresolvedTasksTbody = document.getElementById('unresolved-tasks-tbody');
-        if(unresolvedTasksTbody) unresolvedTasksTbody.addEventListener('click', handleTaskAction);
+        if(unresolvedTasksTbody) {
+            unresolvedTasksTbody.addEventListener('click', handleTaskAction);
+            unresolvedTasksTbody.addEventListener('change', (e) => {
+                if(e.target.classList.contains('task-validator-input')) {
+                    const id = e.target.dataset.id;
+                    const newValidator = e.target.value;
+                    if(confirm(`Reassign this unresolved task to ${newValidator}? This will create a new task entry with reset duration.`)) {
+                        let tasks = getValidationTasks();
+                        const taskIndex = tasks.findIndex(t => t.id === id);
+                        if(taskIndex > -1) {
+                            const oldTask = tasks[taskIndex];
+                            // Create new task
+                            const newTask = {
+                                ...oldTask,
+                                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                                timestamp: new Date().toISOString(),
+                                validator: newValidator,
+                                status: 'Pending', // Will move to Assigned automatically
+                                completedAt: undefined,
+                                unresolvedAt: undefined
+                            };
+                            // Update old task
+                            oldTask.status = 'Reassigned';
+                            oldTask.reassignedTo = newValidator;
+                            oldTask.reassignedAt = new Date().toISOString();
+                            
+                            saveValidationTasks(tasks);
+                            renderValidationTasks();
+                            renderValidatorsModal();
+                            showToast(`Task reassigned to ${newValidator}`);
+                        }
+                    } else {
+                        renderValidationTasks(); // Revert selection
+                    }
+                }
+            });
+        }
         const historyTasksTbody = document.getElementById('history-tasks-tbody');
         if(historyTasksTbody) historyTasksTbody.addEventListener('click', handleTaskAction);
 
@@ -3971,7 +4021,7 @@
                     if (now.getHours() < 6) cutoff.setDate(cutoff.getDate() - 1);
                     cutoff.setHours(6, 0, 0, 0);
                     
-                    let hist = tasks.filter(t => (t.status === 'Completed' && new Date(t.completedAt || t.timestamp) < cutoff) || (t.status === 'Unresolved' && new Date(t.unresolvedAt || t.timestamp) < cutoff));
+                    let hist = tasks.filter(t => t.status === 'Reassigned' || (t.status === 'Completed' && new Date(t.completedAt || t.timestamp) < cutoff) || (t.status === 'Unresolved' && new Date(t.unresolvedAt || t.timestamp) < cutoff));
                     if (skuFilter) hist = hist.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
                     if (assignedFilter) hist = hist.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
                     dataToExport = hist;
