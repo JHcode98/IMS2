@@ -1053,6 +1053,7 @@
             <div style="display:flex; align-items:center; gap: 5px;">
                 <button id="toggle-add-task-widget-btn" class="icon-btn" title="Open Add Task Widget" style="background:#2752a7; color:white;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                 <div style="width:1px; height:20px; background:#ddd; margin:0 2px;"></div>
+                <input type="date" id="val-view-date" title="Filter Date" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px; color:#333;">
                 <button id="download-sku-template-btn" class="icon-btn" title="Download SKU Template"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                 <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></button>
                 <button id="clear-sku-master-btn" class="icon-btn" title="Clear SKU Master List" style="color:#d9534f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
@@ -2951,7 +2952,10 @@
             
             let data = getAttendanceData();
             
-            if (globalStartDate.value || globalEndDate.value) {
+            const valViewDate = document.getElementById('val-view-date');
+            if (valViewDate && valViewDate.value) {
+                data = data.filter(item => item.date === valViewDate.value);
+            } else if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value;
                 const end = globalEndDate.value;
                 data = data.filter(item => {
@@ -2961,6 +2965,9 @@
             
             let validators = data.filter(item => item.area === 'Validator' && !item.timeOut);
             let tasks = getValidationTasks();
+            if (valViewDate && valViewDate.value) {
+                tasks = tasks.filter(t => t.timestamp.startsWith(valViewDate.value));
+            }
 
             validators.sort((a, b) => {
                 if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
@@ -3063,7 +3070,11 @@
             
             let tasks = getValidationTasks();
 
-            if (globalStartDate.value || globalEndDate.value) {
+            const valViewDate = document.getElementById('val-view-date');
+            if (valViewDate && valViewDate.value) {
+                const filterDate = valViewDate.value;
+                tasks = tasks.filter(t => t.timestamp.startsWith(filterDate));
+            } else if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
                 if(start) start.setHours(0,0,0,0);
                 const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
@@ -3082,7 +3093,9 @@
 
             // Get validators for dropdown
             let attendanceData = getAttendanceData();
-            if (globalStartDate.value || globalEndDate.value) {
+            if (valViewDate && valViewDate.value) {
+                attendanceData = attendanceData.filter(item => item.date === valViewDate.value);
+            } else if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value;
                 const end = globalEndDate.value;
                 attendanceData = attendanceData.filter(item => {
@@ -3536,12 +3549,23 @@
             }
         }
 
+        const valViewDate = document.getElementById('val-view-date');
+        if(valViewDate) {
+            valViewDate.value = new Date().toISOString().split('T')[0];
+            valViewDate.addEventListener('change', () => {
+                renderValidationTasks();
+                renderValidatorsModal();
+            });
+        }
+
         function renderValAnalytics() {
             let tasks = getValidationTasks();
             const rawTasks = [...tasks]; // Keep raw for specific period overrides
             
-            // Apply Global Date Filter (same as renderValidationTasks)
-            if (globalStartDate.value || globalEndDate.value) {
+            const valViewDate = document.getElementById('val-view-date');
+            if (valViewDate && valViewDate.value) {
+                tasks = tasks.filter(t => t.timestamp.startsWith(valViewDate.value));
+            } else if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
                 if(start) start.setHours(0,0,0,0);
                 const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
@@ -3662,7 +3686,10 @@
 
             // Recalculate data
             let tasks = getValidationTasks();
-            if (globalStartDate.value || globalEndDate.value) {
+            const valViewDate = document.getElementById('val-view-date');
+            if (valViewDate && valViewDate.value) {
+                tasks = tasks.filter(t => t.timestamp.startsWith(valViewDate.value));
+            } else if (globalStartDate.value || globalEndDate.value) {
                 const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
                 if(start) start.setHours(0,0,0,0);
                 const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
