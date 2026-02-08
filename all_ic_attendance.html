@@ -3166,7 +3166,6 @@
                 overdueTbody.innerHTML = '';
                 const now = new Date();
                 const activeAssigned = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved' && t.validator && t.validator !== 'Unassigned');
-                const overdueTasks = activeAssigned.filter(t => {
                 let overdueTasks = activeAssigned.filter(t => {
                     const diffMs = now - new Date(t.timestamp);
                     return diffMs > 3600000; // > 1 hour
