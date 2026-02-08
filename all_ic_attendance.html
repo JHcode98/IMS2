@@ -3207,24 +3207,16 @@
             let allResolved = tasks.filter(t => t.status === 'Completed');
             let allUnresolved = tasks.filter(t => t.status === 'Unresolved');
 
-            // Split Resolved/Unresolved into Current and History based on 6AM cutoff
-            const now = new Date();
-            let cutoff = new Date(now);
-            if (now.getHours() < 6) {
-                cutoff.setDate(cutoff.getDate() - 1);
-            }
-            cutoff.setHours(6, 0, 0, 0);
-
-            let resolvedTasks = [];
+            // Distribute tasks to respective arrays based on status
+            // Note: tasks are already filtered by date at the start of this function
+            let resolvedTasks = allResolved;
             let unresolvedTasks = [];
             let historyTasks = [];
             let reassignedTasks = tasks.filter(t => t.status === 'Reassigned');
 
-            allResolved.forEach(t => {
-                if (new Date(t.completedAt || t.timestamp) < cutoff) historyTasks.push(t); else resolvedTasks.push(t);
-            });
             allUnresolved.forEach(t => {
-                if (t.subStatus === 'Reassigned' || new Date(t.unresolvedAt || t.timestamp) < cutoff) historyTasks.push(t); else unresolvedTasks.push(t);
+                if (t.subStatus === 'Reassigned') historyTasks.push(t); 
+                else unresolvedTasks.push(t);
             });
             historyTasks.push(...reassignedTasks);
             historyTasks.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
