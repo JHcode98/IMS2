@@ -1926,6 +1926,107 @@ function updateAvatar(base64Image){
 }
 window.updateAvatar = updateAvatar;
 
+// Universal Search Logic
+function initUniversalSearch() {
+  if (document.getElementById('univ-search-btn')) return;
+  const navRight = document.querySelector('.nav-right');
+  if (!navRight) return;
+
+  const searchBtn = document.createElement('button');
+  searchBtn.id = 'univ-search-btn';
+  searchBtn.className = 'notification-btn';
+  searchBtn.title = 'Universal Search (Ctrl+K)';
+  searchBtn.style.marginRight = '8px';
+  searchBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+  
+  // Insert as first item in nav-right
+  navRight.insertBefore(searchBtn, navRight.firstChild);
+
+  // Modal HTML
+  const modalHtml = `
+    <div id="univ-search-modal" class="modal hidden" style="z-index: 11000;">
+      <div class="modal-overlay"></div>
+      <div class="modal-content card" style="max-width: 600px; margin-top: 10vh; padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 80vh;">
+        <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;color:#999"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="univ-search-input" placeholder="Search documents, IRs, inventory..." style="flex: 1; border: none; outline: none; font-size: 16px; background: transparent; color: inherit;">
+          <button class="icon-btn close-search" style="font-size: 20px;">&times;</button>
+        </div>
+        <div id="univ-search-results" style="flex: 1; overflow-y: auto; padding: 0; background: var(--bg);">
+          <div style="padding: 20px; text-align: center; color: #999;">Type to search...</div>
+        </div>
+        <div style="padding: 8px 15px; background: var(--bg); border-top: 1px solid #eee; font-size: 11px; color: #666; display: flex; justify-content: space-between;">
+           <span><strong>Enter</strong> to select</span>
+           <span><strong>Esc</strong> to close</span>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  const modal = document.getElementById('univ-search-modal');
+  const input = document.getElementById('univ-search-input');
+  const resultsContainer = document.getElementById('univ-search-results');
+  const closeBtn = modal.querySelector('.close-search');
+  const overlay = modal.querySelector('.modal-overlay');
+
+  const closeSearch = () => modal.classList.add('hidden');
+  const openSearch = () => {
+    modal.classList.remove('hidden');
+    input.value = '';
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Type to search...</div>';
+    input.focus();
+  };
+
+  searchBtn.addEventListener('click', openSearch);
+  closeBtn.addEventListener('click', closeSearch);
+  overlay.addEventListener('click', closeSearch);
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      openSearch();
+    }
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeSearch();
+  });
+
+  input.addEventListener('input', debounce((e) => {
+    const query = e.target.value.trim().toLowerCase();
+    if (!query) {
+      resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Type to search...</div>';
+      return;
+    }
+    performUniversalSearch(query, resultsContainer);
+  }, 300));
+}
+
+function performUniversalSearch(query, container) {
+  const results = [];
+  try { const docs = JSON.parse(localStorage.getItem('dms_docs_v1') || '[]'); docs.forEach(d => { if ((d.controlNumber && d.controlNumber.toLowerCase().includes(query)) || (d.title && d.title.toLowerCase().includes(query))) { results.push({ type: 'Document', title: d.title, subtitle: d.controlNumber, meta: d.status, link: `document.html?control=${encodeURIComponent(d.controlNumber)}`, icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>' }); } }); } catch (e) {}
+  try { const irs = JSON.parse(localStorage.getItem('ims_ir_records_v1') || '[]'); irs.forEach(ir => { if ((ir.id && ir.id.toLowerCase().includes(query)) || (ir.description && ir.description.toLowerCase().includes(query))) { results.push({ type: 'Incident Report', title: ir.id, subtitle: ir.description, meta: ir.status, link: `ir_monitoring.html?search=${encodeURIComponent(ir.id)}`, icon: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>' }); } }); } catch (e) {}
+  try { const ccs = JSON.parse(localStorage.getItem('ims_cycle_count_v1') || '[]'); ccs.forEach(cc => { if ((cc.itemCode && String(cc.itemCode).toLowerCase().includes(query)) || (cc.location && cc.location.toLowerCase().includes(query))) { results.push({ type: 'Cycle Count', title: cc.itemCode, subtitle: cc.location, meta: `Var: ${cc.physical - cc.system}`, link: `cycle_count.html?search=${encodeURIComponent(cc.itemCode)}`, icon: '<polyline points="23 4 23 10 17 10"></polyline>' }); } }); } catch (e) {}
+
+  if (results.length === 0) { container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No results found.</div>'; return; }
+
+  const grouped = results.reduce((acc, item) => { if (!acc[item.type]) acc[item.type] = []; acc[item.type].push(item); return acc; }, {});
+  let html = '';
+  for (const type in grouped) {
+    html += `<div style="padding: 8px 15px; background: #eee; font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase;">${type}</div>`;
+    grouped[type].slice(0, 5).forEach(item => {
+      html += `<a href="${item.link}" class="search-result-item" style="display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee; text-decoration: none; color: inherit; transition: background 0.2s;">
+          <div style="width: 32px; height: 32px; background: #eef2f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 12px; color: #2752a7;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px">${item.icon}</svg></div>
+          <div style="flex: 1; min-width: 0;"><div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.title)}</div><div style="font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.subtitle)}</div></div>
+          <div style="font-size: 11px; color: #999; background: #f5f5f5; padding: 2px 6px; border-radius: 4px;">${escapeHtml(item.meta)}</div>
+        </a>`;
+    });
+  }
+  container.innerHTML = html;
+  container.querySelectorAll('.search-result-item').forEach(el => {
+      el.addEventListener('mouseenter', () => el.style.background = '#f0f7ff');
+      el.addEventListener('mouseleave', () => el.style.background = 'transparent');
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // If you want auto-login during development, uncomment:
   // showDashboard(DEMO_USER.username);
@@ -1967,6 +2068,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   try{ renderNavAvatar(); }catch(e){}
+  
+  // Initialize Universal Search
+  try { initUniversalSearch(); } catch(e) { console.error('Universal Search Init Failed', e); }
 
   // Sidebar search & page size
   const sidebarSearch = document.getElementById('sidebar-search');
