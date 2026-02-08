@@ -1518,7 +1518,6 @@
                 <select id="assign-validator" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;"><option value="">Unassigned</option></select>
             </div>
             <div style="text-align:right;">
-                <button id="btn-clear-task-widget" class="icon-btn" style="background:#eee; color:#333; padding:6px 12px; font-size:11px; margin-right:5px; border:1px solid #ccc;">Clear All</button>
                 <button id="btn-assign-task" class="icon-btn" style="background:#2752a7; color:white; padding:6px 12px; font-size:11px;">Add Task</button>
             </div>
         </div>
@@ -4735,20 +4734,6 @@
             });
         }
 
-        const btnClearTaskWidget = document.getElementById('btn-clear-task-widget');
-        if(btnClearTaskWidget) {
-            btnClearTaskWidget.addEventListener('click', () => {
-                if(assignSku) assignSku.value = '';
-                if(assignQty) assignQty.value = '';
-                if(assignDesc) assignDesc.value = '';
-                if(assignReason) assignReason.value = '';
-                if(assignValidator) assignValidator.value = '';
-                if(assignExpiry) assignExpiry.value = '';
-                if(document.getElementById('assign-expiry-container')) document.getElementById('assign-expiry-container').style.display = 'none';
-                if(assignSku) assignSku.focus();
-            });
-        }
-
         if (validatorsViewBtn) {
             validatorsViewBtn.addEventListener('click', () => {
                 if (validatorsModal) {
@@ -5311,7 +5296,5 @@
   </script>
 </body>
 </html>
-            
- 
             
             
