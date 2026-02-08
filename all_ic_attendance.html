@@ -1387,7 +1387,7 @@
                     </div>
                     <div id="tab-val-top-validator" class="val-analytics-tab-content" style="display:none; flex:1; overflow:auto; max-height:150px;">
                         <table class="report-table" style="width:100%; font-size:10px;">
-                            <thead><tr><th>Validator</th><th>Resolved</th></tr></thead>
+                            <thead><tr><th style="width:30px;">#</th><th>Most Resolved</th><th>Most Unresolved</th><th>Most Total Tasks</th><th>Most Present</th></tr></thead>
                             <tbody id="val-analytics-validator-tbody"></tbody>
                         </table>
                     </div>
@@ -3636,21 +3636,67 @@
             }
 
             // Top Validators (Resolved count)
-            const valCounts = {};
+            const valResolved = {};
+            const valUnresolved = {};
+            const valTotal = {};
+            
             tasks.forEach(t => {
-                if(t.status === 'Completed' && t.validator && t.validator !== 'Unassigned') {
-                    valCounts[t.validator] = (valCounts[t.validator] || 0) + 1;
+                if (t.validator && t.validator !== 'Unassigned') {
+                    valTotal[t.validator] = (valTotal[t.validator] || 0) + 1;
+                    if (t.status === 'Completed') valResolved[t.validator] = (valResolved[t.validator] || 0) + 1;
+                    if (t.status === 'Unresolved') valUnresolved[t.validator] = (valUnresolved[t.validator] || 0) + 1;
                 }
             });
-            const sortedVals = Object.entries(valCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+
+            // Attendance for "Most Present"
+            let attendanceData = getAttendanceData();
+            if (valViewDate && valViewDate.value) {
+                attendanceData = attendanceData.filter(item => item.date === valViewDate.value);
+            } else if (globalStartDate.value || globalEndDate.value) {
+                const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+                if(start) start.setHours(0,0,0,0);
+                const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+                if(end) end.setHours(23,59,59,999);
+                attendanceData = attendanceData.filter(item => {
+                    const d = new Date(item.date);
+                    return (!start || d >= start) && (!end || d <= end);
+                });
+            }
+
+            const valPresent = {};
+            attendanceData.forEach(a => {
+                if (a.area === 'Validator' && a.name) {
+                    valPresent[a.name] = (valPresent[a.name] || 0) + 1;
+                }
+            });
+
+            const topResolvedVal = Object.entries(valResolved).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const topUnresolvedVal = Object.entries(valUnresolved).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const topTotalVal = Object.entries(valTotal).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const topPresentVal = Object.entries(valPresent).sort((a,b) => b[1] - a[1]).slice(0, 10);
             
             const valTbody = document.getElementById('val-analytics-validator-tbody');
             if(valTbody) {
                 valTbody.innerHTML = '';
-                if(sortedVals.length === 0) valTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999;">No data</td></tr>';
-                sortedVals.forEach(([val, count]) => {
-                    valTbody.innerHTML += `<tr><td>${val}</td><td>${count}</td></tr>`;
-                });
+                const maxLen = Math.max(topResolvedVal.length, topUnresolvedVal.length, topTotalVal.length, topPresentVal.length);
+                
+                if(maxLen === 0) valTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">No data</td></tr>';
+                
+                for(let i=0; i<maxLen; i++) {
+                    const renderCell = (arr) => {
+                        if(!arr[i]) return '-';
+                        const [k, v] = arr[i];
+                        return `${k} (${v})`;
+                    };
+                    
+                    valTbody.innerHTML += `<tr>
+                        <td>${i+1}</td>
+                        <td>${renderCell(topResolvedVal)}</td>
+                        <td>${renderCell(topUnresolvedVal)}</td>
+                        <td>${renderCell(topTotalVal)}</td>
+                        <td>${renderCell(topPresentVal)}</td>
+                    </tr>`;
+                }
             }
 
             // Reason Analysis
