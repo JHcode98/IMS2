@@ -1334,6 +1334,14 @@
         });
     });
 
+    // Check for search param from Universal Search
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam) {
+        document.getElementById('search-input').value = searchParam;
+        applyFilter();
+    }
+
     renderTable();
     updateCharts();
     });
