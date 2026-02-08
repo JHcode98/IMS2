@@ -1378,6 +1378,7 @@
                         <button class="att-tab active" onclick="openValAnalyticsTab(event, 'tab-val-top-sku')" style="padding:4px 8px; font-size:11px;">Top SKUs</button>
                         <button class="att-tab" onclick="openValAnalyticsTab(event, 'tab-val-top-validator')" style="padding:4px 8px; font-size:11px;">Top Validators</button>
                         <button class="att-tab" onclick="openValAnalyticsTab(event, 'tab-val-reason-analysis')" style="padding:4px 8px; font-size:11px;">Reason Analysis</button>
+                        <button class="att-tab" onclick="openValAnalyticsTab(event, 'tab-val-trend')" style="padding:4px 8px; font-size:11px;">Trend Analysis</button>
                     </div>
                     <div id="tab-val-top-sku" class="val-analytics-tab-content" style="flex:1; overflow:auto; max-height:150px;">
                         <table class="report-table" style="width:100%; font-size:10px;">
@@ -1392,6 +1393,9 @@
                         </table>
                     </div>
                     <div id="tab-val-reason-analysis" class="val-analytics-tab-content" style="display:none; flex:1; overflow:hidden;">
+                        <div style="height:120px; margin-bottom:5px; position:relative; width:100%;">
+                            <canvas id="val-reason-chart"></canvas>
+                        </div>
                         <div style="margin-bottom:5px; text-align:right;">
                             <select id="val-analytics-reason-period" style="font-size:10px; padding:2px; border:1px solid #ccc; border-radius:3px;">
                                 <option value="global">Global Filter</option>
@@ -1404,6 +1408,11 @@
                                 <thead><tr><th>SKU</th><th>Desc</th><th>Reason</th><th>Count</th></tr></thead>
                                 <tbody id="val-analytics-reason-tbody"></tbody>
                             </table>
+                        </div>
+                    </div>
+                    <div id="tab-val-trend" class="val-analytics-tab-content" style="display:none; flex:1; overflow:hidden;">
+                        <div style="position:relative; height:100%; width:100%; padding:5px;">
+                            <canvas id="val-trend-chart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -3040,6 +3049,8 @@
         let valUnresolvedRows = 10;
         let valHistoryPage = 1;
         let valHistoryRows = 10;
+        let valReasonChart = null;
+        let valTrendChart = null;
         
         // Filters
         let valFilterAssigned1 = '';
@@ -3064,6 +3075,9 @@
                 if(btn) btn.click();
             } else if (type === 'history') {
                 const btn = document.querySelector("button[onclick*='tab-val-history']");
+                if(btn) btn.click();
+            } else if (type === 'trend') {
+                const btn = document.querySelector("button[onclick*='tab-val-trend']");
                 if(btn) btn.click();
             } else if (type === 'chart') {
                 const chart = document.getElementById('val-status-chart'); 
@@ -3753,6 +3767,84 @@
                     const shortDesc = desc.length > 15 ? desc.substring(0, 15) + '...' : desc;
                     reasonTbody.innerHTML += `<tr><td>${item.sku}</td><td title="${desc}">${shortDesc}</td><td>${item.topReason}</td><td>${item.totalCount}</td></tr>`;
                 });
+
+                // Render Reason Chart
+                const reasonCounts = {};
+                reasonTasks.forEach(t => {
+                    const r = t.reason || 'Unknown';
+                    reasonCounts[r] = (reasonCounts[r] || 0) + 1;
+                });
+                const sortedReasons = Object.entries(reasonCounts).sort((a,b) => b[1] - a[1]).slice(0, 8);
+                
+                const ctxReason = document.getElementById('val-reason-chart');
+                if(ctxReason) {
+                    if(valReasonChart) valReasonChart.destroy();
+                    valReasonChart = new Chart(ctxReason, {
+                        type: 'bar',
+                        data: {
+                            labels: sortedReasons.map(x => x[0]),
+                            datasets: [{
+                                label: 'Count',
+                                data: sortedReasons.map(x => x[1]),
+                                backgroundColor: '#f1c40f',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            indexAxis: 'y',
+                            plugins: { legend: { display: false }, title: { display: true, text: 'Top Reasons', font: { size: 10 } } },
+                            scales: { x: { beginAtZero: true, ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 9 } } } }
+                        }
+                    });
+                }
+            }
+
+            // Trend Analysis
+            const ctxTrend = document.getElementById('val-trend-chart');
+            if(ctxTrend) {
+                let trendTasks = rawTasks;
+                if (globalStartDate.value || globalEndDate.value) {
+                    const start = globalStartDate.value ? new Date(globalStartDate.value) : null;
+                    if(start) start.setHours(0,0,0,0);
+                    const end = globalEndDate.value ? new Date(globalEndDate.value) : null;
+                    if(end) end.setHours(23,59,59,999);
+                    trendTasks = trendTasks.filter(t => {
+                        const d = new Date(t.timestamp);
+                        return (!start || d >= start) && (!end || d <= end);
+                    });
+                }
+
+                const trendData = {};
+                trendTasks.forEach(t => {
+                    const d = t.timestamp.split('T')[0];
+                    if(!trendData[d]) trendData[d] = { total: 0, resolved: 0, unresolved: 0 };
+                    trendData[d].total++;
+                    if(t.status === 'Completed') trendData[d].resolved++;
+                    if(t.status === 'Unresolved') trendData[d].unresolved++;
+                });
+
+                const sortedDates = Object.keys(trendData).sort();
+                // Limit to last 30 days if too many
+                const displayDates = sortedDates.length > 30 ? sortedDates.slice(-30) : sortedDates;
+
+                if(valTrendChart) valTrendChart.destroy();
+                valTrendChart = new Chart(ctxTrend, {
+                    type: 'line',
+                    data: {
+                        labels: displayDates,
+                        datasets: [
+                            { label: 'Total', data: displayDates.map(d => trendData[d].total), borderColor: '#3498db', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
+                            { label: 'Resolved', data: displayDates.map(d => trendData[d].resolved), borderColor: '#2ecc71', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
+                            { label: 'Unresolved', data: displayDates.map(d => trendData[d].unresolved), borderColor: '#e74c3c', backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { font: { size: 10 } } } }
+                    }
+                });
             }
         }
 
@@ -3761,6 +3853,7 @@
             const skuTab = document.getElementById('tab-val-top-sku');
             const valTab = document.getElementById('tab-val-top-validator');
             const reasonTab = document.getElementById('tab-val-reason-analysis');
+            const trendTab = document.getElementById('tab-val-trend');
 
             let activeTab = 'sku';
             if (valTab && valTab.style.display !== 'none') activeTab = 'validator';
@@ -3869,6 +3962,24 @@
                 skuReasonList.forEach(item => {
                     const desc = masterMap[item.sku] || '-';
                     rows.push([`"${item.sku}"`, `"${desc.replace(/"/g, '""')}"`, `"${item.topReason}"`, item.totalCount]);
+                });
+            } else if (activeTab === 'trend') {
+                headers = ['Date', 'Total Tasks', 'Resolved', 'Unresolved'];
+                filename = 'trend_analysis.csv';
+                
+                const trendData = {};
+                tasks.forEach(t => {
+                    const d = t.timestamp.split('T')[0];
+                    if(!trendData[d]) trendData[d] = { total: 0, resolved: 0, unresolved: 0 };
+                    trendData[d].total++;
+                    if(t.status === 'Completed') trendData[d].resolved++;
+                    if(t.status === 'Unresolved') trendData[d].unresolved++;
+                });
+                
+                const sortedDates = Object.keys(trendData).sort();
+                sortedDates.forEach(d => {
+                    const item = trendData[d];
+                    rows.push([d, item.total, item.resolved, item.unresolved]);
                 });
             }
 
