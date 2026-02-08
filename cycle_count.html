@@ -1188,6 +1188,13 @@
         });
     }
 
+    // Check for search param from Universal Search
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam && cycleCountSearchInput) {
+        cycleCountSearchInput.value = searchParam;
+    }
+
     loadData();
 
     // Sidebar Toggle Logic
