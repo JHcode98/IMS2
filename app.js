@@ -1928,19 +1928,8 @@ window.updateAvatar = updateAvatar;
 
 // Universal Search Logic
 function initUniversalSearch() {
-  if (document.getElementById('univ-search-btn')) return;
-  const navRight = document.querySelector('.nav-right');
-  if (!navRight) return;
-
-  const searchBtn = document.createElement('button');
-  searchBtn.id = 'univ-search-btn';
-  searchBtn.className = 'notification-btn';
-  searchBtn.title = 'Universal Search (Ctrl+K)';
-  searchBtn.style.marginRight = '8px';
-  searchBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
-  
-  // Insert as first item in nav-right
-  navRight.insertBefore(searchBtn, navRight.firstChild);
+  // Prevent duplicate initialization
+  if (document.getElementById('univ-search-modal')) return;
 
   // Modal HTML
   const modalHtml = `
@@ -1978,7 +1967,6 @@ function initUniversalSearch() {
     input.focus();
   };
 
-  searchBtn.addEventListener('click', openSearch);
   closeBtn.addEventListener('click', closeSearch);
   overlay.addEventListener('click', closeSearch);
 
@@ -1998,6 +1986,22 @@ function initUniversalSearch() {
     }
     performUniversalSearch(query, resultsContainer);
   }, 300));
+
+  // Expose globally
+  window.openUniversalSearch = openSearch;
+
+  // Inject Button into Navbar if exists
+  const navRight = document.querySelector('.nav-right');
+  if (navRight && !document.getElementById('univ-search-btn')) {
+    const searchBtn = document.createElement('button');
+    searchBtn.id = 'univ-search-btn';
+    searchBtn.className = 'notification-btn';
+    searchBtn.title = 'Universal Search (Ctrl+K)';
+    searchBtn.style.marginRight = '8px';
+    searchBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+    searchBtn.addEventListener('click', openSearch);
+    navRight.insertBefore(searchBtn, navRight.firstChild);
+  }
 }
 
 function performUniversalSearch(query, container) {
