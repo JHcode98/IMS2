@@ -1960,7 +1960,8 @@ function initUniversalSearch() {
   const overlay = modal.querySelector('.modal-overlay');
 
   const closeSearch = () => modal.classList.add('hidden');
-  const openSearch = () => {
+  const openSearch = (types) => {
+    window.univSearchTypes = Array.isArray(types) ? types : [];
     modal.classList.remove('hidden');
     input.value = '';
     resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Type to search...</div>';
@@ -2009,10 +2010,18 @@ function performUniversalSearch(query, container) {
   try { const docs = JSON.parse(localStorage.getItem('dms_docs_v1') || '[]'); docs.forEach(d => { if ((d.controlNumber && d.controlNumber.toLowerCase().includes(query)) || (d.title && d.title.toLowerCase().includes(query))) { results.push({ type: 'Document', title: d.title, subtitle: d.controlNumber, meta: d.status, link: `document.html?control=${encodeURIComponent(d.controlNumber)}`, icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>' }); } }); } catch (e) {}
   try { const irs = JSON.parse(localStorage.getItem('ims_ir_records_v1') || '[]'); irs.forEach(ir => { if ((ir.id && ir.id.toLowerCase().includes(query)) || (ir.description && ir.description.toLowerCase().includes(query))) { results.push({ type: 'Incident Report', title: ir.id, subtitle: ir.description, meta: ir.status, link: `ir_monitoring.html?search=${encodeURIComponent(ir.id)}`, icon: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>' }); } }); } catch (e) {}
   try { const ccs = JSON.parse(localStorage.getItem('ims_cycle_count_v1') || '[]'); ccs.forEach(cc => { if ((cc.itemCode && String(cc.itemCode).toLowerCase().includes(query)) || (cc.location && cc.location.toLowerCase().includes(query))) { results.push({ type: 'Cycle Count', title: cc.itemCode, subtitle: cc.location, meta: `Var: ${cc.physical - cc.system}`, link: `cycle_count.html?search=${encodeURIComponent(cc.itemCode)}`, icon: '<polyline points="23 4 23 10 17 10"></polyline>' }); } }); } catch (e) {}
+  try { const atts = JSON.parse(localStorage.getItem('ims_daily_attendance_v1') || '[]'); atts.forEach(a => { if ((a.name && a.name.toLowerCase().includes(query)) || (a.userId && a.userId.toLowerCase().includes(query))) { results.push({ type: 'Attendance', title: a.name, subtitle: a.userId, meta: a.role, link: `all_ic_attendance.html`, icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>' }); } }); } catch (e) {}
+  try { const dcs = JSON.parse(localStorage.getItem('ims_daily_counters_v1') || '[]'); dcs.forEach(dc => { if ((dc.date && dc.date.includes(query)) || (dc.shift && dc.shift.toLowerCase().includes(query))) { results.push({ type: 'Daily Counter', title: dc.date, subtitle: dc.shift, meta: `Req: ${dc.required}`, link: `daily_cycle_count.html`, icon: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line>' }); } }); } catch (e) {}
+  try { const vts = JSON.parse(localStorage.getItem('ims_validation_tasks_v1') || '[]'); vts.forEach(vt => { if ((vt.sku && vt.sku.toLowerCase().includes(query)) || (vt.validator && vt.validator.toLowerCase().includes(query))) { results.push({ type: 'Validation Task', title: vt.sku, subtitle: vt.validator, meta: vt.status, link: `all_ic_attendance.html`, icon: '<path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>' }); } }); } catch (e) {}
 
-  if (results.length === 0) { container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No results found.</div>'; return; }
+  let filteredResults = results;
+  if (window.univSearchTypes && window.univSearchTypes.length > 0) {
+      filteredResults = results.filter(r => window.univSearchTypes.includes(r.type));
+  }
 
-  const grouped = results.reduce((acc, item) => { if (!acc[item.type]) acc[item.type] = []; acc[item.type].push(item); return acc; }, {});
+  if (filteredResults.length === 0) { container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No results found.</div>'; return; }
+
+  const grouped = filteredResults.reduce((acc, item) => { if (!acc[item.type]) acc[item.type] = []; acc[item.type].push(item); return acc; }, {});
   let html = '';
   for (const type in grouped) {
     html += `<div style="padding: 8px 15px; background: #eee; font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase;">${type}</div>`;
