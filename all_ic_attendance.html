@@ -1381,7 +1381,7 @@
                     </div>
                     <div id="tab-val-top-sku" class="val-analytics-tab-content" style="flex:1; overflow:auto; max-height:150px;">
                         <table class="report-table" style="width:100%; font-size:10px;">
-                            <thead><tr><th>SKU</th><th>Description</th><th>Count</th></tr></thead>
+                            <thead><tr><th style="width:30px;">#</th><th>Most Tasks</th><th>Most Resolved</th><th>Most Unresolved</th></tr></thead>
                             <tbody id="val-analytics-sku-tbody"></tbody>
                         </table>
                     </div>
@@ -3592,12 +3592,20 @@
             }
 
             // Top SKUs
-            const skuCounts = {};
+            const skuTotal = {};
+            const skuResolved = {};
+            const skuUnresolved = {};
+
             tasks.forEach(t => {
                 const sku = t.sku || 'Unknown';
-                skuCounts[sku] = (skuCounts[sku] || 0) + 1;
+                skuTotal[sku] = (skuTotal[sku] || 0) + 1;
+                if (t.status === 'Completed') skuResolved[sku] = (skuResolved[sku] || 0) + 1;
+                if (t.status === 'Unresolved') skuUnresolved[sku] = (skuUnresolved[sku] || 0) + 1;
             });
-            const sortedSkus = Object.entries(skuCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+
+            const topTotal = Object.entries(skuTotal).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const topResolved = Object.entries(skuResolved).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const topUnresolved = Object.entries(skuUnresolved).sort((a,b) => b[1] - a[1]).slice(0, 10);
             
             // Get Master Descriptions
             let masterMap = {};
@@ -3606,11 +3614,25 @@
             const skuTbody = document.getElementById('val-analytics-sku-tbody');
             if(skuTbody) {
                 skuTbody.innerHTML = '';
-                if(sortedSkus.length === 0) skuTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#999;">No data</td></tr>';
-                sortedSkus.forEach(([sku, count]) => {
-                    const desc = masterMap[sku] || '-';
-                    skuTbody.innerHTML += `<tr><td>${sku}</td><td>${desc}</td><td>${count}</td></tr>`;
-                });
+                const maxLen = Math.max(topTotal.length, topResolved.length, topUnresolved.length);
+                
+                if(maxLen === 0) skuTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">No data</td></tr>';
+                
+                for(let i=0; i<maxLen; i++) {
+                    const renderCell = (arr) => {
+                        if(!arr[i]) return '-';
+                        const [k, v] = arr[i];
+                        const desc = masterMap[k] || '';
+                        return `<span title="${desc}">${k} (${v})</span>`;
+                    };
+                    
+                    skuTbody.innerHTML += `<tr>
+                        <td>${i+1}</td>
+                        <td>${renderCell(topTotal)}</td>
+                        <td>${renderCell(topResolved)}</td>
+                        <td>${renderCell(topUnresolved)}</td>
+                    </tr>`;
+                }
             }
 
             // Top Validators (Resolved count)
@@ -4924,6 +4946,20 @@
                 addTaskWidget.classList.add('hidden');
             });
         }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+                e.preventDefault();
+                const widget = document.getElementById('add-task-widget');
+                if (widget) {
+                    widget.classList.toggle('hidden');
+                    if (!widget.classList.contains('hidden')) {
+                        const input = document.getElementById('assign-sku');
+                        if (input) input.focus();
+                    }
+                }
+            }
+        });
 
         // Drag Logic
         if(addTaskWidget && widgetHeader) {
