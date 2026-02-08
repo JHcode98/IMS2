@@ -3167,9 +3167,16 @@
                 const now = new Date();
                 const activeAssigned = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved' && t.validator && t.validator !== 'Unassigned');
                 const overdueTasks = activeAssigned.filter(t => {
+                let overdueTasks = activeAssigned.filter(t => {
                     const diffMs = now - new Date(t.timestamp);
                     return diffMs > 3600000; // > 1 hour
                 });
+                if (valFilterSku1) {
+                    overdueTasks = overdueTasks.filter(t => (t.sku || '').toLowerCase().includes(valFilterSku1));
+                }
+                if (valFilterAssigned1) {
+                    overdueTasks = overdueTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned1));
+                }
                 overdueTasks.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                 
                 if (overdueTasks.length === 0) {
