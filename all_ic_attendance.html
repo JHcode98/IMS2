@@ -901,6 +901,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
                 Inactive Users (CSV)
             </button>
+            <button id="rep-validators-btn" class="icon-btn" style="justify-content:flex-start; padding:10px; width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; width:18px; height:18px;"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                Validation Tasks (CSV)
+            </button>
         </div>
     </div>
   </div>
@@ -1600,6 +1604,7 @@
         const repBreaklogBtn = document.getElementById('rep-breaklog-btn');
         const repInactiveBtn = document.getElementById('rep-inactive-btn');
         const repSessionsBtn = document.getElementById('rep-sessions-btn');
+        const repValidatorsBtn = document.getElementById('rep-validators-btn');
         
         // Requirements
         const reqModal = document.getElementById('req-modal');
@@ -5235,6 +5240,180 @@
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+            });
+        }
+
+        // Reports Modal Logic
+        if(reportsMenuBtn) {
+            reportsMenuBtn.addEventListener('click', () => {
+                reportsModal.classList.remove('hidden');
+                // Default dates
+                const today = new Date().toISOString().split('T')[0];
+                if(!document.getElementById('rep-start-date').value) document.getElementById('rep-start-date').value = today;
+                if(!document.getElementById('rep-end-date').value) document.getElementById('rep-end-date').value = today;
+            });
+        }
+
+        if(repAttendanceBtn) {
+            repAttendanceBtn.addEventListener('click', () => {
+                const startVal = document.getElementById('rep-start-date').value;
+                const endVal = document.getElementById('rep-end-date').value;
+                let data = getAttendanceData();
+                
+                if(startVal || endVal) {
+                    const start = startVal ? new Date(startVal) : null;
+                    if(start) start.setHours(0,0,0,0);
+                    const end = endVal ? new Date(endVal) : null;
+                    if(end) end.setHours(23,59,59,999);
+                    
+                    data = data.filter(item => {
+                        const d = new Date(item.date);
+                        return (!start || d >= start) && (!end || d <= end);
+                    });
+                }
+                
+                if (data.length === 0) { alert('No attendance records found for selected range.'); return; }
+                
+                const headers = ['Date', 'User ID', 'Shift', 'Name', 'Role', 'Job Description', 'Time In', 'Break Out', 'Break In', 'Time Out', 'Duration', 'Status'];
+                const rows = [headers.join(',')];
+                
+                data.forEach(item => {
+                    const dur = getDuration(item.breakOut, item.breakIn);
+                    const row = [
+                        item.date, `"${item.userId||''}"`, `"${item.shift}"`, `"${item.name}"`, item.role || '', item.area || '', item.timeIn || '', item.breakOut || '', item.breakIn || '', item.timeOut || '', dur, `"${item.status||''}"`
+                    ];
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'attendance_report.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                reportsModal.classList.add('hidden');
+            });
+        }
+
+        if(repValidatorsBtn) {
+            repValidatorsBtn.addEventListener('click', () => {
+                const startVal = document.getElementById('rep-start-date').value;
+                const endVal = document.getElementById('rep-end-date').value;
+                let tasks = getValidationTasks();
+                
+                if(startVal || endVal) {
+                    const start = startVal ? new Date(startVal) : null;
+                    if(start) start.setHours(0,0,0,0);
+                    const end = endVal ? new Date(endVal) : null;
+                    if(end) end.setHours(23,59,59,999);
+                    
+                    tasks = tasks.filter(t => {
+                        const d = new Date(t.timestamp);
+                        return (!start || d >= start) && (!end || d <= end);
+                    });
+                }
+                
+                if(tasks.length === 0) { alert('No validation tasks found for selected range.'); return; }
+                
+                const headers = ['Date', 'SKU', 'Description', 'Qty', 'Reason', 'Validator', 'Status', 'Completed At'];
+                const rows = [headers.join(',')];
+                
+                tasks.forEach(t => {
+                    const date = new Date(t.timestamp).toLocaleString().replace(',', '');
+                    const completedAt = t.completedAt ? new Date(t.completedAt).toLocaleString().replace(',', '') : '';
+                    const row = [
+                        `"${date}"`, `"${t.sku || ''}"`, `"${(t.desc || '').replace(/"/g, '""')}"`,
+                        `"${t.qty || ''}"`, `"${(t.reason || '').replace(/"/g, '""')}"`,
+                        `"${t.validator || ''}"`, `"${t.status || ''}"`, `"${completedAt}"`
+                    ];
+                    rows.push(row.join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'validation_tasks_report.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                reportsModal.classList.add('hidden');
+            });
+        }
+
+        if(repSessionsBtn) {
+            repSessionsBtn.addEventListener('click', () => {
+                const startVal = document.getElementById('rep-start-date').value;
+                const endVal = document.getElementById('rep-end-date').value;
+                const start = startVal ? new Date(startVal) : null;
+                if(start) start.setHours(0,0,0,0);
+                const end = endVal ? new Date(endVal) : null;
+                if(end) end.setHours(23,59,59,999);
+
+                let data = getTimestamps();
+                const attendance = getAttendanceData();
+
+                // Reconstruct sessions
+                data.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const sessions = [];
+                const openSessions = {};
+                
+                data.forEach(log => {
+                    if (log.deleted) return;
+                    // Filter by date range based on log timestamp
+                    const d = new Date(log.timestamp);
+                    if(start && d < start) return;
+                    if(end && d > end) return;
+
+                    if (log.action === 'Start') {
+                        if (openSessions[log.userId]) sessions.push(openSessions[log.userId]);
+                        openSessions[log.userId] = { userId: log.userId, startLog: log, endLog: null, breaks: [] };
+                    } else if (log.action === 'End') {
+                        if (openSessions[log.userId]) {
+                            const session = openSessions[log.userId];
+                            session.endLog = log;
+                            sessions.push(session);
+                            delete openSessions[log.userId];
+                        } else {
+                            sessions.push({ userId: log.userId, startLog: null, endLog: log, breaks: [] });
+                        }
+                    }
+                });
+                Object.values(openSessions).forEach(s => sessions.push(s));
+
+                if(sessions.length === 0) { alert('No sessions found in selected range.'); return; }
+                
+                const headers = ['User ID', 'Name', 'Area Type', 'Shift', 'Start Time', 'End Time', 'Duration', 'Status'];
+                const rows = [headers.join(',')];
+                
+                sessions.forEach(s => {
+                    const ts = s.startLog ? s.startLog.timestamp : (s.endLog ? s.endLog.timestamp : null);
+                    let sessionDate = ts ? new Date(ts).toISOString().split('T')[0] : '';
+                    let attRecord = attendance.find(a => a.userId === s.userId && a.date === sessionDate);
+                    if (!attRecord) attRecord = attendance.find(a => a.userId === s.userId);
+                    
+                    const name = attRecord ? attRecord.name : '';
+                    let shift = attRecord ? attRecord.shift : (s.startLog ? getShiftFromTimestamp(s.startLog.timestamp).shift : '');
+                    const area = s.startLog ? (s.startLog.areaType || '-') : '-';
+
+                    const startStr = s.startLog ? new Date(s.startLog.timestamp).toLocaleString() : '-';
+                    const endStr = s.endLog ? new Date(s.endLog.timestamp).toLocaleString() : '-';
+                    
+                    let duration = '-';
+                    if (s.startLog && s.endLog) {
+                        const diff = new Date(s.endLog.timestamp) - new Date(s.startLog.timestamp);
+                        const mins = Math.round(diff / 60000);
+                        duration = `${mins} min`;
+                    } else if (s.startLog) {
+                        const diff = new Date() - new Date(s.startLog.timestamp);
+                        duration = `Active (${Math.floor(diff/60000)}m)`;
+                    }
+
+                    rows.push([`"${s.userId}"`, `"${name}"`, `"${area}"`, `"${shift}"`, `"${startStr}"`, `"${endStr}"`, `"${duration}"`, s.endLog ? 'Completed' : 'Active'].join(','));
+                });
+                
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url; link.download = 'counter_sessions_report.csv';
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                reportsModal.classList.add('hidden');
             });
         }
 
