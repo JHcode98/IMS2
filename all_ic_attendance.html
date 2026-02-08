@@ -185,6 +185,11 @@
     #unresolved-tasks-tbody tr:hover .icon-btn {
         opacity: 1;
     }
+
+    /* Analytics Expanded View */
+    #val-analytics-card.expanded { flex: 1; }
+    #val-analytics-card.expanded .val-analytics-tab-content { max-height: none !important; }
+    #val-analytics-card.expanded #tab-val-reason-analysis > div:last-child { max-height: none !important; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -1152,7 +1157,7 @@
             <!-- 2. Left Side (60%) -->
             <div style="flex:6; display:flex; flex-direction:column; gap:15px; overflow:hidden;">
                 <!-- Table 1: Pending -->
-                <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
+                <div id="val-tasks-card" class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <div class="att-tabs" style="margin-bottom:0; border-bottom:none;">
                             <button class="att-tab active" onclick="openValTab(event, 'tab-val-pending')">Pending</button>
@@ -1357,12 +1362,17 @@
                 </div>
 
                 <!-- Analytics Overview -->
-                <div class="card" style="margin:0; padding:10px; min-height: 200px; display:flex; flex-direction:column;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h4 style="margin:0 0 10px 0; color:#2752a7;">Analytics Overview</h4>
-                        <button id="export-val-analytics-btn" class="icon-btn" title="Export Analytics CSV" style="margin-bottom:10px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        </button>
+                <div id="val-analytics-card" class="card" style="margin:0; padding:10px; min-height: 200px; display:flex; flex-direction:column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="margin:0; color:#2752a7;">Analytics Overview</h4>
+                        <div style="display:flex; gap:5px;">
+                            <button id="toggle-val-analytics-view-btn" class="icon-btn" title="Expand View">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                            </button>
+                            <button id="export-val-analytics-btn" class="icon-btn" title="Export Analytics CSV">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="att-tabs" style="margin-bottom:5px; border-bottom:1px solid #eee;">
                         <button class="att-tab active" onclick="openValAnalyticsTab(event, 'tab-val-top-sku')" style="padding:4px 8px; font-size:11px;">Top SKUs</button>
@@ -5043,6 +5053,32 @@
             const exportValAnalyticsBtn = document.getElementById('export-val-analytics-btn');
             if(exportValAnalyticsBtn) {
                 exportValAnalyticsBtn.addEventListener('click', exportValAnalytics);
+            }
+
+            const toggleValAnalyticsBtn = document.getElementById('toggle-val-analytics-view-btn');
+            if (toggleValAnalyticsBtn) {
+                toggleValAnalyticsBtn.addEventListener('click', () => {
+                    const tasksCard = document.getElementById('val-tasks-card');
+                    const analyticsCard = document.getElementById('val-analytics-card');
+                    
+                    if (tasksCard && analyticsCard) {
+                        const isExpanded = analyticsCard.classList.contains('expanded');
+                        
+                        if (isExpanded) {
+                            // Collapse
+                            tasksCard.style.display = 'flex';
+                            analyticsCard.classList.remove('expanded');
+                            toggleValAnalyticsBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+                            toggleValAnalyticsBtn.title = "Expand View";
+                        } else {
+                            // Expand
+                            tasksCard.style.display = 'none';
+                            analyticsCard.classList.add('expanded');
+                            toggleValAnalyticsBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+                            toggleValAnalyticsBtn.title = "Collapse View";
+                        }
+                    }
+                });
             }
     });
   </script>
