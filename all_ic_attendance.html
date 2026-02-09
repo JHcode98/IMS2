@@ -1176,6 +1176,7 @@
                                 <option value="Urgent">Urgent</option>
                             </select>
                             <input type="text" id="val-filter-assigned-1" placeholder="Filter Assigned To..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
+                            <button class="icon-btn" id="val-clear-filters-btn-1" title="Clear Filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                             <button class="icon-btn" id="val-print-btn-1" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                             <button class="icon-btn" id="val-export-btn-1" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                             <button class="icon-btn" id="val-bulk-reassign-btn-1" title="Bulk Reassign" style="color:#f39c12; display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></button>
@@ -4348,6 +4349,16 @@
         if(filterSku1) filterSku1.addEventListener('input', renderValidationTasks);
         const filterPriority1 = document.getElementById('val-filter-priority-1');
         if(filterPriority1) filterPriority1.addEventListener('change', renderValidationTasks);
+
+        const clearFiltersBtn1 = document.getElementById('val-clear-filters-btn-1');
+        if(clearFiltersBtn1) {
+            clearFiltersBtn1.addEventListener('click', () => {
+                if(document.getElementById('val-filter-sku-1')) document.getElementById('val-filter-sku-1').value = '';
+                if(document.getElementById('val-filter-priority-1')) document.getElementById('val-filter-priority-1').value = '';
+                if(document.getElementById('val-filter-assigned-1')) document.getElementById('val-filter-assigned-1').value = '';
+                renderValidationTasks();
+            });
+        }
 
         // Export CSV
         const exportValCSV = () => {
