@@ -1169,6 +1169,12 @@
                         </div>
                         <div style="display:flex; gap:5px; align-items:center;">
                             <input type="text" id="val-filter-sku-1" placeholder="Filter SKU..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:100px;">
+                            <select id="val-filter-priority-1" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:90px;">
+                                <option value="">All Priorities</option>
+                                <option value="Normal">Normal</option>
+                                <option value="High">High</option>
+                                <option value="Urgent">Urgent</option>
+                            </select>
                             <input type="text" id="val-filter-assigned-1" placeholder="Filter Assigned To..." style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; width:120px;">
                             <button class="icon-btn" id="val-print-btn-1" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                             <button class="icon-btn" id="val-export-btn-1" title="Export CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
@@ -3075,6 +3081,7 @@
             if (type === 'total') {
                 if(document.getElementById('val-filter-sku-1')) document.getElementById('val-filter-sku-1').value=''; 
                 if(document.getElementById('val-filter-assigned-1')) document.getElementById('val-filter-assigned-1').value=''; 
+                if(document.getElementById('val-filter-priority-1')) document.getElementById('val-filter-priority-1').value='';
                 renderValidationTasks();
             } else if (type === 'resolved') {
                 const btn = document.querySelector("button[onclick*='tab-val-resolved']");
@@ -3132,6 +3139,7 @@
             // Get filter values
             valFilterAssigned1 = document.getElementById('val-filter-assigned-1') ? document.getElementById('val-filter-assigned-1').value.toLowerCase() : '';
             valFilterSku1 = document.getElementById('val-filter-sku-1') ? document.getElementById('val-filter-sku-1').value.toLowerCase() : '';
+            const valFilterPriority1 = document.getElementById('val-filter-priority-1') ? document.getElementById('val-filter-priority-1').value : '';
             
 
             // Get validators for dropdown
@@ -3249,6 +3257,13 @@
             }
             if (valFilterAssigned1) {
                 assignedTasks = assignedTasks.filter(t => (t.validator || '').toLowerCase().includes(valFilterAssigned1));
+            }
+            if (valFilterPriority1) {
+                pendingTasks = pendingTasks.filter(t => (t.priority || 'Normal') === valFilterPriority1);
+                assignedTasks = assignedTasks.filter(t => (t.priority || 'Normal') === valFilterPriority1);
+                resolvedTasks = resolvedTasks.filter(t => (t.priority || 'Normal') === valFilterPriority1);
+                unresolvedTasks = unresolvedTasks.filter(t => (t.priority || 'Normal') === valFilterPriority1);
+                historyTasks = historyTasks.filter(t => (t.priority || 'Normal') === valFilterPriority1);
             }
 
             // Apply Filters for Card 2 (Resolved/Unresolved)
@@ -4331,6 +4346,8 @@
         if(filterInput1) filterInput1.addEventListener('input', renderValidationTasks);
         const filterSku1 = document.getElementById('val-filter-sku-1');
         if(filterSku1) filterSku1.addEventListener('input', renderValidationTasks);
+        const filterPriority1 = document.getElementById('val-filter-priority-1');
+        if(filterPriority1) filterPriority1.addEventListener('change', renderValidationTasks);
 
         // Export CSV
         const exportValCSV = () => {
@@ -4363,9 +4380,11 @@
                 
                 const skuFilter = document.getElementById('val-filter-sku-1').value.toLowerCase();
                 const assignedFilter = document.getElementById('val-filter-assigned-1').value.toLowerCase();
+                const priorityFilter = document.getElementById('val-filter-priority-1') ? document.getElementById('val-filter-priority-1').value : '';
                 
                 let filtered = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved');
                 if (skuFilter) filtered = filtered.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
+                if (priorityFilter) filtered = filtered.filter(t => (t.priority || 'Normal') === priorityFilter);
                 
                 if (isPendingTab) {
                     dataToExport = filtered.filter(t => !t.validator || t.validator === 'Unassigned');
@@ -4378,6 +4397,7 @@
                     let filteredRes = tasks.filter(t => t.status === 'Completed');
                     if (skuFilter) filteredRes = filteredRes.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
                     if (assignedFilter) filteredRes = filteredRes.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
+                    if (priorityFilter) filteredRes = filteredRes.filter(t => (t.priority || 'Normal') === priorityFilter);
                     dataToExport = filteredRes;
                     filename = 'resolved_validation_tasks.csv';
                 } else if (isHistoryTab) {
@@ -4390,12 +4410,14 @@
                     let hist = tasks.filter(t => t.status === 'Reassigned' || (t.status === 'Completed' && new Date(t.completedAt || t.timestamp) < cutoff) || (t.status === 'Unresolved' && new Date(t.unresolvedAt || t.timestamp) < cutoff));
                     if (skuFilter) hist = hist.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
                     if (assignedFilter) hist = hist.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
+                    if (priorityFilter) hist = hist.filter(t => (t.priority || 'Normal') === priorityFilter);
                     dataToExport = hist;
                     filename = 'history_validation_tasks.csv';
                 } else { // Unresolved
                     let filteredUnres = tasks.filter(t => t.status === 'Unresolved');
                     if (skuFilter) filteredUnres = filteredUnres.filter(t => (t.sku || '').toLowerCase().includes(skuFilter));
                     if (assignedFilter) filteredUnres = filteredUnres.filter(t => (t.validator || '').toLowerCase().includes(assignedFilter));
+                    if (priorityFilter) filteredUnres = filteredUnres.filter(t => (t.priority || 'Normal') === priorityFilter);
                     dataToExport = filteredUnres;
                     filename = 'unresolved_validation_tasks.csv';
                 }
