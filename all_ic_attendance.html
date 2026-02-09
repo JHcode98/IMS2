@@ -44,6 +44,11 @@
     .editable-time { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
     .editable-time:hover { color: #2752a7; }
 
+    /* Priority Styles */
+    .priority-high { background-color: #ffebee !important; color: #c62828; font-weight: bold; }
+    .priority-medium { background-color: #fff8e1 !important; color: #f57c00; }
+    .priority-low { background-color: #e8f5e9 !important; color: #2e7d32; }
+
     /* Excel-like Report Table */
     .report-table {
         width: 100%;
@@ -1192,6 +1197,7 @@
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
                                     <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                     <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                    <th style="position:sticky; top:0; z-index:1;">Priority</th>
                                     <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                     <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
                                     <th style="position:sticky; top:0; z-index:1;">Duration</th>
@@ -1229,6 +1235,7 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Priority</th>
                                         <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                         <th style="position:sticky; top:0; z-index:1;">Assigned To</th>
                                         <th style="position:sticky; top:0; z-index:1;">Duration</th>
@@ -1267,8 +1274,10 @@
                                     <th style="position:sticky; top:0; z-index:1;">Description</th>
                                     <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                     <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Priority</th>
                                     <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                     <th style="position:sticky; top:0; z-index:1;">Validator</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Resolution Notes</th>
                                     <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                     <th style="position:sticky; top:0; z-index:1;">Action</th>
                                 </tr>
@@ -1305,8 +1314,10 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Priority</th>
                                         <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                         <th style="position:sticky; top:0; z-index:1;">Validator</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Resolution Notes</th>
                                         <th style="position:sticky; top:0; z-index:1;">Unresolved Time</th>
                                         <th style="position:sticky; top:0; z-index:1;">Duration</th>
                                         <th style="position:sticky; top:0; z-index:1;">Action</th>
@@ -1344,6 +1355,7 @@
                                         <th style="position:sticky; top:0; z-index:1;">Description</th>
                                         <th style="position:sticky; top:0; z-index:1;">Qty</th>
                                         <th style="position:sticky; top:0; z-index:1;">Reason</th>
+                                        <th style="position:sticky; top:0; z-index:1;">Priority</th>
                                         <th style="position:sticky; top:0; z-index:1;">Expiry Date</th>
                                         <th style="position:sticky; top:0; z-index:1;">Validator</th>
                                         <th style="position:sticky; top:0; z-index:1;">Status</th>
@@ -1454,26 +1466,12 @@
                 <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
                     <h4 style="margin:0 0 10px 0; color:#2752a7;">Available Validators</h4>
                     <div style="flex:1; overflow:auto;">
-                        <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
-                    <thead>
-                        <tr>
-                            <th style="position:sticky; top:0; z-index:1;">User ID</th>
-                            <th style="position:sticky; top:0; z-index:1;">Name</th>
-                            <th style="position:sticky; top:0; z-index:1;">Shift</th>
-                            <th style="position:sticky; top:0; z-index:1;">Pending</th>
-                            <th style="position:sticky; top:0; z-index:1;">Resolved</th>
-                            <th style="position:sticky; top:0; z-index:1;">Unresolved</th>
-                            <th style="position:sticky; top:0; z-index:1;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="validators-tbody"></tbody>
-                </table>
+                        <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;"><thead></thead><tbody id="validators-tbody"></tbody></table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <button id="fab-add-task-btn" class="fab-btn" title="Open Add Task Widget" style="z-index:10005;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    </button>
   </div>
 
   <!-- Floating Add Task Widget -->
@@ -1516,6 +1514,14 @@
                  <input type="date" id="assign-expiry" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
             </div>
             <div style="margin-bottom:8px;">
+                <label style="font-size:10px; font-weight:bold;">Priority</label>
+                <select id="assign-priority" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+                    <option value="Low">Low</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="High">High</option>
+                </select>
+            </div>
+            <div style="margin-bottom:8px;">
                 <label style="font-size:10px; font-weight:bold;">Assign To (Opt)</label>
                 <select id="assign-validator" style="width:100%; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;"><option value="">Unassigned</option></select>
             </div>
@@ -1524,6 +1530,69 @@
             </div>
         </div>
     </div>
+
+  <!-- Resolution Comment Modal -->
+  <div id="resolution-comment-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 500px;">
+      <h3 id="comment-modal-title">Add Resolution Note</h3>
+      <input type="hidden" id="comment-task-id">
+      <input type="hidden" id="comment-task-status">
+      <div class="form-group">
+        <label for="resolution-comment">Comment (Optional)</label>
+        <textarea id="resolution-comment" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+          <label>Recent Comments</label>
+          <div id="recent-comments-list" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+      </div>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="icon-btn close-modal" style="margin-right:5px;">Cancel</button>
+        <button type="button" id="save-resolution-comment-btn" class="icon-btn" style="background:#2752a7; color:white;">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal -->
+  <div id="edit-task-modal" class="modal hidden" style="z-index: 10050;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content card" style="max-width: 400px; margin: 80px auto;">
+        <h3 style="margin-top:0">Edit Task Details</h3>
+        <input type="hidden" id="edit-task-id">
+        <div class="form-group">
+            <label style="font-weight:bold; font-size:11px;">Time Started</label>
+            <input type="datetime-local" id="edit-task-time" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group"><label style="font-weight:bold; font-size:11px;">SKU</label><input type="text" id="edit-task-sku" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+            <div class="form-group"><label style="font-weight:bold; font-size:11px;">Qty</label><input type="number" id="edit-task-qty" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+        </div>
+        <div class="form-group"><label style="font-weight:bold; font-size:11px;">Description</label><input type="text" id="edit-task-desc" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group">
+                <label style="font-weight:bold; font-size:11px;">Reason</label>
+                <select id="edit-task-reason" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                    <option value="Missing">Missing</option><option value="Oversell">Oversell</option><option value="Damaged">Damaged</option><option value="Expired">Expired</option><option value="Near Expiry">Near Expiry</option><option value="Website Issue">Website Issue</option><option value="Supplier Issue">Supplier Issue</option><option value="Others">Others</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="font-weight:bold; font-size:11px;">Priority</label>
+                <select id="edit-task-priority" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                    <option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group"><label style="font-weight:bold; font-size:11px;">Expiry Date</label><input type="date" id="edit-task-expiry" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+        <div class="form-group" id="edit-task-comment-group" style="display:none;">
+            <label style="font-weight:bold; font-size:11px;">Resolution Comment</label>
+            <textarea id="edit-task-comment" rows="2" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></textarea>
+        </div>
+        <div style="text-align:right; margin-top:15px;">
+            <button type="button" class="icon-btn close-modal" style="margin-right:5px; border:1px solid #ccc; padding:6px 12px;">Cancel</button>
+            <button type="button" id="save-edit-task-btn" class="icon-btn" style="background:#2752a7; color:white; padding:6px 12px;">Save Changes</button>
+        </div>
+    </div>
+  </div>
 
   <div id="toast-notification" class="toast"></div>
   <script src="app.js"></script>
@@ -2311,6 +2380,21 @@
                         document.getElementById('att-time-out').value = item.timeOut || '';
                         document.getElementById('att-status').value = item.status || 'Full-time';
                         attModal.classList.remove('hidden');
+                    };
+
+                    if (btn.classList.contains('delete-att-btn')) {
+                        showSupervisorDeleteModal(1, () => {
+                            let data = getAttendanceData();
+                            data = data.filter(item => item.id !== id);
+                            saveAttendanceData(data);
+                            renderAttendanceTable();
+                            showToast('Attendance entry deleted');
+                        });
+                    } else if (btn.classList.contains('edit-att-btn')) {
+                        const data = getAttendanceData();
+                        const item = data.find(x => x.id === id);
+                        if (item) {
+                            openAttendanceEditModal(item);
                     }
                 }
             });
@@ -2965,6 +3049,7 @@
         const validatorsSearch = document.getElementById('validators-search');
         const assignSku = document.getElementById('assign-sku');
         const assignDesc = document.getElementById('assign-desc');
+        const assignPriority = document.getElementById('assign-priority');
         const assignQty = document.getElementById('assign-qty');
         const assignReason = document.getElementById('assign-reason');
         const assignExpiry = document.getElementById('assign-expiry');
@@ -2992,6 +3077,22 @@
                 });
             }
             
+            // Add/Update table header
+            const thead = validatorsTbody.previousElementSibling;
+            if (thead && thead.tagName === 'THEAD') {
+                thead.innerHTML = `<tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Shift</th>
+                    <th>Time In</th>
+                    <th>Pending</th>
+                    <th>Completed</th>
+                    <th>Unresolved</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                </tr>`;
+            }
+
             let validators = data.filter(item => item.area === 'Validator' && !item.timeOut);
             let tasks = getValidationTasks();
             if (valViewDate && valViewDate.value) {
@@ -3013,7 +3114,8 @@
                 const totalCount = pendingCount + completedCount + unresolvedCount;
 
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${unresolvedCount}</td><td>${totalCount}</td>`;
+                tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${v.timeIn || '-'}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${unresolvedCount}</td><td>${totalCount}</td>
+                <td><button class="icon-btn edit-att-btn" data-id="${v.id}" title="Edit Attendance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button></td>`;
                 validatorsTbody.appendChild(tr);
             });
         }
@@ -3308,6 +3410,9 @@
                     const validatorInput = `<select class="task-validator-input" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #e0e0e0; border-radius:4px; font-size:11px; background:#fff; color:#333;">${options}</select>`;
 
                     const actionHtml = `
+                        <button class="icon-btn edit-task-btn" data-id="${t.id}" title="Edit Task" style="margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         </button>
@@ -3317,7 +3422,8 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    const priorityClass = `priority-${(t.priority || 'medium').toLowerCase()}`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox pending-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td class="${priorityClass}">${t.priority || 'Medium'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     pendingTasksTbody.appendChild(tr);
                 });
             }
@@ -3339,7 +3445,7 @@
             if(assignedNext) assignedNext.disabled = valAssignedPage >= totalAssignedPages;
 
             if(paginatedAssigned.length === 0) {
-                assignedTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
+                assignedTasksTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:10px; color:#999;">No assigned tasks.</td></tr>';
             } else {
                 const now = new Date();
                 paginatedAssigned.forEach(t => {
@@ -3351,10 +3457,11 @@
                     let durationStr = diffMins < 60 ? `${diffMins}m` : `${Math.floor(diffMins/60)}h ${diffMins%60}m`;
                     
                     const expiryStr = t.expiryDate || '-';
-                    if(diffMins > 60) durationStr = `<span style="color:#e74c3c; font-weight:bold;">${durationStr}</span>`;
-                    else if(diffMins > 30) durationStr = `<span style="color:#f39c12; font-weight:bold;">${durationStr}</span>`;
-                    else durationStr = `<span style="color:#2ecc71; font-weight:bold;">${durationStr}</span>`;
-
+                    if(diffMins > 60) {
+                        durationStr = `<span style="color:#e74c3c; font-weight:bold;">${durationStr}</span>`;
+                        tr.style.backgroundColor = "#fff5f5";
+                    }
+                    
                     let options = `<option value="Unassigned">Unassign</option>`;
                   
                     validatorNames.forEach(v => {
@@ -3367,6 +3474,9 @@
                     const validatorInput = `<select class="task-validator-input" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #e0e0e0; border-radius:4px; font-size:11px; background:#fff; color:#333;">${options}</select>`;
 
                     const actionHtml = `
+                        <button class="icon-btn edit-task-btn" data-id="${t.id}" title="Edit Task" style="margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         </button>
@@ -3376,7 +3486,8 @@
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    const priorityClass = `priority-${(t.priority || 'medium').toLowerCase()}`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox assigned-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td class="${priorityClass}">${t.priority || 'Medium'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     assignedTasksTbody.appendChild(tr);
                 });
             }
@@ -3398,8 +3509,7 @@
             if(resolvedNext) resolvedNext.disabled = valResolvedPage >= totalResolvedPages;
 
             if(paginatedResolved.length === 0) {
-                resolvedTasksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
-                resolvedTasksTbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
+                resolvedTasksTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:10px; color:#999;">No resolved tasks.</td></tr>';
             } else {
                 paginatedResolved.forEach(t => {
                     const tr = document.createElement('tr');
@@ -3415,13 +3525,18 @@
                     }
 
                     const actionHtml = `
+                        <button class="icon-btn edit-task-btn" data-id="${t.id}" title="Edit Task" style="margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
                         <button class="icon-btn reopen-task-btn" data-id="${t.id}" title="Reopen (Move to Pending)" style="color:#f39c12; margin-right:5px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38"/></svg>
                         </button>
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox resolved-cb" value="${t.id}"></td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${t.validator}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    const priorityClass = `priority-${(t.priority || 'medium').toLowerCase()}`;
+                    const resolutionNote = t.resolutionComment ? `<span title="${t.resolutionComment}">${t.resolutionComment.substring(0, 20)}...</span>` : '-';
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox resolved-cb" value="${t.id}"></td><td>${resolvedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td class="${priorityClass}">${t.priority || 'Medium'}</td><td>${expiryStr}</td><td>${t.validator}</td><td>${resolutionNote}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     resolvedTasksTbody.appendChild(tr);
                 });
             }
@@ -3443,7 +3558,7 @@
             if(unresolvedNext) unresolvedNext.disabled = valUnresolvedPage >= totalUnresolvedPages;
 
             if(paginatedUnresolved.length === 0) {
-                unresolvedTasksTbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:10px; color:#999;">No unresolved tasks.</td></tr>';
+                unresolvedTasksTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:10px; color:#999;">No unresolved tasks.</td></tr>';
             } else {
                 const now = new Date();
                 paginatedUnresolved.forEach(t => {
@@ -3473,13 +3588,18 @@
                     const validatorInput = `<select class="task-validator-input" data-id="${t.id}" style="width:100%; padding:4px; border:1px solid #e0e0e0; border-radius:4px; font-size:11px; background:#fff; color:#333;">${options}</select>`;
 
                     const actionHtml = `
+                        <button class="icon-btn edit-task-btn" data-id="${t.id}" title="Edit Task" style="margin-right:5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
                         <button class="icon-btn complete-task-btn" data-id="${t.id}" title="Mark Resolved" style="color:#2ecc71; margin-right:5px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         </button>
                         <button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                         </button>`;
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${unresolvedTime}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
+                    const priorityClass = `priority-${(t.priority || 'medium').toLowerCase()}`;
+                    const resolutionNote = t.resolutionComment ? `<span title="${t.resolutionComment}">${t.resolutionComment.substring(0, 20)}...</span>` : '-';
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox unresolved-cb" value="${t.id}"></td><td>${assignedTime}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td class="${priorityClass}">${t.priority || 'Medium'}</td><td>${expiryStr}</td><td>${validatorInput}</td><td>${resolutionNote}</td><td>${unresolvedTime}</td><td>${durationStr}</td><td>${actionHtml}</td>`;
                     unresolvedTasksTbody.appendChild(tr);
                 });
             }
@@ -3500,7 +3620,7 @@
             if(historyNext) historyNext.disabled = valHistoryPage >= totalHistoryPages;
 
             if(paginatedHistory.length === 0) {
-                historyTasksTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:10px; color:#999;">No history tasks.</td></tr>';
+                historyTasksTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:10px; color:#999;">No history tasks.</td></tr>';
             } else {
                 paginatedHistory.forEach(t => {
                     const tr = document.createElement('tr');
@@ -3523,7 +3643,8 @@
                         displaySubStatus = 'Reassigned';
                     }
 
-                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox history-cb" value="${t.id}"></td><td>${dateStr}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td>${expiryStr}</td><td>${t.validator}</td><td>${displayStatus}</td><td>${displaySubStatus}</td><td>${durationStr}</td><td><button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button></td>`;
+                    const priorityClass = `priority-${(t.priority || 'medium').toLowerCase()}`;
+                    tr.innerHTML = `<td><input type="checkbox" class="val-row-checkbox history-cb" value="${t.id}"></td><td>${dateStr}</td><td>${t.sku}</td><td>${t.desc}</td><td>${t.qty}</td><td>${t.reason || '-'}</td><td class="${priorityClass}">${t.priority || 'Medium'}</td><td>${expiryStr}</td><td>${t.validator}</td><td>${displayStatus}</td><td>${displaySubStatus}</td><td>${durationStr}</td><td><button class="icon-btn delete-task-btn" data-id="${t.id}" title="Delete" style="color:#d9534f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button></td>`;
                     historyTasksTbody.appendChild(tr);
                 });
             }
@@ -4062,37 +4183,18 @@
             if (!btn) return;
 
             if(btn.classList.contains('delete-task-btn')) {
-                if(confirm('Delete this task?')) {
+                showSupervisorDeleteModal(1, () => {
                     const id = btn.dataset.id;
                     let tasks = getValidationTasks();
                     tasks = tasks.filter(t => t.id !== id);
                     saveValidationTasks(tasks);
                     renderValidationTasks();
                     showToast('Task deleted');
-                }
+                });
             } else if(btn.classList.contains('complete-task-btn')) {
-                const id = btn.dataset.id;
-                let tasks = getValidationTasks();
-                const taskIndex = tasks.findIndex(t => t.id === id);
-                if(taskIndex > -1) {
-                    tasks[taskIndex].status = 'Completed';
-                    tasks[taskIndex].completedAt = new Date().toISOString();
-                    saveValidationTasks(tasks);
-                    renderValidationTasks();
-                    showToast('Task completed');
-                }
+                openResolutionModal(btn.dataset.id, 'Completed');
             } else if(btn.classList.contains('mark-unresolved-btn')) {
-                if(!confirm('Are you sure you want to mark this task as Unresolved?')) return;
-                const id = btn.dataset.id;
-                let tasks = getValidationTasks();
-                const taskIndex = tasks.findIndex(t => t.id === id);
-                if(taskIndex > -1) {
-                    tasks[taskIndex].status = 'Unresolved';
-                    tasks[taskIndex].unresolvedAt = new Date().toISOString();
-                    saveValidationTasks(tasks);
-                    renderValidationTasks();
-                    showToast('Task marked as Unresolved');
-                }
+                openResolutionModal(btn.dataset.id, 'Unresolved');
             } else if(btn.classList.contains('reopen-task-btn')) {
                 const id = btn.dataset.id;
                 let tasks = getValidationTasks();
@@ -4105,7 +4207,124 @@
                     renderValidationTasks();
                     showToast('Task reopened (Pending)');
                 }
+            } else if(btn.classList.contains('edit-task-btn')) {
+                openEditTaskModal(btn.dataset.id);
             }
+        }
+
+        function openResolutionModal(id, status) {
+            const modal = document.getElementById('resolution-comment-modal');
+            if (!modal) return;
+            modal.querySelector('#comment-task-id').value = id;
+            modal.querySelector('#comment-task-status').value = status;
+            modal.querySelector('#resolution-comment').value = '';
+            modal.querySelector('#comment-modal-title').textContent = `Add Note for ${status} Task`;
+
+            // Populate recent comments
+            const recentList = document.getElementById('recent-comments-list');
+            recentList.innerHTML = '';
+            const recentComments = JSON.parse(localStorage.getItem('ims_val_recent_comments_v1') || '[]');
+            recentComments.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = 'icon-btn';
+                btn.textContent = c;
+                btn.style.fontSize = '11px';
+                btn.style.padding = '2px 6px';
+                btn.onclick = () => {
+                    const commentInput = document.getElementById('resolution-comment');
+                    commentInput.value += (commentInput.value ? ' ' : '') + c;
+                };
+                recentList.appendChild(btn);
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        // Edit Task Modal Logic
+        const editTaskModal = document.getElementById('edit-task-modal');
+        const saveEditTaskBtn = document.getElementById('save-edit-task-btn');
+
+        function openEditTaskModal(id) {
+            const tasks = getValidationTasks();
+            const task = tasks.find(t => t.id === id);
+            if(!task) return;
+            
+            document.getElementById('edit-task-id').value = task.id;
+            const d = new Date(task.timestamp);
+            const localIso = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            document.getElementById('edit-task-time').value = localIso;
+            document.getElementById('edit-task-sku').value = task.sku || '';
+            document.getElementById('edit-task-desc').value = task.desc || '';
+            document.getElementById('edit-task-qty').value = task.qty || '';
+            document.getElementById('edit-task-reason').value = task.reason || '';
+            document.getElementById('edit-task-priority').value = task.priority || 'Medium';
+            document.getElementById('edit-task-expiry').value = task.expiryDate || '';
+            
+            const commentGroup = document.getElementById('edit-task-comment-group');
+            if (task.status === 'Completed' || task.status === 'Unresolved') {
+                commentGroup.style.display = 'block';
+                document.getElementById('edit-task-comment').value = task.resolutionComment || '';
+            } else {
+                commentGroup.style.display = 'none';
+            }
+            editTaskModal.classList.remove('hidden');
+        }
+
+        if(saveEditTaskBtn) {
+            saveEditTaskBtn.addEventListener('click', () => {
+                const id = document.getElementById('edit-task-id').value;
+                let tasks = getValidationTasks();
+                const idx = tasks.findIndex(t => t.id === id);
+                if(idx > -1) {
+                    tasks[idx].timestamp = new Date(document.getElementById('edit-task-time').value).toISOString();
+                    tasks[idx].sku = document.getElementById('edit-task-sku').value;
+                    tasks[idx].desc = document.getElementById('edit-task-desc').value;
+                    tasks[idx].qty = document.getElementById('edit-task-qty').value;
+                    tasks[idx].reason = document.getElementById('edit-task-reason').value;
+                    tasks[idx].priority = document.getElementById('edit-task-priority').value;
+                    tasks[idx].expiryDate = document.getElementById('edit-task-expiry').value;
+                    if (tasks[idx].status === 'Completed' || tasks[idx].status === 'Unresolved') {
+                        tasks[idx].resolutionComment = document.getElementById('edit-task-comment').value;
+                    }
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
+                    showToast('Task updated successfully');
+                    editTaskModal.classList.add('hidden');
+                }
+            });
+        }
+
+        const saveCommentBtn = document.getElementById('save-resolution-comment-btn');
+        if (saveCommentBtn) {
+            saveCommentBtn.addEventListener('click', () => {
+                const modal = document.getElementById('resolution-comment-modal');
+                const id = modal.querySelector('#comment-task-id').value;
+                const status = modal.querySelector('#comment-task-status').value;
+                const comment = modal.querySelector('#resolution-comment').value.trim();
+
+                let tasks = getValidationTasks();
+                const taskIndex = tasks.findIndex(t => t.id === id);
+                if (taskIndex > -1) {
+                    tasks[taskIndex].status = status;
+                    tasks[taskIndex].resolutionComment = comment;
+                    if (status === 'Completed') tasks[taskIndex].completedAt = new Date().toISOString();
+                    else if (status === 'Unresolved') tasks[taskIndex].unresolvedAt = new Date().toISOString();
+                    
+                    if (comment) {
+                        let recentComments = JSON.parse(localStorage.getItem('ims_val_recent_comments_v1') || '[]');
+                        if (!recentComments.includes(comment)) {
+                            recentComments.unshift(comment);
+                            if (recentComments.length > 10) recentComments.pop();
+                            localStorage.setItem('ims_val_recent_comments_v1', JSON.stringify(recentComments));
+                        }
+                    }
+
+                    saveValidationTasks(tasks);
+                    renderValidationTasks();
+                    showToast(`Task marked as ${status}`);
+                }
+                modal.classList.add('hidden');
+            });
         }
 
         if(pendingTasksTbody) {
@@ -4722,6 +4941,7 @@
                     reason: reason,
                     expiryDate: assignExpiry ? assignExpiry.value : '',
                     validator: assignValidator.value || 'Unassigned',
+                    priority: assignPriority.value || 'Medium',
                     status: 'Pending'
                 };
                 tasks.push(newTask);
@@ -4730,7 +4950,7 @@
                 showToast('Task successfully assigned!');
                 
                 assignSku.value = ''; assignDesc.value = ''; assignQty.value = ''; assignReason.value = ''; assignValidator.value = '';
-                if(assignExpiry) assignExpiry.value = '';
+                if(assignExpiry) assignExpiry.value = ''; if(assignPriority) assignPriority.value = 'Medium';
                 if(document.getElementById('assign-expiry-container')) document.getElementById('assign-expiry-container').style.display = 'none';
             });
         }
