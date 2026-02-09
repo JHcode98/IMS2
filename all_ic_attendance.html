@@ -4621,8 +4621,8 @@
 
         if(downloadTaskTemplateBtn) {
             downloadTaskTemplateBtn.addEventListener('click', () => {
-                const headers = ['SKU', 'Description', 'Qty', 'Reason', 'Validator'];
-                const sample = ['10000001', 'Sample Item', '10', 'Variance Check', 'John Doe'];
+                const headers = ['SKU', 'Description', 'Qty', 'Reason', 'Priority', 'Validator'];
+                const sample = ['10000001', 'Sample Item', '10', 'Variance Check', 'Normal', 'John Doe'];
                 const csvContent = headers.join(',') + '\n' + sample.join(',');
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
@@ -4654,6 +4654,7 @@
                     const qtyIdx = headers.indexOf('qty');
                     const reasonIdx = headers.indexOf('reason');
                     const valIdx = headers.indexOf('validator');
+                    const prioIdx = headers.indexOf('priority');
                     
                     if(skuIdx === -1 || qtyIdx === -1) {
                         alert('CSV must contain "SKU" and "Qty" columns.');
@@ -4677,6 +4678,7 @@
                         let desc = (descIdx > -1) ? cols[descIdx] : '';
                         const reason = (reasonIdx > -1) ? cols[reasonIdx] : '';
                         const validator = (valIdx > -1) ? cols[valIdx] : '';
+                        const priority = (prioIdx > -1) ? cols[prioIdx] : 'Normal';
                         
                         if(sku && qty) {
                             if(!desc && masterMap[sku]) desc = masterMap[sku];
@@ -4688,6 +4690,7 @@
                                 desc: desc,
                                 qty: qty,
                                 reason: reason,
+                                priority: priority || 'Normal',
                                 validator: validator || 'Unassigned',
                                 status: 'Pending'
                             });
