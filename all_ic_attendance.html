@@ -2958,8 +2958,10 @@
             icMasterPage++; renderIcMaster();
         });
         if(icMasterRows) icMasterRows.addEventListener('change', () => {
+            const oldRows = icMasterRowsPerPage;
             icMasterRowsPerPage = parseInt(icMasterRows.value);
-            icMasterPage = 1;
+            const firstItem = (icMasterPage - 1) * oldRows;
+            icMasterPage = Math.floor(firstItem / icMasterRowsPerPage) + 1;
             renderIcMaster();
         });
 
@@ -3230,6 +3232,12 @@
             try {
                 const canvas = await html2canvas(container, { scale: 2 });
                 const imgData = canvas.toDataURL('image/png');
+                
+                if (!window.jspdf) {
+                    alert('jsPDF library not loaded.');
+                    return;
+                }
+                
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('p', 'pt', 'a4');
                 const imgProps = pdf.getImageProperties(imgData);
@@ -3237,7 +3245,10 @@
                 const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
                 
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`Validator_SignOff_${validator.name}_${dateStr.replace(/\//g, '-')}.pdf`);
+                
+                const safeName = (validator.name || 'Validator').replace(/[^a-z0-9]/gi, '_');
+                const safeDate = dateStr.replace(/[^a-z0-9]/gi, '-');
+                pdf.save(`Validator_SignOff_${safeName}_${safeDate}.pdf`);
             } catch (err) {
                 console.error(err);
                 alert('Failed to generate PDF.');
@@ -4383,7 +4394,13 @@
 
         if(valPendingPrev) valPendingPrev.addEventListener('click', () => { if(valPendingPage > 1) { valPendingPage--; renderValidationTasks(); } });
         if(valPendingNext) valPendingNext.addEventListener('click', () => { valPendingPage++; renderValidationTasks(); });
-        if(valPendingRowsSel) valPendingRowsSel.addEventListener('change', () => { valPendingRows = parseInt(valPendingRowsSel.value); valPendingPage = 1; renderValidationTasks(); });
+        if(valPendingRowsSel) valPendingRowsSel.addEventListener('change', () => { 
+            const oldRows = valPendingRows;
+            valPendingRows = parseInt(valPendingRowsSel.value); 
+            const firstItem = (valPendingPage - 1) * oldRows;
+            valPendingPage = Math.floor(firstItem / valPendingRows) + 1;
+            renderValidationTasks(); 
+        });
 
         const valAssignedPrev = document.getElementById('val-assigned-prev');
         const valAssignedNext = document.getElementById('val-assigned-next');
@@ -4391,7 +4408,13 @@
 
         if(valAssignedPrev) valAssignedPrev.addEventListener('click', () => { if(valAssignedPage > 1) { valAssignedPage--; renderValidationTasks(); } });
         if(valAssignedNext) valAssignedNext.addEventListener('click', () => { valAssignedPage++; renderValidationTasks(); });
-        if(valAssignedRowsSel) valAssignedRowsSel.addEventListener('change', () => { valAssignedRows = parseInt(valAssignedRowsSel.value); valAssignedPage = 1; renderValidationTasks(); });
+        if(valAssignedRowsSel) valAssignedRowsSel.addEventListener('change', () => { 
+            const oldRows = valAssignedRows;
+            valAssignedRows = parseInt(valAssignedRowsSel.value); 
+            const firstItem = (valAssignedPage - 1) * oldRows;
+            valAssignedPage = Math.floor(firstItem / valAssignedRows) + 1;
+            renderValidationTasks(); 
+        });
 
         const valResolvedPrev = document.getElementById('val-resolved-prev');
         const valResolvedNext = document.getElementById('val-resolved-next');
@@ -4399,7 +4422,13 @@
 
         if(valResolvedPrev) valResolvedPrev.addEventListener('click', () => { if(valResolvedPage > 1) { valResolvedPage--; renderValidationTasks(); } });
         if(valResolvedNext) valResolvedNext.addEventListener('click', () => { valResolvedPage++; renderValidationTasks(); });
-        if(valResolvedRowsSel) valResolvedRowsSel.addEventListener('change', () => { valResolvedRows = parseInt(valResolvedRowsSel.value); valResolvedPage = 1; renderValidationTasks(); });
+        if(valResolvedRowsSel) valResolvedRowsSel.addEventListener('change', () => { 
+            const oldRows = valResolvedRows;
+            valResolvedRows = parseInt(valResolvedRowsSel.value); 
+            const firstItem = (valResolvedPage - 1) * oldRows;
+            valResolvedPage = Math.floor(firstItem / valResolvedRows) + 1;
+            renderValidationTasks(); 
+        });
 
         const valUnresolvedPrev = document.getElementById('val-unresolved-prev');
         const valUnresolvedNext = document.getElementById('val-unresolved-next');
@@ -4407,14 +4436,26 @@
 
         if(valUnresolvedPrev) valUnresolvedPrev.addEventListener('click', () => { if(valUnresolvedPage > 1) { valUnresolvedPage--; renderValidationTasks(); } });
         if(valUnresolvedNext) valUnresolvedNext.addEventListener('click', () => { valUnresolvedPage++; renderValidationTasks(); });
-        if(valUnresolvedRowsSel) valUnresolvedRowsSel.addEventListener('change', () => { valUnresolvedRows = parseInt(valUnresolvedRowsSel.value); valUnresolvedPage = 1; renderValidationTasks(); });
+        if(valUnresolvedRowsSel) valUnresolvedRowsSel.addEventListener('change', () => { 
+            const oldRows = valUnresolvedRows;
+            valUnresolvedRows = parseInt(valUnresolvedRowsSel.value); 
+            const firstItem = (valUnresolvedPage - 1) * oldRows;
+            valUnresolvedPage = Math.floor(firstItem / valUnresolvedRows) + 1;
+            renderValidationTasks(); 
+        });
 
         const valHistoryPrev = document.getElementById('val-history-prev');
         const valHistoryNext = document.getElementById('val-history-next');
         const valHistoryRowsSel = document.getElementById('val-history-rows');
         if(valHistoryPrev) valHistoryPrev.addEventListener('click', () => { if(valHistoryPage > 1) { valHistoryPage--; renderValidationTasks(); } });
         if(valHistoryNext) valHistoryNext.addEventListener('click', () => { valHistoryPage++; renderValidationTasks(); });
-        if(valHistoryRowsSel) valHistoryRowsSel.addEventListener('change', () => { valHistoryRows = parseInt(valHistoryRowsSel.value); valHistoryPage = 1; renderValidationTasks(); });
+        if(valHistoryRowsSel) valHistoryRowsSel.addEventListener('change', () => { 
+            const oldRows = valHistoryRows;
+            valHistoryRows = parseInt(valHistoryRowsSel.value); 
+            const firstItem = (valHistoryPage - 1) * oldRows;
+            valHistoryPage = Math.floor(firstItem / valHistoryRows) + 1;
+            renderValidationTasks(); 
+        });
 
         function handleTaskAction(e) {
             const btn = e.target.closest('.icon-btn');
@@ -5412,7 +5453,10 @@
             const attRowsPerPageSelect = document.getElementById('att-rows-per-page');
             if (attRowsPerPageSelect) {
                 attRowsPerPageSelect.addEventListener('change', () => {
-                    attCurrentPage = 1;
+                    const oldPerPage = attItemsPerPage;
+                    const newPerPage = parseInt(attRowsPerPageSelect.value, 10);
+                    const firstItem = (attCurrentPage - 1) * oldPerPage;
+                    attCurrentPage = Math.floor(firstItem / newPerPage) + 1;
                     renderAttendanceTable();
                 });
             }
@@ -5596,8 +5640,10 @@
             modalCurrentPage++; renderModalTable();
         });
         if(modalRowsSelect) modalRowsSelect.addEventListener('change', () => {
+            const oldRows = modalRowsPerPage;
             modalRowsPerPage = parseInt(modalRowsSelect.value);
-            modalCurrentPage = 1;
+            const firstItem = (modalCurrentPage - 1) * oldRows;
+            modalCurrentPage = Math.floor(firstItem / modalRowsPerPage) + 1;
             renderModalTable();
         });
 
