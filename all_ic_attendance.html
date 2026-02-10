@@ -1501,6 +1501,27 @@
                 </table>
             </div>
         </div>
+
+        <!-- Bottom: Timeout Validators -->
+        <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; padding:10px;">
+            <h4 style="margin:0 0 10px 0; color:#e74c3c;">Timeout Validators</h4>
+            <div style="flex:1; overflow:auto;">
+                <table class="report-table" style="width:100%; table-layout: auto; white-space: nowrap; font-size: 11px;">
+                    <thead>
+                        <tr>
+                            <th style="position:sticky; top:0; z-index:1;">User ID</th>
+                            <th style="position:sticky; top:0; z-index:1;">Name</th>
+                            <th style="position:sticky; top:0; z-index:1;">Shift</th>
+                            <th style="position:sticky; top:0; z-index:1;">Pending</th>
+                            <th style="position:sticky; top:0; z-index:1;">Resolved</th>
+                            <th style="position:sticky; top:0; z-index:1;">Unresolved</th>
+                            <th style="position:sticky; top:0; z-index:1;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timeout-validators-tbody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
     <button id="fab-add-task-btn" class="fab-btn" title="Open Add Task Widget" style="z-index:10005;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -3017,6 +3038,8 @@
         function renderValidatorsModal() {
             if (!validatorsTbody) return;
             validatorsTbody.innerHTML = '';
+            const timeoutTbody = document.getElementById('timeout-validators-tbody');
+            if (timeoutTbody) timeoutTbody.innerHTML = '';
             
             let data = getAttendanceData();
             
@@ -3032,19 +3055,26 @@
             }
             
             let validators = data.filter(item => item.area === 'Validator' && !item.timeOut);
+            let timeoutValidators = data.filter(item => item.area === 'Validator' && item.timeOut);
+
             let tasks = getValidationTasks();
             if (valViewDate && valViewDate.value) {
                 tasks = tasks.filter(t => t.timestamp.startsWith(valViewDate.value));
             }
 
-            validators.sort((a, b) => {
-                if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
-                return a.shift.localeCompare(b.shift);
-            });
+            const sortValidators = (list) => {
+                list.sort((a, b) => {
+                    if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+                    return a.shift.localeCompare(b.shift);
+                });
+            };
+
+            sortValidators(validators);
+            sortValidators(timeoutValidators);
 
             updateValidatorDropdown(data);
 
-            validators.forEach(v => {
+            const renderRow = (v, tbody) => {
                 // Calculate stats for this validator
                 const pendingCount = tasks.filter(t => t.validator === v.name && t.status !== 'Completed' && t.status !== 'Unresolved').length;
                 const completedCount = tasks.filter(t => t.validator === v.name && t.status === 'Completed').length;
@@ -3053,8 +3083,11 @@
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${unresolvedCount}</td><td>${totalCount}</td>`;
-                validatorsTbody.appendChild(tr);
-            });
+                tbody.appendChild(tr);
+            };
+
+            validators.forEach(v => renderRow(v, validatorsTbody));
+            if (timeoutTbody) timeoutValidators.forEach(v => renderRow(v, timeoutTbody));
         }
 
         function updateValidatorDropdown(data) {
