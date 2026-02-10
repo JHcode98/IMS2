@@ -190,6 +190,25 @@
     #val-analytics-card.expanded { flex: 1; }
     #val-analytics-card.expanded .val-analytics-tab-content { max-height: none !important; }
     #val-analytics-card.expanded #tab-val-reason-analysis > div:last-child { max-height: none !important; }
+
+    /* Search Preview Styles */
+    .search-preview-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 300px;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 10000;
+        margin-top: 4px;
+    }
+    .search-preview-item { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+    .search-preview-item:hover { background-color: #f5f9ff; }
+    .search-preview-item:last-child { border-bottom: none; }
   </style>
 </head>
 <body class="inventory-mode">
@@ -1059,6 +1078,10 @@
                 <button id="toggle-add-task-widget-btn" class="icon-btn" title="Open Add Task Widget" style="background:#2752a7; color:white;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                 <div style="width:1px; height:20px; background:#ddd; margin:0 2px;"></div>
                 <button onclick="window.openUniversalSearch && window.openUniversalSearch(['Cycle Count', 'Attendance', 'Daily Counter', 'Validation Task'])" class="icon-btn" title="Universal Search (Ctrl+K)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+                <div style="position:relative;">
+                    <input type="text" id="val-global-search" placeholder="Search SKU, Desc, Validator..." style="padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-size:12px; width:180px;">
+                    <div id="val-search-preview" class="search-preview-dropdown" style="display:none;"></div>
+                </div>
                 <input type="date" id="val-view-date" title="Filter Date" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px; color:#333;">
                 <button id="download-sku-template-btn" class="icon-btn" title="Download SKU Template"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                 <button id="upload-sku-desc-btn" class="icon-btn" title="Upload SKU Master List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></button>
@@ -3141,6 +3164,15 @@
             valFilterAssigned1 = document.getElementById('val-filter-assigned-1') ? document.getElementById('val-filter-assigned-1').value.toLowerCase() : '';
             valFilterSku1 = document.getElementById('val-filter-sku-1') ? document.getElementById('val-filter-sku-1').value.toLowerCase() : '';
             const valFilterPriority1 = document.getElementById('val-filter-priority-1') ? document.getElementById('val-filter-priority-1').value : '';
+            const valGlobalSearchTerm = document.getElementById('val-global-search') ? document.getElementById('val-global-search').value.toLowerCase() : '';
+
+            if (valGlobalSearchTerm) {
+                tasks = tasks.filter(t => 
+                    (t.sku || '').toLowerCase().includes(valGlobalSearchTerm) ||
+                    (t.desc || '').toLowerCase().includes(valGlobalSearchTerm) ||
+                    (t.validator || '').toLowerCase().includes(valGlobalSearchTerm)
+                );
+            }
             
 
             // Get validators for dropdown
@@ -5211,6 +5243,54 @@
                 }
             }
         });
+
+        // Global Search Preview Logic
+        const valGlobalSearchInput = document.getElementById('val-global-search');
+        const valSearchPreview = document.getElementById('val-search-preview');
+
+        if (valGlobalSearchInput && valSearchPreview) {
+            valGlobalSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim().toLowerCase();
+                if (!query) {
+                    valSearchPreview.style.display = 'none';
+                    renderValidationTasks();
+                    return;
+                }
+
+                // Get current view tasks (filtered by date)
+                let tasks = getValidationTasks();
+                const valViewDate = document.getElementById('val-view-date');
+                if (valViewDate && valViewDate.value) {
+                    tasks = tasks.filter(t => t.timestamp.startsWith(valViewDate.value));
+                }
+
+                const matches = tasks.filter(t => 
+                    (t.sku || '').toLowerCase().includes(query) ||
+                    (t.desc || '').toLowerCase().includes(query) ||
+                    (t.validator || '').toLowerCase().includes(query)
+                ).slice(0, 10);
+
+                if (matches.length > 0) {
+                    valSearchPreview.innerHTML = '';
+                    matches.forEach(t => {
+                        const div = document.createElement('div');
+                        div.className = 'search-preview-item';
+                        div.innerHTML = `<div style="font-weight:bold; font-size:12px;">${t.sku}</div><div style="color:#666; font-size:11px;">${t.desc || 'No Desc'}</div><div style="font-size:10px; color:#999;">${t.validator || 'Unassigned'} • ${t.status}</div>`;
+                        div.addEventListener('click', () => {
+                            valGlobalSearchInput.value = t.sku;
+                            valSearchPreview.style.display = 'none';
+                            renderValidationTasks();
+                        });
+                        valSearchPreview.appendChild(div);
+                    });
+                    valSearchPreview.style.display = 'block';
+                } else {
+                    valSearchPreview.style.display = 'none';
+                }
+                renderValidationTasks();
+            });
+            document.addEventListener('click', (e) => { if (!valGlobalSearchInput.contains(e.target) && !valSearchPreview.contains(e.target)) valSearchPreview.style.display = 'none'; });
+        }
 
         // Drag Logic
         if(addTaskWidget && widgetHeader) {
