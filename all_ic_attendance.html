@@ -1516,6 +1516,7 @@
                             <th style="position:sticky; top:0; z-index:1;">Resolved</th>
                             <th style="position:sticky; top:0; z-index:1;">Unresolved</th>
                             <th style="position:sticky; top:0; z-index:1;">Total</th>
+                            <th style="position:sticky; top:0; z-index:1;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="timeout-validators-tbody"></tbody>
@@ -3035,6 +3036,113 @@
         const uploadSkuBtn = document.getElementById('upload-sku-desc-btn');
         const uploadSkuFile = document.getElementById('upload-sku-desc-file');
 
+        function printValidatorSignOff(validator, validatorTasks) {
+            const printWindow = window.open('', '_blank');
+            const dateStr = new Date().toLocaleDateString();
+            
+            // Stats
+            const pending = validatorTasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved').length;
+            const resolved = validatorTasks.filter(t => t.status === 'Completed').length;
+            const unresolved = validatorTasks.filter(t => t.status === 'Unresolved').length;
+            const total = validatorTasks.length;
+
+            let tasksHtml = '';
+            validatorTasks.forEach(t => {
+                tasksHtml += `
+                    <tr>
+                        <td>${t.sku}</td>
+                        <td>${t.desc || ''}</td>
+                        <td>${t.qty}</td>
+                        <td>${t.reason || ''}</td>
+                        <td>${t.status}</td>
+                        <td>${new Date(t.timestamp).toLocaleTimeString()}</td>
+                    </tr>
+                `;
+            });
+
+            const html = `
+                <html>
+                <head>
+                    <title>Validator Sign-Off - ${validator.name}</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 20px; }
+                        h2 { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                        .info-section { margin-bottom: 20px; }
+                        .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+                        .stats-table, .tasks-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+                        .stats-table th, .stats-table td, .tasks-table th, .tasks-table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                        .stats-table th, .tasks-table th { background-color: #f0f0f0; }
+                        .sign-off-section { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; }
+                        .signature-row { display: flex; justify-content: space-between; margin-top: 40px; }
+                        .signature-box { width: 45%; border-top: 1px solid #000; text-align: center; padding-top: 5px; }
+                    </style>
+                </head>
+                <body>
+                    <h2>Validator Sign-Off Form</h2>
+                    
+                    <div class="info-section">
+                        <div class="info-row"><strong>Validator Name:</strong> ${validator.name}</div>
+                        <div class="info-row"><strong>User ID:</strong> ${validator.userId || '-'}</div>
+                        <div class="info-row"><strong>Shift:</strong> ${validator.shift}</div>
+                        <div class="info-row"><strong>Date:</strong> ${dateStr}</div>
+                    </div>
+
+                    <h3>Task Summary</h3>
+                    <table class="stats-table">
+                        <thead>
+                            <tr><th>Total Tasks</th><th>Resolved</th><th>Unresolved</th><th>Pending</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${total}</td>
+                                <td>${resolved}</td>
+                                <td>${unresolved}</td>
+                                <td>${pending}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Task Details</h3>
+                    <table class="tasks-table">
+                        <thead>
+                            <tr><th>SKU</th><th>Description</th><th>Qty</th><th>Reason</th><th>Status</th><th>Time</th></tr>
+                        </thead>
+                        <tbody>
+                            ${tasksHtml || '<tr><td colspan="6" style="text-align:center">No tasks found</td></tr>'}
+                        </tbody>
+                    </table>
+
+                    <div class="sign-off-section">
+                        <p>I confirm that the validation tasks listed above have been attended to according to the standard operating procedures.</p>
+                        
+                        <div class="signature-row">
+                            <div class="signature-box">
+                                <strong>${validator.name}</strong><br>
+                                Validator Signature
+                            </div>
+                            <div class="signature-box">
+                                <strong>Supervisor / Manager</strong><br>
+                                Signature
+                            </div>
+                        </div>
+                        <div class="signature-row">
+                            <div class="signature-box" style="border-top:0;"></div>
+                            <div class="signature-box">
+                                <strong>Date</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        window.onload = function() { window.print(); }
+                    <\/script>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(html);
+            printWindow.document.close();
+        }
+
         function renderValidatorsModal() {
             if (!validatorsTbody) return;
             validatorsTbody.innerHTML = '';
@@ -3074,7 +3182,7 @@
 
             updateValidatorDropdown(data);
 
-            const renderRow = (v, tbody) => {
+            const renderRow = (v, tbody, isTimeout = false) => {
                 // Calculate stats for this validator
                 const pendingCount = tasks.filter(t => t.validator === v.name && t.status !== 'Completed' && t.status !== 'Unresolved').length;
                 const completedCount = tasks.filter(t => t.validator === v.name && t.status === 'Completed').length;
@@ -3082,12 +3190,23 @@
                 const totalCount = pendingCount + completedCount + unresolvedCount;
 
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${unresolvedCount}</td><td>${totalCount}</td>`;
+                let actionHtml = '';
+                if (isTimeout) {
+                    actionHtml = `<td><button class="icon-btn print-signoff-btn" title="Print Sign-off Form" style="color:#2752a7;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button></td>`;
+                }
+                tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${unresolvedCount}</td><td>${totalCount}</td>${actionHtml}`;
+                
+                if (isTimeout) {
+                    const btn = tr.querySelector('.print-signoff-btn');
+                    if(btn) {
+                        btn.addEventListener('click', () => printValidatorSignOff(v, tasks.filter(t => t.validator === v.name)));
+                    }
+                }
                 tbody.appendChild(tr);
             };
 
             validators.forEach(v => renderRow(v, validatorsTbody));
-            if (timeoutTbody) timeoutValidators.forEach(v => renderRow(v, timeoutTbody));
+            if (timeoutTbody) timeoutValidators.forEach(v => renderRow(v, timeoutTbody, true));
         }
 
         function updateValidatorDropdown(data) {
