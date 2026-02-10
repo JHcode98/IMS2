@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     /* Dark Mode Header */
     body.dark-mode header { background: #1a252f; border-bottom: 1px solid #2c3e50; }
@@ -3143,6 +3144,108 @@
             printWindow.document.close();
         }
 
+        async function exportValidatorSignOffPDF(validator, validatorTasks) {
+            const container = document.getElementById('pdf-generator-container');
+            if (!container) return;
+            
+            const dateStr = new Date().toLocaleDateString();
+            const pending = validatorTasks.filter(t => t.status !== 'Completed' && t.status !== 'Unresolved').length;
+            const resolved = validatorTasks.filter(t => t.status === 'Completed').length;
+            const unresolved = validatorTasks.filter(t => t.status === 'Unresolved').length;
+            const total = validatorTasks.length;
+
+            let tasksHtml = '';
+            validatorTasks.forEach(t => {
+                tasksHtml += `
+                    <tr>
+                        <td style="border:1px solid #ccc; padding:6px;">${t.sku}</td>
+                        <td style="border:1px solid #ccc; padding:6px;">${t.desc || ''}</td>
+                        <td style="border:1px solid #ccc; padding:6px;">${t.qty}</td>
+                        <td style="border:1px solid #ccc; padding:6px;">${t.reason || ''}</td>
+                        <td style="border:1px solid #ccc; padding:6px;">${t.status}</td>
+                        <td style="border:1px solid #ccc; padding:6px;">${new Date(t.timestamp).toLocaleTimeString()}</td>
+                    </tr>
+                `;
+            });
+
+            container.innerHTML = `
+                <div style="font-family: sans-serif; padding: 20px; color: #000;">
+                    <h2 style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px;">Validator Sign-Off Form</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong>Validator Name:</strong> ${validator.name}</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong>User ID:</strong> ${validator.userId || '-'}</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong>Shift:</strong> ${validator.shift}</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong>Date:</strong> ${dateStr}</div>
+                    </div>
+
+                    <h3>Task Summary</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                        <thead>
+                            <tr><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Total Tasks</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Resolved</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Unresolved</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Pending</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border:1px solid #ccc; padding:6px;">${total}</td>
+                                <td style="border:1px solid #ccc; padding:6px;">${resolved}</td>
+                                <td style="border:1px solid #ccc; padding:6px;">${unresolved}</td>
+                                <td style="border:1px solid #ccc; padding:6px;">${pending}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Task Details</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                        <thead>
+                            <tr><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">SKU</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Description</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Qty</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Reason</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Status</th><th style="border:1px solid #ccc; padding:6px; background-color:#f0f0f0;">Time</th></tr>
+                        </thead>
+                        <tbody>
+                            ${tasksHtml || '<tr><td colspan="6" style="text-align:center; border:1px solid #ccc; padding:6px;">No tasks found</td></tr>'}
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px;">
+                        <p>I confirm that the validation tasks listed above have been attended to according to the standard operating procedures.</p>
+                        
+                        <div style="display: flex; justify-content: space-between; margin-top: 40px;">
+                            <div style="width: 45%; border-top: 1px solid #000; text-align: center; padding-top: 5px;">
+                                <strong>${validator.name}</strong><br>
+                                Validator Signature
+                            </div>
+                            <div style="width: 45%; border-top: 1px solid #000; text-align: center; padding-top: 5px;">
+                                <strong>Supervisor / Manager</strong><br>
+                                Signature
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 40px;">
+                            <div style="width: 45%; border-top: 0;"></div>
+                            <div style="width: 45%; border-top: 1px solid #000; text-align: center; padding-top: 5px;">
+                                <strong>Date</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const canvas = await html2canvas(container, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'pt', 'a4');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Validator_SignOff_${validator.name}_${dateStr.replace(/\//g, '-')}.pdf`);
+            } catch (err) {
+                console.error(err);
+                alert('Failed to generate PDF.');
+            } finally {
+                container.innerHTML = '';
+            }
+        }
+
         function renderValidatorsModal() {
             if (!validatorsTbody) return;
             validatorsTbody.innerHTML = '';
@@ -3192,7 +3295,10 @@
                 const tr = document.createElement('tr');
                 let actionHtml = '';
                 if (isTimeout) {
-                    actionHtml = `<td><button class="icon-btn print-signoff-btn" title="Print Sign-off Form" style="color:#2752a7;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button></td>`;
+                    actionHtml = `<td>
+                        <button class="icon-btn print-signoff-btn" title="Print Sign-off Form" style="color:#2752a7; margin-right:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
+                        <button class="icon-btn export-pdf-btn" title="Export PDF" style="color:#e74c3c;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg></button>
+                    </td>`;
                 }
                 tr.innerHTML = `<td>${v.userId || '-'}</td><td>${v.name}</td><td>${v.shift}</td><td>${pendingCount}</td><td>${completedCount}</td><td>${unresolvedCount}</td><td>${totalCount}</td>${actionHtml}`;
                 
@@ -3200,6 +3306,10 @@
                     const btn = tr.querySelector('.print-signoff-btn');
                     if(btn) {
                         btn.addEventListener('click', () => printValidatorSignOff(v, tasks.filter(t => t.validator === v.name)));
+                    }
+                    const pdfBtn = tr.querySelector('.export-pdf-btn');
+                    if(pdfBtn) {
+                        pdfBtn.addEventListener('click', () => exportValidatorSignOffPDF(v, tasks.filter(t => t.validator === v.name)));
                     }
                 }
                 tbody.appendChild(tr);
