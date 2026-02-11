@@ -267,6 +267,9 @@
       <button id="validators-view-btn" class="icon-btn" title="Validators View" style="margin-left: 5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> Validators View
       </button>
+      <button id="main-assign-task-btn" class="icon-btn" title="Assign Task" style="margin-left: 5px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Assign Task
+      </button>
       <div style="display:flex; align-items:center; gap:5px; margin-left:10px; border-left:1px solid #ccc; padding-left:10px;">
           <input type="checkbox" id="auto-refresh-check" title="Auto Refresh every 15s">
           <label for="auto-refresh-check" style="font-size:13px; cursor:pointer;">Auto Refresh</label>
@@ -5516,6 +5519,7 @@
         const addTaskWidget = document.getElementById('add-task-widget');
         const toggleAddTaskBtn = document.getElementById('toggle-add-task-widget-btn');
         const fabAddTaskBtn = document.getElementById('fab-add-task-btn');
+        const mainAssignTaskBtn = document.getElementById('main-assign-task-btn');
         const closeWidgetBtn = document.querySelector('.close-widget-btn');
         const widgetHeader = document.getElementById('add-task-header');
 
@@ -5527,6 +5531,13 @@
         if(fabAddTaskBtn && addTaskWidget) {
             fabAddTaskBtn.addEventListener('click', () => {
                 addTaskWidget.classList.toggle('hidden');
+            });
+        }
+        if(mainAssignTaskBtn && addTaskWidget) {
+            mainAssignTaskBtn.addEventListener('click', () => {
+                addTaskWidget.classList.remove('hidden');
+                const input = document.getElementById('assign-sku');
+                if (input) input.focus();
             });
         }
         if(closeWidgetBtn && addTaskWidget) {
